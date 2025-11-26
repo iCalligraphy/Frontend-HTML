@@ -1,478 +1,444 @@
 /**
- * 认证页面交互逻辑
+ * 认证管理类，处理用户登录状态、token管理和导航栏更新
  */
+class AuthManager {
+  constructor() {
+    this.ACCESS_TOKEN_KEY = 'access_token';
+    this.REFRESH_TOKEN_KEY = 'refresh_token';
+    this.USER_INFO_KEY = 'user_info';
+    this.tokenExpiryCheckInterval = null;
+  }
 
+  /**
+   * 保存登录凭据
+   * @param {string} accessToken - 访问令牌
+   * @param {string} refreshToken - 刷新令牌
+   * @param {Object} userInfo - 用户信息
+   */
+  saveCredentials(accessToken, refreshToken, userInfo) {
+    console.log('AuthManager: 保存登录凭据', userInfo);
+    localStorage.setItem(this.ACCESS_TOKEN_KEY, accessToken);
+    localStorage.setItem(this.REFRESH_TOKEN_KEY, refreshToken);
+    localStorage.setItem(this.USER_INFO_KEY, JSON.stringify(userInfo || {}));
+    
+    // 启动token过期检查
+    this.startTokenExpiryCheck();
+    
+    // 更新导航栏
+    this.updateNavbar();
+  }
+
+  /**
+   * 获取访问令牌
+   * @returns {string|null} 访问令牌或null
+   */
+  getAccessToken() {
+    return localStorage.getItem(this.ACCESS_TOKEN_KEY);
+  }
+
+  /**
+   * 获取刷新令牌
+   * @returns {string|null} 刷新令牌或null
+   */
+  getRefreshToken() {
+    return localStorage.getItem(this.REFRESH_TOKEN_KEY);
+  }
+
+  /**
+   * 获取用户信息
+   * @returns {Object|null} 用户信息对象或null
+   */
+  getUserInfo() {
+    const userInfoStr = localStorage.getItem(this.USER_INFO_KEY);
+    try {
+      return userInfoStr ? JSON.parse(userInfoStr) : null;
+    } catch (error) {
+      console.error('解析用户信息失败:', error);
+      return null;
+    }
+  }
+
+  /**
+   * 检查是否已登录
+   * @returns {boolean} 是否已登录
+   */
+  isLoggedIn() {
+    return !!this.getAccessToken();
+  }
+
+  /**
+   * 退出登录
+   */
+  logout() {
+    // 清除localStorage中的凭据
+    localStorage.removeItem(this.ACCESS_TOKEN_KEY);
+    localStorage.removeItem(this.REFRESH_TOKEN_KEY);
+    localStorage.removeItem(this.USER_INFO_KEY);
+    
+    // 停止token过期检查
+    this.stopTokenExpiryCheck();
+    
+    // 更新导航栏
+    this.updateNavbar();
+    
+    // 显示退出登录消息
+    alert('已成功退出登录');
+    
+    // 可以选择跳转到登录页或首页
+    window.location.href = '/login';
+  }
+
+  /**
+   * 刷新访问令牌
+   * @returns {Promise<boolean>} 刷新是否成功
+   */
+  async refreshToken() {
+    const refreshToken = this.getRefreshToken();
+    if (!refreshToken) {
+      console.log('AuthManager: 没有找到refresh token');
+      return false;
+    }
+
+    try {
+      // 修改为正确的JWT刷新token方式 - 在Authorization头中使用Bearer
+      const response = await fetch('/api/auth/refresh', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${refreshToken}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        localStorage.setItem(this.ACCESS_TOKEN_KEY, data.access_token);
+        console.log('AuthManager: token刷新成功');
+        return true;
+      } else {
+        // 服务器返回错误，只有明确的401/403才清除凭据
+        console.log('AuthManager: token刷新失败，服务器返回错误');
+        const status = response.status;
+        if (status === 401 || status === 403) {
+          console.log('AuthManager: token无效，执行登出');
+          this.logout();
+        }
+        return false;
+      }
+    } catch (error) {
+      console.error('AuthManager: 刷新token网络错误:', error);
+      // 网络错误时不自动登出，避免用户体验问题
+      // 仅在控制台记录错误，让用户可以继续使用
+      return false;
+    }
+  }
+
+  /**
+   * 启动token过期检查
+   */
+  startTokenExpiryCheck() {
+    // 每5分钟检查一次
+    this.tokenExpiryCheckInterval = setInterval(() => {
+      this.checkTokenExpiry();
+    }, 5 * 60 * 1000);
+  }
+
+  /**
+   * 停止token过期检查
+   */
+  stopTokenExpiryCheck() {
+    if (this.tokenExpiryCheckInterval) {
+      clearInterval(this.tokenExpiryCheckInterval);
+      this.tokenExpiryCheckInterval = null;
+    }
+  }
+
+  /**
+   * 检查token是否即将过期
+   */
+  async checkTokenExpiry() {
+    // 简单实现，实际项目中可以解析JWT token检查过期时间
+    // 这里我们假设token会在一段时间后过期，尝试自动刷新
+    if (this.isLoggedIn()) {
+      this.refreshToken();
+    }
+  }
+
+  /**
+   * 获取当前用户信息
+   * @returns {Promise<Object|null>} 用户信息或null
+   */
+  async fetchCurrentUser() {
+    const token = this.getAccessToken();
+    if (!token) {
+      console.log('AuthManager: 没有找到access token');
+      return null;
+    }
+
+    try {
+      console.log('AuthManager: 尝试获取用户信息');
+      const response = await fetch('/api/auth/me', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const user = data.user || data; // 处理不同的响应格式
+        localStorage.setItem(this.USER_INFO_KEY, JSON.stringify(user));
+        console.log('AuthManager: 获取用户信息成功');
+        return user;
+      } else if (response.status === 401) {
+        // Token过期，尝试刷新
+        console.log('AuthManager: 用户信息获取失败，token可能过期，尝试刷新');
+        const refreshed = await this.refreshToken();
+        if (refreshed) {
+          console.log('AuthManager: token刷新成功后再次尝试获取用户信息');
+          return this.fetchCurrentUser();
+        }
+        console.log('AuthManager: token刷新失败，无法获取用户信息');
+      } else {
+        console.log(`AuthManager: 获取用户信息失败，状态码: ${response.status}`);
+      }
+      return null;
+    } catch (error) {
+      console.error('AuthManager: 获取用户信息网络错误:', error);
+      // 网络错误时不自动登出，只记录错误
+      return null;
+    }
+  }
+
+  /**
+   * 更新导航栏显示
+   */
+  updateNavbar() {
+    console.log('AuthManager: 开始更新导航栏');
+    const navAuthContainer = document.querySelector('.nav-auth');
+    if (!navAuthContainer) {
+      console.log('AuthManager: 未找到导航栏容器');
+      return;
+    }
+
+    const isLoggedIn = this.isLoggedIn();
+    const userInfo = this.getUserInfo();
+    
+    console.log('AuthManager: 登录状态', isLoggedIn);
+    console.log('AuthManager: 用户信息', userInfo);
+    
+    if (isLoggedIn && userInfo) {
+      // 已登录状态：显示用户菜单
+      navAuthContainer.innerHTML = `
+        <div class="user-menu-container">
+          <button class="user-menu-btn" id="user-menu-btn">
+            <span class="user-avatar">${userInfo.username?.[0] || 'U'}</span>
+            <span class="user-name">${userInfo.username || '用户'}</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+          <div class="user-dropdown-menu" id="user-dropdown-menu">
+            <div class="user-info">
+              <div class="user-avatar-large">${userInfo.username?.[0] || 'U'}</div>
+              <div class="user-details">
+                <div class="user-fullname">${userInfo.username || '用户'}</div>
+                <div class="user-email">${userInfo.email || ''}</div>
+              </div>
+            </div>
+            <div class="dropdown-divider"></div>
+            <a href="/profile" class="dropdown-item">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              个人中心
+            </a>
+            <div class="dropdown-divider"></div>
+            <button class="dropdown-item logout-btn" id="logout-btn">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+              </svg>
+              退出登录
+            </button>
+          </div>
+        </div>
+      `;
+      
+      // 添加用户菜单事件监听
+      const userMenuBtn = document.getElementById('user-menu-btn');
+      const userDropdownMenu = document.getElementById('user-dropdown-menu');
+      const logoutBtn = document.getElementById('logout-btn');
+      
+      if (userMenuBtn && userDropdownMenu) {
+        userMenuBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          userDropdownMenu.classList.toggle('active');
+        });
+        
+        // 点击页面其他地方关闭菜单
+        document.addEventListener('click', () => {
+          userDropdownMenu.classList.remove('active');
+        });
+        
+        // 阻止菜单内部点击冒泡
+        userDropdownMenu.addEventListener('click', (e) => {
+          e.stopPropagation();
+        });
+      }
+      
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+          this.logout();
+        });
+      }
+    } else {
+      // 未登录状态：显示登录/注册按钮
+      navAuthContainer.innerHTML = `
+        <a href="/login" class="btn btn-outline">登录/注册</a>
+      `;
+    }
+    console.log('AuthManager: 导航栏更新完成');
+  }
+}
+
+// 创建全局实例
+const authManager = new AuthManager();
+
+// 页面加载时检查登录状态并更新导航栏
 document.addEventListener('DOMContentLoaded', () => {
-  // 登录/注册标签切换
-  initTabSwitch();
-
-  // 登录模式切换（密码/验证码）
-  initLoginModeSwitch();
-
-  // 密码显示/隐藏切换
-  initPasswordToggle();
-
-  // 验证码发送
-  initSendCode();
-
-  // 表单提交
-  initFormSubmit();
+  console.log('AuthManager: 页面加载完成，检查登录状态');
+  
+  // 先更新导航栏，让用户界面立即显示正确状态
+  authManager.updateNavbar();
+  
+  // 延迟获取用户信息，避免登录后立即触发可能的错误处理
+  if (authManager.isLoggedIn()) {
+    setTimeout(() => {
+      console.log('AuthManager: 延迟获取用户信息');
+      authManager.fetchCurrentUser().then(() => {
+        // 重新更新导航栏以显示最新用户信息
+        console.log('AuthManager: 获取用户信息后更新导航栏');
+        authManager.updateNavbar();
+      });
+    }, 500);
+  }
 });
 
-/**
- * 登录/注册标签切换
- */
-function initTabSwitch() {
-  const tabBtns = document.querySelectorAll('.tab-btn');
-  const loginForm = document.getElementById('login-form');
-  const registerForm = document.getElementById('register-form');
-
-  tabBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const tab = btn.dataset.tab;
-
-      // 更新按钮状态
-      tabBtns.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-
-      // 切换表单显示
-      if (tab === 'login') {
-        loginForm.classList.add('active');
-        registerForm.classList.remove('active');
-      } else {
-        loginForm.classList.remove('active');
-        registerForm.classList.add('active');
+// 为API请求添加拦截器，自动附加Authorization头
+document.addEventListener('DOMContentLoaded', () => {
+  // 保存原始fetch
+  const originalFetch = window.fetch;
+  
+  // 用于防止无限刷新的标志
+  let isRefreshing = false;
+  
+  // 重写fetch
+  window.fetch = async (url, options = {}) => {
+    // 只对API请求添加token（排除refresh请求，避免重复添加refresh token）
+    if (url.startsWith('/api') && !url.includes('/login') && !url.includes('/register') && !url.includes('/refresh')) {
+      const token = authManager.getAccessToken();
+      if (token) {
+        options.headers = {
+          ...options.headers,
+          'Authorization': `Bearer ${token}`
+        };
       }
-    });
-  });
-}
-
-/**
- * 登录模式切换（密码/验证码）
- */
-function initLoginModeSwitch() {
-  const modeBtns = document.querySelectorAll('.mode-btn');
-  const passwordForm = document.getElementById('password-login-form');
-  const smsForm = document.getElementById('sms-login-form');
-
-  modeBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const mode = btn.dataset.mode;
-
-      // 更新按钮状态
-      modeBtns.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-
-      // 切换表单显示
-      if (mode === 'password') {
-        passwordForm.classList.add('active');
-        smsForm.classList.remove('active');
-      } else {
-        passwordForm.classList.remove('active');
-        smsForm.classList.add('active');
+    }
+    
+    // 执行原始fetch
+    let response = await originalFetch(url, options);
+    
+    // 处理401错误（token过期）- 只处理非refresh请求和避免重复刷新
+    if (response.status === 401 && url.startsWith('/api') && !url.includes('/refresh') && !isRefreshing) {
+      console.log(`AuthManager: 请求${url}返回401，尝试刷新token`);
+      try {
+        // 设置刷新中标志
+        isRefreshing = true;
+        
+        // 尝试刷新token
+        const refreshed = await authManager.refreshToken();
+        
+        if (refreshed) {
+          // 刷新成功后重新请求
+          console.log(`AuthManager: token刷新成功，重新请求${url}`);
+          const newToken = authManager.getAccessToken();
+          options.headers = {
+            ...options.headers,
+            'Authorization': `Bearer ${newToken}`
+          };
+          response = await originalFetch(url, options);
+        }
+      } finally {
+        // 无论成功失败都重置刷新标志
+        isRefreshing = false;
       }
-    });
-  });
-}
-
-/**
- * 密码显示/隐藏切换
- */
-function initPasswordToggle() {
-  const toggleBtns = document.querySelectorAll('.toggle-password');
-
-  toggleBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const input = btn.parentElement.querySelector('input');
-      const isPassword = input.type === 'password';
-
-      // 切换输入框类型
-      input.type = isPassword ? 'text' : 'password';
-
-      // 更新图标
-      btn.innerHTML = isPassword
-        ? `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-             <circle cx="12" cy="12" r="3"></circle>
-             <line x1="3" y1="3" x2="21" y2="21"></line>
-           </svg>`
-        : `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-             <circle cx="12" cy="12" r="3"></circle>
-           </svg>`;
-
-      // 更新 aria-label
-      btn.setAttribute('aria-label', isPassword ? '隐藏密码' : '显示密码');
-    });
-  });
-}
-
-/**
- * 验证码发送
- */
-function initSendCode() {
-  const sendCodeBtns = document.querySelectorAll('.btn-send-code');
-
-  sendCodeBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      // 获取关联的手机号输入框
-      const form = btn.closest('form');
-      const phoneInput = form.querySelector('input[type="tel"]');
-      const phone = phoneInput.value.trim();
-
-      // 验证手机号
-      if (!phone) {
-        showMessage('请输入手机号', 'error');
-        phoneInput.focus();
-        return;
-      }
-
-      if (!/^1[3-9]\d{9}$/.test(phone)) {
-        showMessage('请输入正确的手机号', 'error');
-        phoneInput.focus();
-        return;
-      }
-
-      // 发送验证码（这里模拟发送）
-      sendVerificationCode(btn, phone);
-    });
-  });
-}
-
-/**
- * 发送验证码（模拟）
- */
-function sendVerificationCode(btn, phone) {
-  // 禁用按钮
-  btn.disabled = true;
-
-  // 模拟 API 调用
-  setTimeout(() => {
-    showMessage('验证码已发送至 ' + phone, 'success');
-
-    // 倒计时
-    let countdown = 60;
-    btn.textContent = `${countdown}秒后重试`;
-
-    const timer = setInterval(() => {
-      countdown--;
-      if (countdown > 0) {
-        btn.textContent = `${countdown}秒后重试`;
-      } else {
-        clearInterval(timer);
-        btn.textContent = '获取验证码';
-        btn.disabled = false;
-      }
-    }, 1000);
-  }, 500);
-
-  // TODO: 实际项目中应该调用后端 API
-  // fetch('/api/auth/send-code', {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({ phone })
-  // })
-  // .then(response => response.json())
-  // .then(data => {
-  //   if (data.success) {
-  //     showMessage('验证码已发送', 'success');
-  //     // 开始倒计时...
-  //   } else {
-  //     showMessage(data.message || '发送失败', 'error');
-  //     btn.disabled = false;
-  //   }
-  // })
-  // .catch(error => {
-  //   showMessage('网络错误，请重试', 'error');
-  //   btn.disabled = false;
-  // });
-}
-
-/**
- * 表单提交
- */
-function initFormSubmit() {
-  const passwordLoginForm = document.getElementById('password-login-form');
-  const smsLoginForm = document.getElementById('sms-login-form');
-  const registerForm = document.querySelector('#register-form .auth-form');
-
-  // 密码登录
-  if (passwordLoginForm) {
-    passwordLoginForm.addEventListener('submit', handlePasswordLogin);
-  }
-
-  // 验证码登录
-  if (smsLoginForm) {
-    smsLoginForm.addEventListener('submit', handleSmsLogin);
-  }
-
-  // 注册
-  if (registerForm) {
-    registerForm.addEventListener('submit', handleRegister);
-  }
-}
-
-/**
- * 处理密码登录
- */
-function handlePasswordLogin(e) {
-  e.preventDefault();
-
-  const formData = new FormData(e.target);
-  const username = formData.get('username').trim();
-  const password = formData.get('password');
-  const remember = formData.get('remember') === 'on';
-
-  // 表单验证
-  if (!username) {
-    showMessage('请输入用户名、手机号或邮箱', 'error');
-    return;
-  }
-
-  if (!password) {
-    showMessage('请输入密码', 'error');
-    return;
-  }
-
-  // 模拟登录
-  showMessage('登录中...', 'info');
-
-  setTimeout(() => {
-    // TODO: 实际项目中应该调用后端 API
-    // 这里模拟登录成功
-    showMessage('登录成功！', 'success');
-
-    // 跳转到首页
-    setTimeout(() => {
-      window.location.href = '/';
-    }, 1000);
-  }, 1000);
-
-  // TODO: 实际项目中的 API 调用
-  // fetch('/api/auth/login', {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({ username, password, remember })
-  // })
-  // .then(response => response.json())
-  // .then(data => {
-  //   if (data.success) {
-  //     showMessage('登录成功！', 'success');
-  //     localStorage.setItem('token', data.token);
-  //     localStorage.setItem('user', JSON.stringify(data.user));
-  //     setTimeout(() => {
-  //       window.location.href = '/';
-  //     }, 1000);
-  //   } else {
-  //     showMessage(data.message || '登录失败', 'error');
-  //   }
-  // })
-  // .catch(error => {
-  //   showMessage('网络错误，请重试', 'error');
-  // });
-}
-
-/**
- * 处理验证码登录
- */
-function handleSmsLogin(e) {
-  e.preventDefault();
-
-  const formData = new FormData(e.target);
-  const phone = formData.get('phone').trim();
-  const code = formData.get('code').trim();
-
-  // 表单验证
-  if (!phone) {
-    showMessage('请输入手机号', 'error');
-    return;
-  }
-
-  if (!/^1[3-9]\d{9}$/.test(phone)) {
-    showMessage('请输入正确的手机号', 'error');
-    return;
-  }
-
-  if (!code) {
-    showMessage('请输入验证码', 'error');
-    return;
-  }
-
-  if (!/^\d{6}$/.test(code)) {
-    showMessage('请输入6位验证码', 'error');
-    return;
-  }
-
-  // 模拟登录
-  showMessage('登录中...', 'info');
-
-  setTimeout(() => {
-    showMessage('登录成功！', 'success');
-    setTimeout(() => {
-      window.location.href = '/';
-    }, 1000);
-  }, 1000);
-
-  // TODO: 实际 API 调用同上
-}
-
-/**
- * 处理注册
- */
-function handleRegister(e) {
-  e.preventDefault();
-
-  const formData = new FormData(e.target);
-  const username = formData.get('username').trim();
-  const phone = formData.get('phone').trim();
-  const code = formData.get('code').trim();
-  const email = formData.get('email').trim();
-  const password = formData.get('password');
-  const passwordConfirm = formData.get('password_confirm');
-  const agree = formData.get('agree') === 'on';
-
-  // 表单验证
-  if (!username) {
-    showMessage('请输入用户名', 'error');
-    return;
-  }
-
-  if (username.length < 3 || username.length > 20) {
-    showMessage('用户名长度应在3-20个字符之间', 'error');
-    return;
-  }
-
-  if (!phone) {
-    showMessage('请输入手机号', 'error');
-    return;
-  }
-
-  if (!/^1[3-9]\d{9}$/.test(phone)) {
-    showMessage('请输入正确的手机号', 'error');
-    return;
-  }
-
-  if (!code) {
-    showMessage('请输入验证码', 'error');
-    return;
-  }
-
-  if (!/^\d{6}$/.test(code)) {
-    showMessage('请输入6位验证码', 'error');
-    return;
-  }
-
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    showMessage('请输入正确的邮箱地址', 'error');
-    return;
-  }
-
-  if (!password) {
-    showMessage('请输入密码', 'error');
-    return;
-  }
-
-  if (password.length < 6) {
-    showMessage('密码长度至少为6个字符', 'error');
-    return;
-  }
-
-  if (password !== passwordConfirm) {
-    showMessage('两次输入的密码不一致', 'error');
-    return;
-  }
-
-  if (!agree) {
-    showMessage('请阅读并同意用户协议和隐私政策', 'error');
-    return;
-  }
-
-  // 模拟注册
-  showMessage('注册中...', 'info');
-
-  setTimeout(() => {
-    showMessage('注册成功！即将跳转到登录页面...', 'success');
-
-    // 切换到登录标签
-    setTimeout(() => {
-      const loginTab = document.querySelector('.tab-btn[data-tab="login"]');
-      if (loginTab) {
-        loginTab.click();
-      }
-    }, 1500);
-  }, 1000);
-
-  // TODO: 实际 API 调用
-  // fetch('/api/auth/register', {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({ username, phone, code, email, password })
-  // })
-  // .then(response => response.json())
-  // .then(data => {
-  //   if (data.success) {
-  //     showMessage('注册成功！', 'success');
-  //     setTimeout(() => {
-  //       // 切换到登录标签
-  //       document.querySelector('.tab-btn[data-tab="login"]').click();
-  //     }, 1500);
-  //   } else {
-  //     showMessage(data.message || '注册失败', 'error');
-  //   }
-  // })
-  // .catch(error => {
-  //   showMessage('网络错误，请重试', 'error');
-  // });
-}
-
-/**
- * 显示提示消息
- */
-function showMessage(message, type = 'info') {
-  // 创建消息元素
-  const messageEl = document.createElement('div');
-  messageEl.className = `message message-${type}`;
-  messageEl.textContent = message;
-
-  // 添加样式
-  Object.assign(messageEl.style, {
-    position: 'fixed',
-    top: '20px',
-    left: '50%',
-    transform: 'translateX(-50%)',
-    padding: '12px 24px',
-    borderRadius: '8px',
-    color: '#fff',
-    fontSize: '14px',
-    fontWeight: '600',
-    zIndex: '9999',
-    opacity: '0',
-    transition: 'opacity 0.3s ease',
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
-  });
-
-  // 根据类型设置背景色
-  const colors = {
-    success: '#52c41a',
-    error: '#ff4d4f',
-    warning: '#faad14',
-    info: '#1890ff'
+    }
+    
+    return response;
   };
-  messageEl.style.background = colors[type] || colors.info;
+});
 
-  // 添加到页面
-  document.body.appendChild(messageEl);
+// 认证页面交互逻辑
+document.addEventListener('DOMContentLoaded', () => {
+  // 登录/注册标签切换
+  const tabBtns = document.querySelectorAll('.tab-btn');
+  if (tabBtns.length > 0) {
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
+        
+        // 更新标签样式
+        tabBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        // 切换表单显示
+        document.querySelectorAll('.auth-form-container').forEach(container => {
+          container.classList.remove('active');
+        });
+        document.getElementById(`${tab}-form`).classList.add('active');
+      });
+    });
+  }
+  
+  // 登录方式切换
+  const modeBtns = document.querySelectorAll('.login-mode-switch .mode-btn');
+  if (modeBtns.length > 0) {
+    modeBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const mode = btn.dataset.mode;
+        
+        // 更新按钮样式
+        modeBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        // 切换登录表单
+        document.querySelectorAll('#login-form .auth-form').forEach(form => {
+          form.classList.remove('active');
+        });
+        document.getElementById(`${mode}-login-form`).classList.add('active');
+      });
+    });
+  }
+  
+  // 显示/隐藏密码
+  const togglePasswordBtns = document.querySelectorAll('.toggle-password');
+  togglePasswordBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const input = btn.closest('.password-input-wrapper').querySelector('input');
+      const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+      input.setAttribute('type', type);
+      
+      // 切换图标
+      const svg = btn.querySelector('svg');
+      if (type === 'text') {
+        // 切换为隐藏密码图标
+        svg.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><line x1="12" y1="4" x2="12" y2="20"></line>';
+      } else {
+        // 切换为显示密码图标
+        svg.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+      }
+    });
+  });
+});
 
-  // 显示动画
-  setTimeout(() => {
-    messageEl.style.opacity = '1';
-  }, 10);
-
-  // 自动隐藏
-  setTimeout(() => {
-    messageEl.style.opacity = '0';
-    setTimeout(() => {
-      document.body.removeChild(messageEl);
-    }, 300);
-  }, 3000);
-}
