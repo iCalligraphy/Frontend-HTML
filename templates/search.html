@@ -2,11 +2,58 @@
 
 {% block title %}检索 · iCalligraphy{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/search.css">
+{% endblock %}
+
 {% block content %}
-    <main class="container">
-      <h1>检索</h1>
-      <p>页面建设中：后续将支持实时搜索、结果展示切换与筛选。</p>
-    </main>
+<main class="container search-container">
+
+  <h1>检索</h1>
+
+  <!-- 搜索框 -->
+  <div class="search-box">
+    <div class="search-type">
+      <button class="type-btn active" data-type="works">作品</button>
+      <button class="type-btn" data-type="characters">单字</button>
+      <button class="type-btn" data-type="collections">字集</button>
+    </div>
+    <div class="search-input">
+      <input type="search" id="searchInput" placeholder="输入关键词检索...">
+      <button id="searchBtn" class="btn btn-primary">搜索</button>
+    </div>
+  </div>
+
+  <!-- 筛选条件 -->
+  <div class="filters">
+    <div class="filter-group">
+      <label class="label">风格</label>
+      <select id="styleFilter">
+        <option value="">全部</option>
+        <option value="楷书">楷书</option>
+        <option value="行书">行书</option>
+        <option value="草书">草书</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label class="label">作者</label>
+      <input type="text" id="authorFilter" placeholder="作者名">
+    </div>
+  </div>
+
+  <!-- 搜索结果 -->
+  <div class="view-switch">
+    <button class="view-btn active" data-view="grid">网格</button>
+    <button class="view-btn" data-view="list">列表</button>
+  </div>
+  <div class="works-grid" id="searchResults"></div>
+  <div class="pagination" id="searchPagination"></div>
+
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/search.js"></script>
 {% endblock %}
 
 {% block footer_note %}{% endblock %}

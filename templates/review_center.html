@@ -2,11 +2,54 @@
 
 {% block title %}审核中心 · iCalligraphy{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/review_center.css">
+{% endblock %}
+
 {% block content %}
-    <main class="container">
-      <h1>审核中心</h1>
-      <p>页面建设中：后续将支持自动初筛与人工复核流程展示。</p>
-    </main>
+<main class="container review-container">
+
+  <h1>审核中心</h1>
+
+  <!-- 筛选与搜索 -->
+  <section class="review-filters">
+    <input type="text" id="searchInput" placeholder="搜索作品/作者">
+    <select id="statusFilter">
+      <option value="">全部状态</option>
+      <option value="pending">待审核</option>
+      <option value="approved">已通过</option>
+      <option value="rejected">已驳回</option>
+    </select>
+    <button id="filterBtn" class="btn btn-primary">筛选</button>
+  </section>
+
+  <!-- 待审核作品列表 -->
+  <section class="reviews-list" id="reviewsList"></section>
+
+  <!-- 分页 -->
+  <div class="pagination" id="reviewsPagination"></div>
+
+  <!-- 审核弹窗 -->
+  <div id="reviewModal" class="modal hidden">
+    <div class="modal-content">
+      <span class="close-btn">&times;</span>
+      <h3 id="modalTitle">作品审核</h3>
+      <div id="modalThumb"></div>
+      <p>作者：<span id="modalAuthor"></span></p>
+      <div class="modal-actions">
+        <button id="autoScreenBtn" class="btn btn-primary">自动初筛</button>
+        <button id="approveBtn" class="btn btn-primary">通过</button>
+        <button id="rejectBtn" class="btn btn-primary">驳回</button>
+      </div>
+      <textarea id="rejectReason" placeholder="驳回原因" class="hidden"></textarea>
+    </div>
+  </div>
+
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/review_center.js"></script>
 {% endblock %}
 
 {% block footer_note %}{% endblock %}

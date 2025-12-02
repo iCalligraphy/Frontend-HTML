@@ -1,0 +1,74 @@
+.profile-container {
+  padding: 24px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+/* 账号信息 */
+.account-info {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+}
+.avatar-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--theme-brown);
+}
+.user-info h2 {
+  font-size: 24px;
+  margin: 6px 0;
+}
+
+/* 作品列表 */
+.works-filters {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.filter-btn {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  background: #fff;
+}
+.filter-btn.active {
+  background: var(--theme-brown);
+  color: #fff;
+  border-color: var(--theme-brown);
+}
+.works-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+/* 字集、草稿箱 */
+.collections-list, .drafts-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+/* 互动数据 */
+.interaction-grid {
+  display: flex;
+  gap: 24px;
+}
+
+/* 系统设置 */
+.settings-list {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}

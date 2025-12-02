@@ -2,11 +2,80 @@
 
 {% block title %}个人中心 · iCalligraphy{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/profile.css">
+{% endblock %}
+
 {% block content %}
-    <main class="container">
-      <h1>个人中心</h1>
-      <p>页面建设中：后续将展示账号信息、我的作品、我的字集等内容。</p>
-    </main>
+<main class="container profile-container">
+
+  <!-- 账号信息 -->
+  <section class="account-info">
+    <div class="avatar-wrapper">
+      <img id="userAvatar" src="/static/images/default_avatar.png" alt="头像" class="avatar">
+      <input type="file" id="avatarInput" accept="image/*" hidden>
+      <button id="changeAvatarBtn" class="btn btn-primary">更换头像</button>
+    </div>
+    <div class="user-info">
+      <h2 id="username">用户名</h2>
+      <p id="phone">绑定手机号：<span>未绑定</span></p>
+      <p id="role">权限：普通用户</p>
+    </div>
+  </section>
+
+  <!-- 我的作品 -->
+  <section class="my-works">
+    <h3>我的作品</h3>
+    <div class="works-filters">
+      <button class="filter-btn active" data-status="pending">待审核</button>
+      <button class="filter-btn" data-status="approved">已通过</button>
+      <button class="filter-btn" data-status="rejected">已驳回</button>
+    </div>
+    <div class="works-list" id="worksList">
+      <!-- JS 动态生成作品卡片 -->
+    </div>
+    <div class="pagination" id="worksPagination"></div>
+  </section>
+
+  <!-- 我的字集 -->
+  <section class="my-collections">
+    <h3>我的字集</h3>
+    <div class="collections-list" id="collectionsList"></div>
+  </section>
+
+  <!-- 草稿箱 -->
+  <section class="drafts">
+    <h3>草稿箱</h3>
+    <div class="drafts-list" id="draftsList"></div>
+  </section>
+
+  <!-- 互动数据 -->
+  <section class="interaction-data">
+    <h3>互动数据</h3>
+    <div class="interaction-grid">
+      <div>收到的赞：<span id="likesCount">0</span></div>
+      <div>收藏记录：<span id="favoritesCount">0</span></div>
+      <div>浏览历史：<span id="historyCount">0</span></div>
+    </div>
+  </section>
+
+  <!-- 系统设置 -->
+  <section class="system-settings">
+    <h3>系统设置</h3>
+    <div class="settings-list">
+      <button class="btn btn-primary">修改密码</button>
+      <button class="btn btn-primary">绑定手机</button>
+      <button class="btn btn-primary">隐私权限</button>
+      <button class="btn btn-primary">缓存清理</button>
+      <button class="btn btn-primary">意见反馈</button>
+    </div>
+  </section>
+
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/profile.js"></script>
 {% endblock %}
 
 {% block footer_note %}{% endblock %}
