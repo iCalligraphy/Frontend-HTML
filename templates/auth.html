@@ -159,6 +159,7 @@
 {% block footer_note %}{% endblock %}
 
 {% block extra_js %}
+<<<<<<< HEAD
 <script defer>
   document.addEventListener('DOMContentLoaded', () => {
     // 密码登录表单提交
@@ -240,8 +241,10 @@
           const data = await response.json();
           
           if (response.ok) {
-            // 保存凭据到authManager
-            authManager.saveCredentials(data.access_token, data.refresh_token, data.user);
+            // 保存凭据到localStorage
+            localStorage.setItem('access_token', data.access_token);
+            localStorage.setItem('refresh_token', data.refresh_token);
+            localStorage.setItem('user', JSON.stringify(data.user));
             
             // 强制页面刷新，确保导航栏更新
             window.location.href = '/';
@@ -372,4 +375,7 @@
     });
   });
 </script>
+=======
+<script src="/static/js/auth.js" defer></script>
+>>>>>>> origin/community-changes
 {% endblock %}

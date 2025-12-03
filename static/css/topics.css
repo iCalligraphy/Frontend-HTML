@@ -1,0 +1,387 @@
+/* 话题列表页样式 */
+.topics-page {
+  padding: 24px 20px 40px;
+}
+
+/* 话题页面专属导航 */
+.topics-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 4px;
+}
+
+.topic-tab-btn {
+  padding: 12px 24px;
+  border: none;
+  background: transparent;
+  border-radius: 8px 8px 0 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gray);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.topic-tab-btn:hover {
+  color: var(--ink-black);
+  background: var(--bg-xuan);
+}
+
+.topic-tab-btn.active {
+  color: var(--theme-brown);
+}
+
+.topic-tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--theme-brown);
+  border-radius: 2px;
+}
+
+/* 搜索和筛选工具栏 */
+.topics-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.topics-search-box {
+  flex: 1;
+  min-width: 300px;
+  position: relative;
+}
+
+.topics-search-input {
+  width: 100%;
+  padding: 12px 16px 12px 44px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 15px;
+  background: var(--bg-xuan);
+  transition: all 0.3s ease;
+}
+
+.topics-search-input:focus {
+  outline: none;
+  border-color: var(--theme-brown);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(184, 136, 90, 0.1);
+}
+
+.search-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--gray);
+}
+
+.topics-filter-options {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.filter-btn {
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--ink-black);
+  transition: all 0.2s ease;
+}
+
+.filter-btn:hover {
+  border-color: var(--theme-brown);
+  color: var(--theme-brown);
+}
+
+.filter-btn.active {
+  background: var(--theme-brown);
+  border-color: var(--theme-brown);
+  color: #fff;
+}
+
+/* 空状态样式 */
+.topics-empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 60px 20px;
+  background: var(--bg-xuan);
+  border-radius: 16px;
+  border: 2px dashed var(--border);
+}
+
+.empty-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+  opacity: 0.5;
+  color: var(--theme-brown);
+}
+
+.topics-empty-state h3 {
+  font-size: 20px;
+  margin-bottom: 8px;
+  color: var(--ink-black);
+}
+
+.topics-empty-state p {
+  color: var(--gray);
+  margin-bottom: 24px;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* 已关注话题的标记 */
+.topic-followed-badge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: var(--theme-brown);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 关注话题按钮状态 */
+.btn-view-all.following {
+  background: var(--theme-brown);
+  color: #fff;
+}
+
+.btn-view-all.following:hover {
+  background: #6d3710;
+}
+
+/* 话题网格布局 */
+.topics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
+  margin-bottom: 40px;
+}
+
+/* 话题卡片 */
+.topic-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.topic-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  border-color: var(--theme-brown);
+}
+
+.topic-card.large {
+  grid-column: span 2;
+}
+
+.topic-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.topic-icon {
+  font-size: 32px;
+  width: 60px;
+  height: 60px;
+  background: var(--bg-xuan);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.topic-card h2 {
+  font-size: 20px;
+  margin: 0;
+  flex: 1;
+}
+
+.topic-desc {
+  color: var(--ink-black);
+  line-height: 1.7;
+  margin-bottom: 16px;
+  font-size: 15px;
+  flex: 1;
+}
+
+.topic-stats {
+  display: flex;
+  gap: 16px;
+  font-size: 14px;
+  color: var(--gray);
+  margin-bottom: 16px;
+}
+
+.topic-stats span {
+  padding: 4px 8px;
+  background: var(--bg-xuan);
+  border-radius: 4px;
+}
+
+/* 分类样式 */
+.topic-card[data-category="technique"] {
+  border-top: 4px solid #8b4513;
+}
+
+.topic-card[data-category="technique"] .topic-icon {
+  color: #8b4513;
+  background: rgba(139, 69, 19, 0.1);
+}
+
+.topic-card[data-category="appreciation"] {
+  border-top: 4px solid #4a7c59;
+}
+
+.topic-card[data-category="appreciation"] .topic-icon {
+  color: #4a7c59;
+  background: rgba(74, 124, 89, 0.1);
+}
+
+.topic-card[data-category="qna"] {
+  border-top: 4px solid #2c5aa0;
+}
+
+.topic-card[data-category="qna"] .topic-icon {
+  color: #2c5aa0;
+  background: rgba(44, 90, 160, 0.1);
+}
+
+.topic-card[data-category="materials"] {
+  border-top: 4px solid #a0522d;
+}
+
+.topic-card[data-category="materials"] .topic-icon {
+  color: #a0522d;
+  background: rgba(160, 82, 45, 0.1);
+}
+
+.topic-card[data-category="events"] {
+  border-top: 4px solid #c84b31;
+}
+
+.topic-card[data-category="events"] .topic-icon {
+  color: #c84b31;
+  background: rgba(200, 75, 49, 0.1);
+}
+
+/* 查看全部按钮 */
+.topic-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.btn-view-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid var(--theme-brown);
+  border-radius: 20px;
+  color: var(--theme-brown);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-view-all:hover {
+  background: var(--theme-brown);
+  color: #fff;
+}
+
+/* 响应式设计 */
+@media (max-width: 1024px) {
+  .topic-card.large {
+    grid-column: span 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .topics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .topic-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+  }
+
+  .topic-icon {
+    width: 50px;
+    height: 50px;
+    font-size: 24px;
+  }
+
+  .topics-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .topics-search-box {
+    min-width: 100%;
+  }
+
+  .topics-tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 0;
+  }
+
+  .topic-tab-btn {
+    white-space: nowrap;
+    padding: 10px 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .topics-header h1 {
+    font-size: 26px;
+  }
+
+  .topic-card {
+    padding: 16px;
+  }
+
+  .topic-stats {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
