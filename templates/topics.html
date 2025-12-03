@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}话题分类 · iCalligraphy{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/community.css" />
+<link rel="stylesheet" href="/static/css/topics.css" />
+{% endblock %}
+
+{% block content %}
+<main class="container community-main topics-page">
+  <!-- 页面标题 -->
+  <section class="community-header">
+    <h1>话题分类</h1>
+    <p class="subtitle">按兴趣分类浏览社区内容</p>
+  </section>
+
+  <!-- 社区导航栏 - 与社区页面保持一致 -->
+  <section class="community-nav">
+    <div class="community-nav-tabs">
+      <a href="/community" class="nav-tab">
+        <span class="tab-icon">🏠</span>
+        <span class="tab-text">首页</span>
+      </a>
+      <a href="/community/topics" class="nav-tab active">
+        <span class="tab-icon">📚</span>
+        <span class="tab-text">话题分类</span>
+      </a>
+      <a href="/community/follow" class="nav-tab">
+        <span class="tab-icon">👥</span>
+        <span class="tab-text">关注/粉丝</span>
+      </a>
+      <a href="/community/notifications" class="nav-tab">
+        <span class="tab-icon">🔔</span>
+        <span class="tab-text">消息通知</span>
+        <span class="notification-badge" id="navNotificationBadge" style="display: none;">0</span>
+      </a>
+      <a href="/community/feedback" class="nav-tab">
+        <span class="tab-icon">💬</span>
+        <span class="tab-text">意见反馈</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- 话题内容区域 -->
+  <div class="topics-content">
+    <div class="topics-grid">
+      <!-- 技法交流 -->
+      <div class="topic-card large" data-category="technique">
+        <div class="topic-header">
+          <span class="topic-icon">🖌️</span>
+          <h2>技法交流</h2>
+        </div>
+        <p class="topic-desc">分享书写技巧，讨论笔法、结构、章法等</p>
+        <div class="topic-stats">
+          <span>1.2K 帖子</span>
+          <span>今日更新 23</span>
+        </div>
+        <div class="topic-footer">
+          <button class="btn-view-all" data-category="technique">
+            查看全部 →
+          </button>
+        </div>
+      </div>
+
+      <!-- 作品欣赏 -->
+      <div class="topic-card" data-category="appreciation">
+        <div class="topic-header">
+          <span class="topic-icon">👁️</span>
+          <h2>作品欣赏</h2>
+        </div>
+        <p class="topic-desc">欣赏经典与原创书法作品，交流鉴赏心得</p>
+        <div class="topic-stats">
+          <span>890 帖子</span>
+          <span>今日更新 15</span>
+        </div>
+        <div class="topic-footer">
+          <button class="btn-view-all" data-category="appreciation">
+            查看全部 →
+          </button>
+        </div>
+      </div>
+
+      <!-- 问答求助 -->
+      <div class="topic-card" data-category="qna">
+        <div class="topic-header">
+          <span class="topic-icon">❓</span>
+          <h2>问答求助</h2>
+        </div>
+        <p class="topic-desc">提出书法学习中的疑问，互相解答帮助</p>
+        <div class="topic-stats">
+          <span>670 帖子</span>
+          <span>今日更新 18</span>
+        </div>
+        <div class="topic-footer">
+          <button class="btn-view-all" data-category="qna">
+            查看全部 →
+          </button>
+        </div>
+      </div>
+
+      <!-- 文房四宝 -->
+      <div class="topic-card" data-category="materials">
+        <div class="topic-header">
+          <span class="topic-icon">📦</span>
+          <h2>文房四宝</h2>
+        </div>
+        <p class="topic-desc">讨论笔墨纸砚等书法工具的选择与使用</p>
+        <div class="topic-stats">
+          <span>450 帖子</span>
+          <span>今日更新 8</span>
+        </div>
+        <div class="topic-footer">
+          <button class="btn-view-all" data-category="materials">
+            查看全部 →
+          </button>
+        </div>
+      </div>
+
+      <!-- 活动赛事 -->
+      <div class="topic-card" data-category="events">
+        <div class="topic-header">
+          <span class="topic-icon">🎯</span>
+          <h2>活动赛事</h2>
+        </div>
+        <p class="topic-desc">书法比赛、展览、线下活动等信息分享</p>
+        <div class="topic-stats">
+          <span>320 帖子</span>
+          <span>今日更新 5</span>
+        </div>
+        <div class="topic-footer">
+          <button class="btn-view-all" data-category="events">
+            查看全部 →
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/topics.js" defer></script>
+{% endblock %}

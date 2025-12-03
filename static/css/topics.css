@@ -1,0 +1,251 @@
+/* 话题列表页样式 */
+.topics-page {
+  padding: 24px 20px 40px;
+}
+
+.topics-content {
+  margin-top: 24px;
+}
+
+/* 覆盖社区导航栏的位置样式 */
+.topics-page .community-header {
+  margin-bottom: 16px;
+}
+
+.topics-page .community-nav {
+  margin-bottom: 32px;
+}
+
+/* 话题网格布局 */
+.topics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
+  margin-bottom: 40px;
+}
+
+/* 话题卡片 */
+.topic-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.topic-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  border-color: var(--theme-brown);
+}
+
+.topic-card.large {
+  grid-column: span 2;
+}
+
+.topic-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.topic-icon {
+  font-size: 32px;
+  width: 60px;
+  height: 60px;
+  background: var(--bg-xuan);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.topic-card h2 {
+  font-size: 20px;
+  margin: 0;
+  flex: 1;
+}
+
+.topic-desc {
+  color: var(--ink-black);
+  line-height: 1.7;
+  margin-bottom: 16px;
+  font-size: 15px;
+  flex: 1;
+}
+
+.topic-stats {
+  display: flex;
+  gap: 16px;
+  font-size: 14px;
+  color: var(--gray);
+  margin-bottom: 16px;
+}
+
+.topic-stats span {
+  padding: 4px 8px;
+  background: var(--bg-xuan);
+  border-radius: 4px;
+}
+
+/* 分类样式 */
+.topic-card[data-category="technique"] {
+  border-top: 4px solid #8b4513;
+}
+
+.topic-card[data-category="technique"] .topic-icon {
+  color: #8b4513;
+  background: rgba(139, 69, 19, 0.1);
+}
+
+.topic-card[data-category="appreciation"] {
+  border-top: 4px solid #4a7c59;
+}
+
+.topic-card[data-category="appreciation"] .topic-icon {
+  color: #4a7c59;
+  background: rgba(74, 124, 89, 0.1);
+}
+
+.topic-card[data-category="qna"] {
+  border-top: 4px solid #2c5aa0;
+}
+
+.topic-card[data-category="qna"] .topic-icon {
+  color: #2c5aa0;
+  background: rgba(44, 90, 160, 0.1);
+}
+
+.topic-card[data-category="materials"] {
+  border-top: 4px solid #a0522d;
+}
+
+.topic-card[data-category="materials"] .topic-icon {
+  color: #a0522d;
+  background: rgba(160, 82, 45, 0.1);
+}
+
+.topic-card[data-category="events"] {
+  border-top: 4px solid #c84b31;
+}
+
+.topic-card[data-category="events"] .topic-icon {
+  color: #c84b31;
+  background: rgba(200, 75, 49, 0.1);
+}
+
+/* 查看全部按钮 */
+.topic-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.btn-view-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid var(--theme-brown);
+  border-radius: 20px;
+  color: var(--theme-brown);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-view-all:hover {
+  background: var(--theme-brown);
+  color: #fff;
+}
+
+/* 响应式设计 */
+@media (max-width: 1024px) {
+  .topic-card.large {
+    grid-column: span 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .topics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .topic-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+  }
+
+  .topic-icon {
+    width: 50px;
+    height: 50px;
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .topics-header h1 {
+    font-size: 26px;
+  }
+
+  .topic-card {
+    padding: 16px;
+  }
+
+  .topic-stats {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+/* 确保话题页面的导航栏样式正确 */
+.topics-page .community-nav-tabs {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.topics-page .nav-tab {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 24px;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink-black);
+  text-decoration: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  min-width: 140px;
+  justify-content: center;
+  font-weight: 500;
+}
+
+.topics-page .nav-tab:hover {
+  border-color: var(--theme-brown);
+  background: linear-gradient(135deg, rgba(184, 136, 90, 0.1) 0%, rgba(184, 136, 90, 0.05) 100%);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(184, 136, 90, 0.15);
+}
+
+.topics-page .nav-tab.active {
+  background: linear-gradient(135deg, var(--theme-brown) 0%, #a67c52 100%);
+  border-color: var(--theme-brown);
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(184, 136, 90, 0.3);
+}

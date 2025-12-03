@@ -14,214 +14,331 @@
         <p class="subtitle">分享交流心得，记录练习历程，共同探索书法艺术</p>
       </section>
 
-      <!-- 每日打卡区域 -->
-      <section class="daily-checkin">
-        <div class="checkin-card">
-          <div class="checkin-header">
-            <h2>每日打卡</h2>
-            <span class="streak-badge">已连续打卡 <strong id="streakDays">0</strong> 天</span>
-          </div>
-          <div class="checkin-content">
-            <p class="checkin-tip">坚持每日练字，养成良好习惯</p>
-            <button id="checkinBtn" class="btn btn-primary btn-large">
-              <span class="btn-icon">✓</span>
-              <span class="btn-text">今日打卡</span>
-            </button>
-            <p class="checkin-status" id="checkinStatus"></p>
-          </div>
-          <div class="checkin-calendar">
-            <div class="calendar-days" id="calendarDays">
-              <!-- 日历网格将由 JavaScript 生成 -->
-            </div>
-          </div>
+      <section class="community-nav">
+        <div class="community-nav-tabs">
+          <a href="/community" class="nav-tab {% if active_page == 'community' %}active{% endif %}">
+            <span class="tab-icon">🏠</span>
+            <span class="tab-text">首页</span>
+          </a>
+          <a href="/community/topics" class="nav-tab">
+            <span class="tab-icon">📚</span>
+            <span class="tab-text">话题分类</span>
+          </a>
+          <a href="/community/follow" class="nav-tab">
+            <span class="tab-icon">👥</span>
+            <span class="tab-text">关注/粉丝</span>
+          </a>
+          <a href="/community/notifications" class="nav-tab">
+            <span class="tab-icon">🔔</span>
+            <span class="tab-text">消息通知</span>
+            <span class="notification-badge" id="navNotificationBadge" style="display: none;">0</span>
+          </a>
+          <a href="/community/feedback" class="nav-tab">
+            <span class="tab-icon">💬</span>
+            <span class="tab-text">意见反馈</span>
+          </a>
         </div>
       </section>
 
-      <!-- 发帖区域 -->
-      <section class="post-composer">
-        <div class="composer-card">
-          <h3>发布新帖</h3>
-          <div class="composer-form">
-            <input type="text" id="postTitle" class="input-field" placeholder="标题（选填）" maxlength="100" />
-            <textarea id="postContent" class="textarea-field" placeholder="分享你的书法心得、练习成果或提出问题..." rows="4" maxlength="2000"></textarea>
-            <div class="composer-footer">
-              <div class="char-count">
-                <span id="charCount">0</span> / 2000
+      <div class="community-layout">
+        <!-- 左侧内容区 -->
+        <div class="community-content">
+          <!-- 每日打卡区域 -->
+          <section class="daily-checkin">
+            <div class="checkin-card">
+              <div class="checkin-header">
+                <h2>每日打卡</h2>
+                <span class="streak-badge">已连续打卡 <strong id="streakDays">0</strong> 天</span>
               </div>
-              <button id="publishBtn" class="btn btn-primary">发布</button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- 帖子筛选 -->
-      <section class="post-filters">
-        <div class="filter-tabs">
-          <button class="filter-tab active" data-filter="all">全部</button>
-          <button class="filter-tab" data-filter="hot">热门</button>
-          <button class="filter-tab" data-filter="latest">最新</button>
-          <button class="filter-tab" data-filter="following">关注</button>
-        </div>
-        <div class="filter-search">
-          <input type="search" id="postSearch" placeholder="搜索帖子..." />
-        </div>
-      </section>
-
-      <!-- 帖子列表 -->
-      <section class="posts-list" id="postsList">
-        <!-- 示例帖子 1 -->
-        <article class="post-card">
-          <div class="post-header">
-            <div class="post-author">
-              <div class="author-avatar" aria-hidden="true">王</div>
-              <div class="author-info">
-                <h4 class="author-name">王墨客</h4>
-                <p class="post-time">2小时前</p>
+              <div class="checkin-content">
+                <p class="checkin-tip">坚持每日练字，养成良好习惯</p>
+                <button id="checkinBtn" class="btn btn-primary btn-large">
+                  <span class="btn-icon">✓</span>
+                  <span class="btn-text">今日打卡</span>
+                </button>
+                <p class="checkin-status" id="checkinStatus"></p>
               </div>
-            </div>
-            <button class="post-menu-btn" aria-label="更多操作">⋯</button>
-          </div>
-          <div class="post-body">
-            <h3 class="post-title">初学楷书，请前辈指点</h3>
-            <p class="post-content">最近开始练习欧体楷书，感觉横画总是写不平，求教各位老师该如何改进？有没有什么练习技巧？</p>
-          </div>
-          <div class="post-footer">
-            <button class="post-action" data-action="like">
-              <span class="action-icon">👍</span>
-              <span class="action-count">23</span>
-            </button>
-            <button class="post-action" data-action="comment">
-              <span class="action-icon">💬</span>
-              <span class="action-count">8</span>
-            </button>
-            <button class="post-action" data-action="share">
-              <span class="action-icon">↗</span>
-              <span class="action-text">分享</span>
-            </button>
-          </div>
-
-          <!-- 评论区（默认折叠） -->
-          <div class="comments-section hidden">
-            <div class="comment-composer">
-              <input type="text" class="comment-input" placeholder="写下你的评论..." />
-              <button class="btn btn-small">发送</button>
-            </div>
-            <div class="comments-list">
-              <div class="comment-item">
-                <div class="comment-avatar" aria-hidden="true">李</div>
-                <div class="comment-body">
-                  <div class="comment-header">
-                    <span class="comment-author">李墨香</span>
-                    <span class="comment-time">1小时前</span>
-                  </div>
-                  <p class="comment-text">建议多看田英章老师的视频教程，注意手腕的运用，横画要平稳。</p>
-                  <button class="comment-like">
-                    <span class="action-icon">👍</span>
-                    <span class="action-count">5</span>
-                  </button>
-                </div>
-              </div>
-              <div class="comment-item">
-                <div class="comment-avatar" aria-hidden="true">张</div>
-                <div class="comment-body">
-                  <div class="comment-header">
-                    <span class="comment-author">张书生</span>
-                    <span class="comment-time">30分钟前</span>
-                  </div>
-                  <p class="comment-text">欧体确实讲究横平竖直，建议先练习基本笔画，慢慢来不要急。</p>
-                  <button class="comment-like">
-                    <span class="action-icon">👍</span>
-                    <span class="action-count">3</span>
-                  </button>
+              <div class="checkin-calendar">
+                <div class="calendar-days" id="calendarDays">
+                  <!-- 日历网格将由 JavaScript 生成 -->
                 </div>
               </div>
             </div>
-          </div>
-        </article>
+          </section>
 
-        <!-- 示例帖子 2 -->
-        <article class="post-card">
-          <div class="post-header">
-            <div class="post-author">
-              <div class="author-avatar" aria-hidden="true">赵</div>
-              <div class="author-info">
-                <h4 class="author-name">赵字痴</h4>
-                <p class="post-time">5小时前</p>
+          <!-- 发帖区域 -->
+          <section class="post-composer">
+            <div class="composer-card">
+              <h3>发布新帖</h3>
+              <div class="composer-form">
+                <input type="text" id="postTitle" class="input-field" placeholder="标题（选填）" maxlength="100" />
+                <textarea id="postContent" class="textarea-field" placeholder="分享你的书法心得、练习成果或提出问题..." rows="4" maxlength="2000"></textarea>
+                <div class="composer-footer">
+                  <div class="char-count">
+                    <span id="charCount">0</span> / 2000
+                  </div>
+                  <button id="publishBtn" class="btn btn-primary">发布</button>
+                </div>
               </div>
             </div>
-            <button class="post-menu-btn" aria-label="更多操作">⋯</button>
-          </div>
-          <div class="post-body">
-            <p class="post-content">今天练了两个小时的《兰亭序》，感觉行书的韵味越来越能把握了。书法真是一门需要长期坚持的艺术啊！</p>
-          </div>
-          <div class="post-footer">
-            <button class="post-action" data-action="like">
-              <span class="action-icon">👍</span>
-              <span class="action-count">67</span>
-            </button>
-            <button class="post-action" data-action="comment">
-              <span class="action-icon">💬</span>
-              <span class="action-count">15</span>
-            </button>
-            <button class="post-action" data-action="share">
-              <span class="action-icon">↗</span>
-              <span class="action-text">分享</span>
-            </button>
-          </div>
+          </section>
 
-          <div class="comments-section hidden">
-            <div class="comment-composer">
-              <input type="text" class="comment-input" placeholder="写下你的评论..." />
-              <button class="btn btn-small">发送</button>
+          <!-- 帖子筛选 -->
+          <section class="post-filters">
+            <div class="filter-tabs">
+              <button class="filter-tab active" data-filter="all">全部</button>
+              <button class="filter-tab" data-filter="hot">热门</button>
+              <button class="filter-tab" data-filter="latest">最新</button>
+              <button class="filter-tab" data-filter="following">关注</button>
             </div>
-            <div class="comments-list"></div>
-          </div>
-        </article>
+            <div class="filter-search">
+              <input type="search" id="postSearch" placeholder="搜索帖子..." />
+            </div>
+          </section>
 
-        <!-- 示例帖子 3 -->
-        <article class="post-card">
-          <div class="post-header">
-            <div class="post-author">
-              <div class="author-avatar" aria-hidden="true">孙</div>
-              <div class="author-info">
-                <h4 class="author-name">孙笔墨</h4>
-                <p class="post-time">1天前</p>
+          <!-- 帖子列表 -->
+          <section class="posts-list" id="postsList">
+            <!-- 示例帖子 1 -->
+            <article class="post-card">
+              <div class="post-header">
+                <div class="post-author">
+                  <div class="author-avatar" aria-hidden="true">王</div>
+                  <div class="author-info">
+                    <h4 class="author-name">王墨客</h4>
+                    <p class="post-time">2小时前</p>
+                  </div>
+                </div>
+                <button class="post-menu-btn" aria-label="更多操作">⋯</button>
+              </div>
+              <div class="post-body">
+                <h3 class="post-title">初学楷书，请前辈指点</h3>
+                <p class="post-content">最近开始练习欧体楷书，感觉横画总是写不平，求教各位老师该如何改进？有没有什么练习技巧？</p>
+              </div>
+              <div class="post-footer">
+                <button class="post-action" data-action="like">
+                  <span class="action-icon">👍</span>
+                  <span class="action-count">23</span>
+                </button>
+                <button class="post-action" data-action="comment">
+                  <span class="action-icon">💬</span>
+                  <span class="action-count">8</span>
+                </button>
+                <button class="post-action" data-action="share">
+                  <span class="action-icon">↗</span>
+                  <span class="action-text">分享</span>
+                </button>
+              </div>
+
+              <!-- 评论区（默认折叠） -->
+              <div class="comments-section hidden">
+                <div class="comment-composer">
+                  <input type="text" class="comment-input" placeholder="写下你的评论..." />
+                  <button class="btn btn-small">发送</button>
+                </div>
+                <div class="comments-list">
+                  <div class="comment-item">
+                    <div class="comment-avatar" aria-hidden="true">李</div>
+                    <div class="comment-body">
+                      <div class="comment-header">
+                        <span class="comment-author">李墨香</span>
+                        <span class="comment-time">1小时前</span>
+                      </div>
+                      <p class="comment-text">建议多看田英章老师的视频教程，注意手腕的运用，横画要平稳。</p>
+                      <button class="comment-like">
+                        <span class="action-icon">👍</span>
+                        <span class="action-count">5</span>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="comment-item">
+                    <div class="comment-avatar" aria-hidden="true">张</div>
+                    <div class="comment-body">
+                      <div class="comment-header">
+                        <span class="comment-author">张书生</span>
+                        <span class="comment-time">30分钟前</span>
+                      </div>
+                      <p class="comment-text">欧体确实讲究横平竖直，建议先练习基本笔画，慢慢来不要急。</p>
+                      <button class="comment-like">
+                        <span class="action-icon">👍</span>
+                        <span class="action-count">3</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <!-- 示例帖子 2 -->
+            <article class="post-card">
+              <div class="post-header">
+                <div class="post-author">
+                  <div class="author-avatar" aria-hidden="true">赵</div>
+                  <div class="author-info">
+                    <h4 class="author-name">赵字痴</h4>
+                    <p class="post-time">5小时前</p>
+                  </div>
+                </div>
+                <button class="post-menu-btn" aria-label="更多操作">⋯</button>
+              </div>
+              <div class="post-body">
+                <p class="post-content">今天练了两个小时的《兰亭序》，感觉行书的韵味越来越能把握了。书法真是一门需要长期坚持的艺术啊！</p>
+              </div>
+              <div class="post-footer">
+                <button class="post-action" data-action="like">
+                  <span class="action-icon">👍</span>
+                  <span class="action-count">67</span>
+                </button>
+                <button class="post-action" data-action="comment">
+                  <span class="action-icon">💬</span>
+                  <span class="action-count">15</span>
+                </button>
+                <button class="post-action" data-action="share">
+                  <span class="action-icon">↗</span>
+                  <span class="action-text">分享</span>
+                </button>
+              </div>
+
+              <div class="comments-section hidden">
+                <div class="comment-composer">
+                  <input type="text" class="comment-input" placeholder="写下你的评论..." />
+                  <button class="btn btn-small">发送</button>
+                </div>
+                <div class="comments-list"></div>
+              </div>
+            </article>
+
+            <!-- 示例帖子 3 -->
+            <article class="post-card">
+              <div class="post-header">
+                <div class="post-author">
+                  <div class="author-avatar" aria-hidden="true">孙</div>
+                  <div class="author-info">
+                    <h4 class="author-name">孙笔墨</h4>
+                    <p class="post-time">1天前</p>
+                  </div>
+                </div>
+                <button class="post-menu-btn" aria-label="更多操作">⋯</button>
+              </div>
+              <div class="post-body">
+                <h3 class="post-title">分享一些书法工具的选购经验</h3>
+                <p class="post-content">初学者选毛笔建议从兼毫开始，既有弹性又易于控制。纸张的话，元书纸性价比不错。墨汁推荐一得阁，研墨的话可以选松烟墨。大家有什么其他推荐吗？</p>
+              </div>
+              <div class="post-footer">
+                <button class="post-action" data-action="like">
+                  <span class="action-icon">👍</span>
+                  <span class="action-count">102</span>
+                </button>
+                <button class="post-action" data-action="comment">
+                  <span class="action-icon">💬</span>
+                  <span class="action-count">34</span>
+                </button>
+                <button class="post-action" data-action="share">
+                  <span class="action-icon">↗</span>
+                  <span class="action-text">分享</span>
+                </button>
+              </div>
+
+              <div class="comments-section hidden">
+                <div class="comment-composer">
+                  <input type="text" class="comment-input" placeholder="写下你的评论..." />
+                  <button class="btn btn-small">发送</button>
+                </div>
+                <div class="comments-list"></div>
+              </div>
+            </article>
+          </section>
+
+          <!-- 加载更多 -->
+          <div class="load-more">
+            <button class="btn btn-secondary" id="loadMoreBtn">加载更多</button>
+          </div>
+        </div>
+
+        <!-- 右侧边栏 -->
+        <div class="community-sidebar">
+          <!-- 用户信息卡片 -->
+          <div class="sidebar-card user-card">
+            <div class="user-info">
+              <div class="user-avatar-large">我</div>
+              <div class="user-details">
+                <h4 class="user-name">我的账号</h4>
+                <p class="user-stats">粉丝: 12 · 关注: 24</p>
               </div>
             </div>
-            <button class="post-menu-btn" aria-label="更多操作">⋯</button>
-          </div>
-          <div class="post-body">
-            <h3 class="post-title">分享一些书法工具的选购经验</h3>
-            <p class="post-content">初学者选毛笔建议从兼毫开始，既有弹性又易于控制。纸张的话，元书纸性价比不错。墨汁推荐一得阁，研墨的话可以选松烟墨。大家有什么其他推荐吗？</p>
-          </div>
-          <div class="post-footer">
-            <button class="post-action" data-action="like">
-              <span class="action-icon">👍</span>
-              <span class="action-count">102</span>
-            </button>
-            <button class="post-action" data-action="comment">
-              <span class="action-icon">💬</span>
-              <span class="action-count">34</span>
-            </button>
-            <button class="post-action" data-action="share">
-              <span class="action-icon">↗</span>
-              <span class="action-text">分享</span>
-            </button>
-          </div>
-
-          <div class="comments-section hidden">
-            <div class="comment-composer">
-              <input type="text" class="comment-input" placeholder="写下你的评论..." />
-              <button class="btn btn-small">发送</button>
+            <div class="user-actions">
+              <button class="btn btn-outline btn-small">编辑资料</button>
             </div>
-            <div class="comments-list"></div>
           </div>
-        </article>
-      </section>
 
-      <!-- 加载更多 -->
-      <div class="load-more">
-        <button class="btn btn-secondary" id="loadMoreBtn">加载更多</button>
+          <!-- 话题分类 -->
+          <div class="sidebar-card topics-card">
+            <h3>话题分类</h3>
+            <div class="topics-list">
+              <a href="/community/topics/technique" class="topic-item">
+                <span class="topic-icon">🖌️</span>
+                <span class="topic-name">技法交流</span>
+              </a>
+              <a href="/community/topics/appreciation" class="topic-item">
+                <span class="topic-icon">👁️</span>
+                <span class="topic-name">作品欣赏</span>
+              </a>
+              <a href="/community/topics/qna" class="topic-item">
+                <span class="topic-icon">❓</span>
+                <span class="topic-name">问答求助</span>
+              </a>
+              <a href="/community/topics/materials" class="topic-item">
+                <span class="topic-icon">📦</span>
+                <span class="topic-name">文房四宝</span>
+              </a>
+              <a href="/community/topics/events" class="topic-item">
+                <span class="topic-icon">🎯</span>
+                <span class="topic-name">活动赛事</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- 热门话题 -->
+          <div class="sidebar-card hot-topics">
+            <h3>热门话题</h3>
+            <div class="hot-topics-list">
+              <a href="#" class="hot-topic-item">
+                <span class="topic-tag">#楷书入门</span>
+                <span class="post-count">128 讨论</span>
+              </a>
+              <a href="#" class="hot-topic-item">
+                <span class="topic-tag">#兰亭集序</span>
+                <span class="post-count">89 讨论</span>
+              </a>
+              <a href="#" class="hot-topic-item">
+                <span class="topic-tag">#毛笔选择</span>
+                <span class="post-count">67 讨论</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- 推荐用户 -->
+          <div class="sidebar-card recommended-users">
+            <h3>推荐关注</h3>
+            <div class="users-list">
+              <div class="recommended-user">
+                <div class="user-avatar-small">书</div>
+                <div class="user-info-small">
+                  <p class="user-name">书法达人</p>
+                  <p class="user-desc">楷书专家</p>
+                </div>
+                <button class="btn-follow">关注</button>
+              </div>
+              <div class="recommended-user">
+                <div class="user-avatar-small">墨</div>
+                <div class="user-info-small">
+                  <p class="user-name">墨香居士</p>
+                  <p class="user-desc">行书爱好者</p>
+                </div>
+                <button class="btn-follow">关注</button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </main>
 {% endblock %}
