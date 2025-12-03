@@ -26,7 +26,13 @@
           <script>
             // 动态更新导航栏认证状态
             document.addEventListener('DOMContentLoaded', function() {
-              const user = JSON.parse(localStorage.getItem('user'));
+              let user = null;
+              try {
+                user = JSON.parse(localStorage.getItem('user'));
+              } catch (e) {
+                console.error('Failed to parse user data:', e);
+                localStorage.removeItem('user');
+              }
               const authContainer = document.getElementById('navAuthContainer');
                
               if (user) {
