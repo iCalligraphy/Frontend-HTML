@@ -3,17 +3,172 @@
   padding: 24px 20px 40px;
 }
 
-.topics-content {
-  margin-top: 24px;
+/* 话题页面专属导航 */
+.topics-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 4px;
 }
 
-/* 覆盖社区导航栏的位置样式 */
-.topics-page .community-header {
-  margin-bottom: 16px;
+.topic-tab-btn {
+  padding: 12px 24px;
+  border: none;
+  background: transparent;
+  border-radius: 8px 8px 0 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gray);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
 }
 
-.topics-page .community-nav {
-  margin-bottom: 32px;
+.topic-tab-btn:hover {
+  color: var(--ink-black);
+  background: var(--bg-xuan);
+}
+
+.topic-tab-btn.active {
+  color: var(--theme-brown);
+}
+
+.topic-tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--theme-brown);
+  border-radius: 2px;
+}
+
+/* 搜索和筛选工具栏 */
+.topics-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.topics-search-box {
+  flex: 1;
+  min-width: 300px;
+  position: relative;
+}
+
+.topics-search-input {
+  width: 100%;
+  padding: 12px 16px 12px 44px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 15px;
+  background: var(--bg-xuan);
+  transition: all 0.3s ease;
+}
+
+.topics-search-input:focus {
+  outline: none;
+  border-color: var(--theme-brown);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(184, 136, 90, 0.1);
+}
+
+.search-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--gray);
+}
+
+.topics-filter-options {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.filter-btn {
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--ink-black);
+  transition: all 0.2s ease;
+}
+
+.filter-btn:hover {
+  border-color: var(--theme-brown);
+  color: var(--theme-brown);
+}
+
+.filter-btn.active {
+  background: var(--theme-brown);
+  border-color: var(--theme-brown);
+  color: #fff;
+}
+
+/* 空状态样式 */
+.topics-empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 60px 20px;
+  background: var(--bg-xuan);
+  border-radius: 16px;
+  border: 2px dashed var(--border);
+}
+
+.empty-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+  opacity: 0.5;
+  color: var(--theme-brown);
+}
+
+.topics-empty-state h3 {
+  font-size: 20px;
+  margin-bottom: 8px;
+  color: var(--ink-black);
+}
+
+.topics-empty-state p {
+  color: var(--gray);
+  margin-bottom: 24px;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* 已关注话题的标记 */
+.topic-followed-badge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: var(--theme-brown);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 关注话题按钮状态 */
+.btn-view-all.following {
+  background: var(--theme-brown);
+  color: #fff;
+}
+
+.btn-view-all.following:hover {
+  background: #6d3710;
 }
 
 /* 话题网格布局 */
@@ -144,7 +299,7 @@
 /* 查看全部按钮 */
 .topic-footer {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
   margin-top: auto;
   padding-top: 16px;
@@ -194,6 +349,26 @@
     height: 50px;
     font-size: 24px;
   }
+
+  .topics-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .topics-search-box {
+    min-width: 100%;
+  }
+
+  .topics-tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 0;
+  }
+
+  .topic-tab-btn {
+    white-space: nowrap;
+    padding: 10px 16px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -209,43 +384,4 @@
     flex-direction: column;
     gap: 8px;
   }
-}
-
-/* 确保话题页面的导航栏样式正确 */
-.topics-page .community-nav-tabs {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-.topics-page .nav-tab {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 14px 24px;
-  border: 2px solid var(--border);
-  border-radius: 12px;
-  background: #fff;
-  color: var(--ink-black);
-  text-decoration: none;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  min-width: 140px;
-  justify-content: center;
-  font-weight: 500;
-}
-
-.topics-page .nav-tab:hover {
-  border-color: var(--theme-brown);
-  background: linear-gradient(135deg, rgba(184, 136, 90, 0.1) 0%, rgba(184, 136, 90, 0.05) 100%);
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(184, 136, 90, 0.15);
-}
-
-.topics-page .nav-tab.active {
-  background: linear-gradient(135deg, var(--theme-brown) 0%, #a67c52 100%);
-  border-color: var(--theme-brown);
-  color: #fff;
-  box-shadow: 0 4px 15px rgba(184, 136, 90, 0.3);
 }
