@@ -1,29 +1,10 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>我的字集 · iCalligraphy</title>
+{% extends "base.html" %}
+{% block title %}我的字集 · iCalligraphy{% endblock %}
+{% block content %}
     <link rel="stylesheet" href="/static/css/main.css" />
     <link rel="stylesheet" href="/static/css/my_collections.css" />
   </head>
   <body>
-    <header class="site-header">
-      <div class="container header-inner">
-        <a class="brand" href="/"><span class="brand-logo">藝</span><span class="brand-text">iCalligraphy</span></a>
-        <nav class="nav">
-          <a href="/">首页</a>
-          <a href="/work-upload">作品上传</a>
-          <a href="/search">检索</a>
-          <a href="/my-collections" class="active">我的字集</a>
-          <a href="/profile">个人中心</a>
-          <a href="/community">社区</a>
-          <a href="/review-center">审核中心</a>
-          <a href="/auth" class="auth-link">登录/注册</a>
-        </nav>
-      </div>
-    </header>
-
     <main class="container collections-main">
       <!-- 页面标题与操作栏 -->
       <section class="collections-header">
@@ -231,6 +212,7 @@
         </div>
       </section>
     </main>
+{% endblock %}
 
     <!-- 创建/编辑字集弹窗 -->
     <div class="modal hidden" id="collectionModal" role="dialog" aria-labelledby="modalTitle" aria-modal="true">
