@@ -114,8 +114,12 @@ class TopicsManager {
     if (!searchInput) return;
 
     searchInput.addEventListener('input', (e) => {
-      const keyword = e.target.value.toLowerCase().trim();
-      this.searchTopics(keyword);
+      const keyword = e.target.value.trim();
+      if (keyword) {
+        this.searchTopics(keyword);
+      } else {
+        this.updateContent();
+      }
     });
   }
 
@@ -277,13 +281,21 @@ class TopicsManager {
     const topicsGrid = document.getElementById('topicsGrid');
     if (!topicsGrid) return;
 
+    // 检查是否有搜索关键词
+    const searchInput = document.querySelector('.topics-search-input');
+    const keyword = searchInput ? searchInput.value.trim().toLowerCase() : '';
+
+    if (keyword) {
+      // 有搜索关键词，显示搜索结果
+      this.searchTopics(keyword);
+      return;
+    }
+
     // 根据当前标签页筛选话题
     let topicsToShow;
     if (this.currentTab === 'following') {
-      // 只显示已关注的话题
       topicsToShow = this.allTopics.filter(topic => topic.isFollowed);
     } else {
-      // 显示所有话题
       topicsToShow = [...this.allTopics];
     }
 
@@ -291,7 +303,7 @@ class TopicsManager {
     topicsToShow = this.applyFilter(topicsToShow, this.currentFilter);
 
     if (topicsToShow.length === 0) {
-      this.showEmptyState(topicsGrid);
+      this.showEmptyState(topicsGrid, this.currentTab === 'following' ? 'following' : 'general');
       return;
     }
 
@@ -300,6 +312,21 @@ class TopicsManager {
 
     // 绑定卡片事件
     this.bindTopicCardEvents();
+
+    // 添加淡入动画
+    setTimeout(() => {
+      const cards = topicsGrid.querySelectorAll('.topic-card');
+      cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(10px)';
+
+        setTimeout(() => {
+          card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+          card.style.opacity = '1';
+          card.style.transform = 'translateY(0)';
+        }, index * 50);
+      });
+    }, 50);
   }
 
   /**
@@ -314,6 +341,105 @@ class TopicsManager {
       case 'all':
       default:
         return topics;
+    }
+  }
+
+  /**
+   * 搜索话题
+   */
+  searchTopics(keyword) {
+    const grid = document.getElementById('topicsGrid');
+
+    if (!keyword.trim()) {
+      // 清空搜索，显示正常内容
+      this.updateContent();
+      return;
+    }
+
+    // 根据当前标签页筛选话题
+    let topicsToShow;
+    if (this.currentTab === 'following') {
+      topicsToShow = this.allTopics.filter(topic => topic.isFollowed);
+    } else {
+      topicsToShow = [...this.allTopics];
+    }
+
+    // 应用当前筛选器
+    topicsToShow = this.applyFilter(topicsToShow, this.currentFilter);
+
+    // 应用搜索筛选
+    const searchResults = topicsToShow.filter(topic => {
+      const topicName = topic.name.toLowerCase();
+      const topicDesc = topic.description.toLowerCase();
+      const searchTerm = keyword.toLowerCase();
+
+      return topicName.includes(searchTerm) || topicDesc.includes(searchTerm);
+    });
+
+    if (searchResults.length === 0) {
+      this.showEmptyState(grid, 'search');
+      return;
+    }
+
+    // 生成搜索结果
+    grid.innerHTML = searchResults.map((topic, index) => this.createTopicCard(topic, index)).join('');
+
+    // 绑定卡片事件
+    this.bindTopicCardEvents();
+
+    // 添加淡入动画
+    setTimeout(() => {
+      const cards = grid.querySelectorAll('.topic-card');
+      cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(10px)';
+
+        setTimeout(() => {
+          card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+          card.style.opacity = '1';
+          card.style.transform = 'translateY(0)';
+        }, index * 50);
+      });
+    }, 50);
+  }
+
+  /**
+   * 显示空状态
+   */
+  showEmptyState(container, type = 'following') {
+    if (type === 'following') {
+      container.innerHTML = `
+        <div class="topics-empty-state">
+          <div class="empty-icon">📚</div>
+          <h3>你还没有关注任何话题</h3>
+          <p>关注你喜欢的话题，可以在这里快速找到它们</p>
+          <button class="btn btn-primary" onclick="topicsManager.switchTab('all')">
+            去发现话题
+          </button>
+        </div>
+      `;
+    } else if (type === 'search') {
+      container.innerHTML = `
+        <div class="topics-empty-state">
+          <div class="empty-icon">🔍</div>
+          <h3>没有找到匹配的话题</h3>
+          <p>尝试搜索其他关键词或调整筛选条件</p>
+          <button class="btn btn-primary" onclick="topicsManager.clearSearch()">
+            清除搜索
+          </button>
+        </div>
+      `;
+    } else {
+      container.innerHTML = `
+        <div class="topics-empty-state">
+          <div class="empty-icon">📚</div>
+          <h3>暂无话题</h3>
+          <p>当前没有可显示的话题</p>
+          <button class="btn btn-primary" onclick="window.location.reload()">
+            刷新页面
+          </button>
+        </div>
+      `;
     }
   }
 
@@ -351,35 +477,6 @@ class TopicsManager {
         </div>
       </div>
     `;
-  }
-
-  /**
-   * 显示空状态
-   */
-  showEmptyState(container) {
-    if (this.currentTab === 'following') {
-      container.innerHTML = `
-        <div class="topics-empty-state">
-          <div class="empty-icon">📚</div>
-          <h3>你还没有关注任何话题</h3>
-          <p>关注你喜欢的话题，可以在这里快速找到它们</p>
-          <button class="btn btn-primary" onclick="topicsManager.switchTab('all')">
-            去发现话题
-          </button>
-        </div>
-      `;
-    } else {
-      container.innerHTML = `
-        <div class="topics-empty-state">
-          <div class="empty-icon">🔍</div>
-          <h3>没有找到匹配的话题</h3>
-          <p>尝试搜索其他关键词或调整筛选条件</p>
-          <button class="btn btn-primary" onclick="topicsManager.clearSearch()">
-            清除搜索
-          </button>
-        </div>
-      `;
-    }
   }
 
   /**
@@ -425,45 +522,6 @@ class TopicsManager {
         }
       });
     });
-  }
-
-  /**
-   * 搜索话题
-   */
-  searchTopics(keyword) {
-    const topicCards = document.querySelectorAll('.topic-card');
-    const grid = document.getElementById('topicsGrid');
-
-    if (!keyword.trim()) {
-      // 清空搜索，显示正常内容
-      this.updateContent();
-      return;
-    }
-
-    topicCards.forEach(card => {
-      const topicName = card.querySelector('h2').textContent.toLowerCase();
-      const topicDesc = card.querySelector('.topic-desc').textContent.toLowerCase();
-
-      if (topicName.includes(keyword) || topicDesc.includes(keyword)) {
-        card.style.display = '';
-        // 添加淡入动画
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(10px)';
-        setTimeout(() => {
-          card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-          card.style.opacity = '1';
-          card.style.transform = 'translateY(0)';
-        }, 50);
-      } else {
-        card.style.display = 'none';
-      }
-    });
-
-    // 检查是否没有搜索结果
-    const visibleCards = Array.from(topicCards).filter(card => card.style.display !== 'none');
-    if (visibleCards.length === 0 && grid) {
-      this.showEmptyState(grid);
-    }
   }
 
   /**
