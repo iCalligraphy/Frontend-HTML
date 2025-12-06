@@ -1,12 +1,269 @@
-{% extends "base.html" %}
+{% extends "base.html" %} {% block title %}个人中心 · iCalligraphy{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/profile.css" />
+{% endblock %} {% block content %}
+<main class="container">
+  <!-- 用户头部信息区 -->
+  <div class="profile-header">
+    <div class="profile-header-inner">
+      <!-- 用户头像与基本信息 -->
+      <div class="user-card">
+        <div class="avatar-section">
+          <img
+            id="userAvatar"
+            class="avatar"
+            src="/static/default-avatar.png"
+            alt="用户头像"
+          />
+          <label for="avatarInput" class="avatar-upload-btn">
+            <span>更换头像</span>
+            <input
+              type="file"
+              id="avatarInput"
+              accept="image/*"
+              style="display: none"
+            />
+          </label>
+        </div>
+        <div class="user-info">
+          <h1 id="userName" class="user-name">加载中...</h1>
+          <p id="userEmail" class="user-email">--</p>
+          <p id="userBio" class="user-bio">暂无简介</p>
+          <div class="user-actions">
+            <button class="btn btn-primary" id="editProfileBtn">
+              编辑资料
+            </button>
+            <button class="btn btn-secondary" id="settingsBtn">设置</button>
+          </div>
+        </div>
+      </div>
 
-{% block title %}个人中心 · iCalligraphy{% endblock %}
+      <!-- 统计数据卡片 -->
+      <div class="stats-section">
+        <div class="stat-card" id="worksStatCard">
+          <div class="stat-number" id="worksCount">0</div>
+          <div class="stat-label">作品</div>
+        </div>
+        <div class="stat-card" id="collectionsStatCard">
+          <div class="stat-number" id="collectionsCount">0</div>
+          <div class="stat-label">收藏</div>
+        </div>
+        <div class="stat-card" id="postsStatCard">
+          <div class="stat-number" id="postsCount">0</div>
+          <div class="stat-label">帖子</div>
+        </div>
+        <div class="stat-card" id="followersStatCard">
+          <div class="stat-number" id="followersCount">0</div>
+          <div class="stat-label">粉丝</div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-{% block content %}
-    <main class="container">
-      <h1>个人中心</h1>
-      <p>页面建设中：后续将展示账号信息、我的作品、我的字集等内容。</p>
-    </main>
+  <!-- 标签页导航 -->
+  <div class="tabs-wrapper">
+    <div class="tabs">
+      <button class="tab-button active" data-tab="works">
+        <span class="tab-icon">📚</span>
+        <span>我上传的作品</span>
+      </button>
+      <button class="tab-button" data-tab="collections">
+        <span class="tab-icon">❤️</span>
+        <span>我的收藏</span>
+      </button>
+      <button class="tab-button" data-tab="posts">
+        <span class="tab-icon">💬</span>
+        <span>我的帖子</span>
+      </button>
+      <button class="tab-button" data-tab="settings">
+        <span class="tab-icon">⚙️</span>
+        <span>账户设置</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 标签页内容 -->
+  <div class="tabs-content">
+    <!-- 我的作品标签页 -->
+    <div id="works" class="tab-content active">
+      <div id="worksContainer" class="content-container">
+        <div class="loading-spinner">
+          <div class="spinner"></div>
+          <p>加载中...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 我的收藏标签页 -->
+    <div id="collections" class="tab-content">
+      <div id="collectionsContainer" class="content-container">
+        <div class="loading-spinner">
+          <div class="spinner"></div>
+          <p>加载中...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 我的帖子标签页 -->
+    <div id="posts" class="tab-content">
+      <div id="postsContainer" class="content-container">
+        <div class="loading-spinner">
+          <div class="spinner"></div>
+          <p>加载中...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 账户设置标签页 -->
+    <div id="settings" class="tab-content">
+      <div class="settings-container">
+        <!-- 基本信息编辑 -->
+        <div class="settings-section">
+          <h3 class="settings-title">基本信息</h3>
+          <div class="form-group">
+            <label for="editEmail">邮箱地址</label>
+            <input
+              type="email"
+              id="editEmail"
+              class="form-input"
+              placeholder="请输入邮箱地址"
+            />
+          </div>
+          <div class="form-group">
+            <label for="editBio">个人简介</label>
+            <textarea
+              id="editBio"
+              class="form-textarea"
+              placeholder="请输入个人简介（选填）"
+            ></textarea>
+          </div>
+          <button class="btn btn-primary" id="saveProfileBtn">保存资料</button>
+        </div>
+
+        <!-- 密码修改 -->
+        <div class="settings-section">
+          <h3 class="settings-title">修改密码</h3>
+          <div class="form-group">
+            <label for="oldPassword">当前密码</label>
+            <input
+              type="password"
+              id="oldPassword"
+              class="form-input"
+              placeholder="请输入当前密码"
+            />
+          </div>
+          <div class="form-group">
+            <label for="newPassword">新密码</label>
+            <input
+              type="password"
+              id="newPassword"
+              class="form-input"
+              placeholder="请输入新密码"
+            />
+          </div>
+          <div class="form-group">
+            <label for="confirmPassword">确认密码</label>
+            <input
+              type="password"
+              id="confirmPassword"
+              class="form-input"
+              placeholder="请再次输入新密码"
+            />
+          </div>
+          <button class="btn btn-primary" id="changePasswordBtn">
+            修改密码
+          </button>
+        </div>
+
+        <!-- 账户操作 -->
+        <div class="settings-section">
+          <h3 class="settings-title">账户操作</h3>
+          <button class="btn btn-danger" id="logoutBtn">退出登录</button>
+        </div>
+
+        <!-- 开发调试面板 -->
+        <div
+          class="settings-section"
+          id="debugPanel"
+          style="border: 2px dashed #ff6b6b; background: #ffe0e0"
+        >
+          <h3 class="settings-title" style="color: #ff6b6b">🧪 开发调试面板</h3>
+          <p style="color: #666; font-size: 12px; margin-bottom: 16px">
+            用于本地开发测试，连接真实后端后可删除此面板
+          </p>
+
+          <div class="form-group">
+            <label for="mockToggle">启用 Mock 模式</label>
+            <input
+              type="checkbox"
+              id="mockToggle"
+              checked
+              style="width: 20px; height: 20px; cursor: pointer"
+            />
+            <span
+              id="mockStatus"
+              style="color: #28a745; margin-left: 10px; font-weight: 600"
+              >✓ Mock 模式已启用</span
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="apiBaseInput">API 地址</label>
+            <input
+              type="text"
+              id="apiBaseInput"
+              class="form-input"
+              placeholder="http://localhost:5000"
+            />
+          </div>
+
+          <button
+            class="btn btn-primary"
+            id="loadMockDataBtn"
+            style="margin-right: 8px"
+          >
+            重新加载 Mock 数据
+          </button>
+          <button class="btn btn-secondary" id="showMockDataBtn">
+            查看 Mock 数据
+          </button>
+          <button class="btn btn-secondary" id="clearStorageBtn">
+            清空本地存储
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- 成功/错误消息提示 -->
+<div id="toast" class="toast"></div>
+
+<!-- 用户列表模态框（粉丝/关注） -->
+<div id="userListModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="modalTitle">列表</h3>
+      <button class="modal-close" id="modalCloseBtn">&times;</button>
+    </div>
+    <div id="modalBody" class="modal-body">
+      <!-- 内容动态插入 -->
+    </div>
+  </div>
+</div>
+
+<!-- Mock 数据查看模态框 -->
+<div id="mockDataModal" class="modal">
+  <div class="modal-content" style="max-width: 600px; max-height: 80vh">
+    <div class="modal-header">
+      <h3>Mock 数据预览</h3>
+      <button class="modal-close" id="mockDataCloseBtn">&times;</button>
+    </div>
+    <div id="mockDataBody" class="modal-body" style="overflow-y: auto">
+      <!-- 内容动态插入 -->
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script src="/static/js/profile.js" defer></script>
 {% endblock %}
-
-{% block footer_note %}{% endblock %}
