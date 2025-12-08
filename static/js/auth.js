@@ -234,42 +234,44 @@ function handlePasswordLogin(e) {
     return;
   }
 
-  // 模拟登录
+  // 显示登录中提示
   showMessage('登录中...', 'info');
 
-  setTimeout(() => {
-    // TODO: 实际项目中应该调用后端 API
-    // 这里模拟登录成功
-    showMessage('登录成功！', 'success');
-
-    // 跳转到首页
-    setTimeout(() => {
-      window.location.href = '/';
-    }, 1000);
-  }, 1000);
-
-  // TODO: 实际项目中的 API 调用
-  // fetch('/api/auth/login', {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({ username, password, remember })
-  // })
-  // .then(response => response.json())
-  // .then(data => {
-  //   if (data.success) {
-  //     showMessage('登录成功！', 'success');
-  //     localStorage.setItem('token', data.token);
-  //     localStorage.setItem('user', JSON.stringify(data.user));
-  //     setTimeout(() => {
-  //       window.location.href = '/';
-  //     }, 1000);
-  //   } else {
-  //     showMessage(data.message || '登录失败', 'error');
-  //   }
-  // })
-  // .catch(error => {
-  //   showMessage('网络错误，请重试', 'error');
-  // });
+  // 实际的 API 调用
+  fetch('/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password, remember })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.access_token) {
+      // 登录成功
+      showMessage('登录成功！', 'success');
+      // 保存 token 和用户信息到 localStorage
+      console.log('登录成功，保存用户数据:', data.user);
+      localStorage.setItem('access_token', data.access_token);
+      localStorage.setItem('refresh_token', data.refresh_token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      
+      // 验证保存是否成功
+      const savedUser = localStorage.getItem('user');
+      console.log('localStorage保存的用户数据:', savedUser);
+      
+      // 跳转到首页
+      setTimeout(() => {
+        console.log('准备跳转到首页');
+        window.location.href = '/';
+      }, 1000);
+    } else {
+      // 登录失败
+      showMessage(data.error || '登录失败', 'error');
+    }
+  })
+  .catch(error => {
+    console.error('登录错误:', error);
+    showMessage('网络错误，请重试', 'error');
+  });
 }
 
 /**
@@ -303,17 +305,38 @@ function handleSmsLogin(e) {
     return;
   }
 
-  // 模拟登录
+  // 显示登录中提示
   showMessage('登录中...', 'info');
 
-  setTimeout(() => {
-    showMessage('登录成功！', 'success');
-    setTimeout(() => {
-      window.location.href = '/';
-    }, 1000);
-  }, 1000);
-
-  // TODO: 实际 API 调用同上
+  // 注意：验证码登录接口可能尚未实现，这里暂时使用密码登录接口进行模拟
+  // 实际项目中应该调用专门的验证码登录接口
+  fetch('/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: phone, password: code })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.access_token) {
+      // 登录成功
+      showMessage('登录成功！', 'success');
+      // 保存 token 和用户信息到 localStorage
+      localStorage.setItem('access_token', data.access_token);
+      localStorage.setItem('refresh_token', data.refresh_token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      // 跳转到首页
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 1000);
+    } else {
+      // 登录失败
+      showMessage(data.error || '验证码错误或已过期', 'error');
+    }
+  })
+  .catch(error => {
+    console.error('登录错误:', error);
+    showMessage('网络错误，请重试', 'error');
+  });
 }
 
 /**
@@ -387,42 +410,37 @@ function handleRegister(e) {
     return;
   }
 
-  // 模拟注册
+  // 显示注册中提示
   showMessage('注册中...', 'info');
 
-  setTimeout(() => {
-    showMessage('注册成功！即将跳转到登录页面...', 'success');
-
-    // 切换到登录标签
-    setTimeout(() => {
-      const loginTab = document.querySelector('.tab-btn[data-tab="login"]');
-      if (loginTab) {
-        loginTab.click();
-      }
-    }, 1500);
-  }, 1000);
-
-  // TODO: 实际 API 调用
-  // fetch('/api/auth/register', {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({ username, phone, code, email, password })
-  // })
-  // .then(response => response.json())
-  // .then(data => {
-  //   if (data.success) {
-  //     showMessage('注册成功！', 'success');
-  //     setTimeout(() => {
-  //       // 切换到登录标签
-  //       document.querySelector('.tab-btn[data-tab="login"]').click();
-  //     }, 1500);
-  //   } else {
-  //     showMessage(data.message || '注册失败', 'error');
-  //   }
-  // })
-  // .catch(error => {
-  //   showMessage('网络错误，请重试', 'error');
-  // });
+  // 实际 API 调用
+  fetch('/api/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, phone, code, email, password })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.access_token) {
+      // 注册成功并自动登录
+      showMessage('注册成功！正在登录...', 'success');
+      // 保存 token 和用户信息到 localStorage
+      localStorage.setItem('access_token', data.access_token);
+      localStorage.setItem('refresh_token', data.refresh_token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      // 跳转到首页
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 1500);
+    } else {
+      // 注册失败
+      showMessage(data.error || '注册失败', 'error');
+    }
+  })
+  .catch(error => {
+    console.error('注册错误:', error);
+    showMessage('网络错误，请重试', 'error');
+  });
 }
 
 /**

@@ -77,9 +77,15 @@
                 // 退出登录功能
                 const logoutBtn = document.getElementById('logoutBtn');
                 logoutBtn.addEventListener('click', function() {
+                  // 清除所有相关的localStorage项目
                   localStorage.removeItem('access_token');
                   localStorage.removeItem('refresh_token');
                   localStorage.removeItem('user');
+                  localStorage.removeItem('currentUser');
+                  localStorage.removeItem('checkinData');
+                  localStorage.removeItem('userNotifications');
+                  localStorage.removeItem('followedTopics');
+                  localStorage.removeItem('following');
                   window.location.href = '/';
                 });
               } else {

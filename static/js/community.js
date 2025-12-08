@@ -63,8 +63,10 @@ class CommunityManager {
     });
 }
 
-    init() {
-        this.initCheckin();
+    async init() {
+        this.loadUserData();  // 先加载用户数据
+        this.initCommunityNav();
+        await this.initCheckin();
         this.initPostComposer();
         this.initPostFilters();
         this.initPostActions();
@@ -74,8 +76,6 @@ class CommunityManager {
         this.initNotifications();
         this.initFeedback();
         this.initShareFeatures();
-        this.initCommunityNav();
-        this.loadUserData();
     }
 
     /**
@@ -83,97 +83,184 @@ class CommunityManager {
      */
     loadUserData() {
         // 从本地存储或API加载用户数据
-        const userData = localStorage.getItem('currentUser');
+        console.log('开始加载用户数据...');
+        const userData = localStorage.getItem('user');
+        console.log('localStorage中的用户数据:', userData);
+        
         if (userData) {
-            this.currentUser = JSON.parse(userData);
+            try {
+                this.currentUser = JSON.parse(userData);
+                console.log('用户数据解析成功:', this.currentUser);
+                console.log('用户名:', this.currentUser.username);
+            } catch (error) {
+                console.error('解析用户数据失败:', error);
+                console.error('失败的数据:', userData);
+                this.currentUser = null;
+                localStorage.removeItem('user'); // 清除损坏的用户数据
+                console.log('已清除损坏的用户数据');
+            }
+        } else {
+            this.currentUser = null;
+            console.log('未找到用户数据');
         }
 
         // 加载通知数据
         const notifications = localStorage.getItem('userNotifications');
+        console.log('localStorage中的通知数据:', notifications);
+        
         if (notifications) {
-            this.notifications = JSON.parse(notifications);
+            try {
+                this.notifications = JSON.parse(notifications);
+            } catch (error) {
+                console.error('解析通知数据失败:', error);
+                this.notifications = [];
+            }
+        } else {
+            this.notifications = [];
         }
+    }
+
+    /**
+     * 发送API请求的方法
+     */
+    async apiRequest(url, options = {}) {
+        const token = localStorage.getItem('access_token');
+        const headers = {
+            'Content-Type': 'application/json',
+            ...options.headers
+        };
+
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(url, {
+            ...options,
+            headers
+        });
+
+        if (!response.ok) {
+            throw new Error(`API请求失败: ${response.status} ${response.statusText}`);
+        }
+
+        return response.json();
     }
 
     /**
      * 初始化每日打卡功能
      */
-    initCheckin() {
+    async initCheckin() {
         const checkinBtn = document.getElementById('checkinBtn');
         const checkinStatus = document.getElementById('checkinStatus');
         const streakDays = document.getElementById('streakDays');
         const calendarDays = document.getElementById('calendarDays');
 
-        if (!checkinBtn) return;
-
-        // 从本地存储读取打卡数据
-        let checkinData = JSON.parse(localStorage.getItem('checkinData') || '{"streak": 0, "dates": []}');
-
-        // 更新连续天数显示
-        if (streakDays) {
-            streakDays.textContent = checkinData.streak;
+        // 确保所有元素存在
+        if (!checkinBtn || !checkinStatus || !streakDays || !calendarDays) {
+            console.warn('打卡功能所需DOM元素不存在');
+            return;
         }
 
-        // 生成日历（显示最近14天）
-        if (calendarDays) {
-            this.generateCalendar(calendarDays, checkinData.dates);
-        }
-
-        // 检查今天是否已打卡
-        const today = new Date().toDateString();
-        const hasCheckedToday = checkinData.dates.includes(today);
-
-        if (hasCheckedToday && checkinBtn) {
+        // 检查用户是否登录
+        if (!this.currentUser) {
             checkinBtn.disabled = true;
-            checkinBtn.innerHTML = '<span class="btn-text">今日已打卡</span>';
-            checkinBtn.classList.add('checked');
-            if (checkinStatus) {
-                checkinStatus.textContent = '✓ 今日已完成打卡';
-            }
+            checkinBtn.innerHTML = '<span class="btn-text">请先登录</span>';
+            checkinStatus.textContent = '登录后即可使用打卡功能';
+            streakDays.textContent = '0';
+            calendarDays.innerHTML = '<div style="text-align: center; padding: 20px; color: #999;">请登录查看打卡记录</div>';
+            return;
         }
 
-        // 打卡按钮点击事件
-        checkinBtn.addEventListener('click', () => {
-            if (hasCheckedToday) return;
+        try {
+            // 从后端API获取打卡状态
+            const checkinStatusData = await this.apiRequest('/api/checkin/status');
+            console.log('获取到打卡状态:', checkinStatusData);
 
-            // 更新打卡数据
-            checkinData.dates.push(today);
-            checkinData.streak++;
+            // 更新连续天数显示
+            streakDays.textContent = checkinStatusData.consecutive_days;
 
-            // 保存到本地存储
-            localStorage.setItem('checkinData', JSON.stringify(checkinData));
-
-            // 更新UI
-            if (streakDays) streakDays.textContent = checkinData.streak;
-            checkinBtn.disabled = true;
-            checkinBtn.innerHTML = '<span class="btn-text">今日已打卡</span>';
-            checkinBtn.classList.add('checked');
-            if (checkinStatus) {
-                checkinStatus.textContent = '✓ 打卡成功！继续保持！';
-            }
-
-            // 重新生成日历
-            if (calendarDays) {
-                this.generateCalendar(calendarDays, checkinData.dates);
-            }
-
-            // 显示祝贺动画
-            this.showCheckinAnimation();
-
-            // 发送打卡通知
-            this.createNotification({
-                type: 'checkin',
-                message: '打卡成功！连续打卡' + checkinData.streak + '天',
-                timestamp: new Date()
+            // 生成日历
+            // 转换后端返回的日期格式为前端需要的格式
+            const checkedDates = checkinStatusData.month_checkins.map(day => {
+                const date = new Date();
+                date.setDate(day);
+                return date.toDateString();
             });
-        });
+            this.generateCalendar(calendarDays, checkedDates);
+
+            // 检查今天是否已打卡
+            const today = new Date().toDateString();
+            const hasCheckedToday = checkinStatusData.checked_today;
+
+            if (hasCheckedToday) {
+                checkinBtn.disabled = true;
+                checkinBtn.innerHTML = '<span class="btn-text">今日已打卡</span>';
+                checkinBtn.classList.add('checked');
+                checkinStatus.textContent = '✓ 今日已完成打卡';
+            } else {
+                checkinBtn.disabled = false;
+                checkinBtn.innerHTML = '<span class="btn-text">立即打卡</span>';
+                checkinStatus.textContent = '点击按钮完成今日打卡';
+            }
+
+            // 打卡按钮点击事件
+            checkinBtn.addEventListener('click', async () => {
+                if (hasCheckedToday) return;
+
+                try {
+                    // 调用后端API创建打卡记录
+                    const response = await this.apiRequest('/api/checkin', {
+                        method: 'POST'
+                    });
+
+                    // 更新UI
+                    streakDays.textContent = response.consecutive_days;
+                    checkinBtn.disabled = true;
+                    checkinBtn.innerHTML = '<span class="btn-text">今日已打卡</span>';
+                    checkinBtn.classList.add('checked');
+                    checkinStatus.textContent = '✓ 打卡成功！继续保持！';
+
+                    // 重新生成日历
+                    // 重新获取最新的打卡状态
+                    const updatedStatus = await this.apiRequest('/api/checkin/status');
+                    const updatedDates = updatedStatus.month_checkins.map(day => {
+                        const date = new Date();
+                        date.setDate(day);
+                        return date.toDateString();
+                    });
+                    this.generateCalendar(calendarDays, updatedDates);
+
+                    // 显示祝贺动画
+                    this.showCheckinAnimation();
+
+                    // 发送打卡通知
+                    this.createNotification({
+                        type: 'checkin',
+                        message: '打卡成功！连续打卡' + response.consecutive_days + '天',
+                        timestamp: new Date()
+                    });
+
+                } catch (error) {
+                    console.error('打卡失败:', error);
+                    checkinStatus.textContent = '打卡失败，请稍后重试';
+                }
+            });
+
+        } catch (error) {
+            console.error('获取打卡状态失败:', error);
+            checkinStatus.textContent = '加载打卡数据失败，请稍后重试';
+            streakDays.textContent = '0';
+        }
     }
 
     /**
      * 生成打卡日历
      */
     generateCalendar(container, checkedDates) {
-        if (!container) return;
+        if (!container) {
+            console.warn('日历容器不存在');
+            return;
+        }
 
         container.innerHTML = '';
         const today = new Date();
@@ -182,15 +269,18 @@ class CommunityManager {
         for (let i = 13; i >= 0; i--) {
             const date = new Date(today);
             date.setDate(date.getDate() - i);
+            const dayNum = date.getDate();
+            const dateString = date.toDateString();
 
             const dayDiv = document.createElement('div');
             dayDiv.className = 'calendar-day';
-            dayDiv.textContent = date.getDate();
-
+            
             // 检查是否已打卡
-            if (checkedDates.includes(date.toDateString())) {
+            if (checkedDates.includes(dateString)) {
                 dayDiv.classList.add('checked');
-                dayDiv.textContent = '✓';
+                dayDiv.innerHTML = `<span class="date-number">${dayNum}</span><span class="check-mark">✓</span>`;
+            } else {
+                dayDiv.innerHTML = `<span class="date-number">${dayNum}</span>`;
             }
 
             // 标记今天
@@ -206,11 +296,36 @@ class CommunityManager {
      * 初始化发帖功能
      */
     initPostComposer() {
+        console.log('开始初始化发帖功能...');
+        console.log('当前用户数据:', this.currentUser);
+        
         const postContent = document.getElementById('postContent');
         const charCount = document.getElementById('charCount');
         const publishBtn = document.getElementById('publishBtn');
+        const postComposer = document.querySelector('.post-composer');
 
+        console.log('发帖元素:', { postContent, publishBtn, postComposer });
+        
         if (!postContent || !publishBtn) return;
+
+        // 检查用户是否登录
+        console.log('用户登录状态检查:', !!this.currentUser);
+        
+        if (!this.currentUser) {
+            // 隐藏发帖功能或显示登录提示
+            console.log('用户未登录，显示登录提示');
+            
+            if (postComposer) {
+                postComposer.innerHTML = `
+                    <div style="text-align: center; padding: 20px; background: #f5f5f5; border-radius: 8px;">
+                        <h4>发帖功能</h4>
+                        <p>请先登录后再发布帖子</p>
+                        <a href="/auth" class="btn btn-primary">去登录</a>
+                    </div>
+                `;
+            }
+            return;
+        }
 
         // 字数统计
         postContent.addEventListener('input', function() {
@@ -227,6 +342,11 @@ class CommunityManager {
 
         // 发布按钮
         publishBtn.addEventListener('click', () => {
+            console.log('发布按钮被点击...');
+            console.log('当前用户数据:', this.currentUser);
+            console.log('用户名:', this.currentUser?.username);
+            console.log('头像:', this.currentUser?.avatar);
+            
             const title = document.getElementById('postTitle')?.value.trim() || '';
             const content = postContent.value.trim();
 
@@ -236,9 +356,11 @@ class CommunityManager {
             }
 
             // 创建新帖子
+            console.log('创建新帖子，使用的作者名:', this.currentUser.username || '匿名用户');
+            
             const newPost = this.createPostElement({
-                author: this.currentUser?.username || '我',
-                avatar: this.currentUser?.avatar || '我',
+                author: this.currentUser.username || '匿名用户',
+                avatar: this.currentUser.avatar || '👤',
                 time: '刚刚',
                 title: title,
                 content: content,
