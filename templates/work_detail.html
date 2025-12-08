@@ -1,445 +1,198 @@
 {% extends "base.html" %} {% block title %}作品详情 · 墨智帖{% endblock %} {%
 block extra_css %}
-<link rel="stylesheet" href="/static/css/work_detail.css" />
+<link rel="stylesheet" href="/static/css/work_detail_page.css" />
 {% endblock %} {% block content %}
-<main class="detail-main">
-  <!-- 返回导航 -->
-  <div class="container">
-    <nav class="breadcrumb">
-      <a href="/">首页</a>
-      <span class="separator">›</span>
-      <a href="/search">检索</a>
-      <span class="separator">›</span>
-      <span class="current">作品详情</span>
-    </nav>
-  </div>
-
-  <!-- 作品展示区 -->
-  <section class="work-viewer">
-    <div class="viewer-container">
-      <!-- 工具栏 -->
-      <div class="viewer-toolbar">
-        <div class="toolbar-group">
-          <button
-            type="button"
-            class="tool-btn"
-            id="zoomInBtn"
-            title="放大 (Ctrl+Plus)"
-          >
-            <span class="tool-icon">+</span>
-          </button>
-          <button
-            type="button"
-            class="tool-btn"
-            id="zoomOutBtn"
-            title="缩小 (Ctrl+Minus)"
-          >
-            <span class="tool-icon">-</span>
-          </button>
-          <button
-            type="button"
-            class="tool-btn"
-            id="resetZoomBtn"
-            title="重置 (Ctrl+0)"
-          >
-            <span class="tool-icon"></span>
-          </button>
-          <span class="zoom-level" id="zoomLevel">100%</span>
-        </div>
-        <div class="toolbar-divider"></div>
-        <div class="toolbar-group">
-          <button
-            type="button"
-            class="tool-btn"
-            id="fitWidthBtn"
-            title="适应宽度"
-          >
-            <span class="tool-icon"></span>
-          </button>
-          <button
-            type="button"
-            class="tool-btn"
-            id="fitHeightBtn"
-            title="适应高度"
-          >
-            <span class="tool-icon"></span>
-          </button>
-          <button
-            type="button"
-            class="tool-btn"
-            id="fullscreenBtn"
-            title="全屏 (F11)"
-          >
-            <span class="tool-icon"></span>
-          </button>
-        </div>
-        <div class="toolbar-divider"></div>
-        <div class="toolbar-group">
-          <label class="tool-toggle">
-            <input type="checkbox" id="showCharBoxes" checked />
-            <span>显示单字框</span>
-          </label>
-        </div>
-      </div>
-
-      <!-- 画布容器 -->
-      <div class="canvas-container" id="canvasContainer">
-        <canvas id="workCanvas"></canvas>
-
-        <!-- 单字标注层 -->
-        <div class="char-boxes-layer" id="charBoxesLayer">
-          <!-- 动态生成的单字框 -->
-        </div>
-
-        <!-- 加载提示 -->
-        <div class="loading-overlay" id="loadingOverlay">
-          <div class="loading-spinner"></div>
-          <p>加载中...</p>
-        </div>
-      </div>
-
-      <!-- 操作提示 -->
-      <div class="viewer-hints">
-        <p>提示：拖拽图片移动位置 · 滚轮缩放 · 鼠标悬停单字查看详情</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- 作品信息区 -->
-  <section class="work-info-section">
+<main>
+  <header class="page-header">
     <div class="container">
-      <div class="work-info-grid">
-        <!-- 左侧：主要信息 -->
-        <div class="info-main">
-          <h1 class="work-title">兰亭集序</h1>
-
-          <div class="work-meta">
-            <div class="meta-item">
-              <span class="meta-label">作者</span>
-              <span class="meta-value">王羲之</span>
-            </div>
-            <div class="meta-item">
-              <span class="meta-label">朝代</span>
-              <span class="meta-value">魏晋</span>
-            </div>
-            <div class="meta-item">
-              <span class="meta-label">风格</span>
-              <span class="meta-value">行书</span>
-            </div>
-            <div class="meta-item">
-              <span class="meta-label">字数</span>
-              <span class="meta-value">324</span>
-            </div>
-            <div class="meta-item">
-              <span class="meta-label">来源</span>
-              <span class="meta-value">经典碑帖</span>
-            </div>
-          </div>
-
-          <div class="work-desc">
-            <h3>作品介绍</h3>
-            <p>
-              《兰亭序》又名《兰亭宴集序》《兰亭集序》《临河序》《禊序》和《禊帖》，是王羲之的代表作品，被誉为"天下第一行书"。全文28行，324字，通篇遒媚飘逸，字字精妙，点画犹如舞蹈，有如神人相助而成，被历代书界奉为极品。
-            </p>
-          </div>
-
-          <div class="work-tags">
-            <span class="tag">经典</span>
-            <span class="tag">行书</span>
-            <span class="tag">王羲之</span>
-            <span class="tag">魏晋风骨</span>
-          </div>
-
-          <!-- 操作按钮 -->
-          <div class="action-buttons">
-            <button type="button" class="btn btn-primary" id="collectBtn">
-              <span class="btn-icon"></span>
-              <span>收藏作品</span>
-            </button>
-            <button
-              type="button"
-              class="btn btn-outline"
-              id="addToCollectionBtn"
-            >
-              <span class="btn-icon"></span>
-              <span>添加到字集</span>
-            </button>
-            <button type="button" class="btn btn-outline" id="downloadBtn">
-              <span class="btn-icon"></span>
-              <span>下载图片</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- 右侧：统计与相关 -->
-        <div class="info-sidebar">
-          <!-- 统计数据 -->
-          <div class="stats-card">
-            <h3>作品数据</h3>
-            <div class="stats-grid">
-              <div class="stat-item">
-                <div class="stat-value">12.5K</div>
-                <div class="stat-label">浏览量</div>
-              </div>
-              <div class="stat-item">
-                <div class="stat-value">892</div>
-                <div class="stat-label">收藏数</div>
-              </div>
-              <div class="stat-item">
-                <div class="stat-value">156</div>
-                <div class="stat-label">引用数</div>
-              </div>
-              <div class="stat-item">
-                <div class="stat-value">45</div>
-                <div class="stat-label">评论数</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 上传信息 -->
-          <div class="upload-info">
-            <h4>上传信息</h4>
-            <p><strong>上传者：</strong>系统管理员</p>
-            <p><strong>上传时间：</strong>2024-01-15</p>
-            <p>
-              <strong>审核状态：</strong
-              ><span class="status-badge approved">已通过</span>
-            </p>
-          </div>
-
-          <!-- 相关作品 -->
-          <div class="related-works">
-            <h4>相关作品</h4>
-            <div class="related-list">
-              <a href="#" class="related-item">
-                <div class="related-thumb"></div>
-                <div class="related-info">
-                  <p class="related-title">祭侄文稿</p>
-                  <p class="related-author">颜真卿</p>
-                </div>
-              </a>
-              <a href="#" class="related-item">
-                <div class="related-thumb"></div>
-                <div class="related-info">
-                  <p class="related-title">黄州寒食诗帖</p>
-                  <p class="related-author">苏轼</p>
-                </div>
-              </a>
-              <a href="#" class="related-item">
-                <div class="related-thumb"></div>
-                <div class="related-info">
-                  <p class="related-title">多宝塔碑</p>
-                  <p class="related-author">颜真卿</p>
-                </div>
-              </a>
-            </div>
-          </div>
-        </div>
+      <button
+        type="button"
+        class="back-btn"
+        onclick="history.back();"
+        aria-label="返回上一页"
+      >
+        ← 返回上一页
+      </button>
+      <div class="header-info">
+        <h1 class="work-title" id="workTitle">作品详情</h1>
+        <p class="work-meta">
+          <span class="meta-item" id="workAuthor">作者</span>
+          <span class="meta-divider">·</span>
+          <span class="meta-item" id="workDynasty">朝代</span>
+          <span class="meta-divider">·</span>
+          <span class="meta-item" id="workStyle">风格</span>
+          <span class="meta-divider">·</span>
+          <span class="meta-item"
+            >共 <strong id="headerCharCount">0</strong> 个单字</span
+          >
+        </p>
       </div>
-    </div>
-  </section>
-
-  <!-- 单字列表 -->
-  <section class="char-list-section">
-    <div class="container">
-      <div class="section-header">
-        <h2>单字检索</h2>
-        <div class="char-search">
-          <input type="search" id="charSearchInput" placeholder="搜索单字..." />
+      <div class="header-actions">
+        <div class="work-selector">
+          <label for="workSelect">切换作品：</label>
+          <select id="workSelect"></select>
         </div>
-      </div>
-
-      <div class="char-grid" id="charGrid">
-        <!-- 示例单字 -->
-        <div class="char-card" data-char="永" data-index="0">
-          <div class="char-preview"></div>
-          <div class="char-info">
-            <span class="char-text">永</span>
-            <button type="button" class="char-action" title="添加到字集">
-              +
-            </button>
-          </div>
-        </div>
-        <div class="char-card" data-char="和" data-index="1">
-          <div class="char-preview"></div>
-          <div class="char-info">
-            <span class="char-text">和</span>
-            <button type="button" class="char-action" title="添加到字集">
-              +
-            </button>
-          </div>
-        </div>
-        <div class="char-card" data-char="岁" data-index="2">
-          <div class="char-preview"></div>
-          <div class="char-info">
-            <span class="char-text">岁</span>
-            <button type="button" class="char-action" title="添加到字集">
-              +
-            </button>
-          </div>
-        </div>
-        <div class="char-card" data-char="在" data-index="3">
-          <div class="char-preview"></div>
-          <div class="char-info">
-            <span class="char-text">在</span>
-            <button type="button" class="char-action" title="添加到字集">
-              +
-            </button>
-          </div>
-        </div>
-        <div class="char-card" data-char="癸" data-index="4">
-          <div class="char-preview"></div>
-          <div class="char-info">
-            <span class="char-text">癸</span>
-            <button type="button" class="char-action" title="添加到字集">
-              +
-            </button>
-          </div>
-        </div>
-        <div class="char-card" data-char="丑" data-index="5">
-          <div class="char-preview"></div>
-          <div class="char-info">
-            <span class="char-text">丑</span>
-            <button type="button" class="char-action" title="添加到字集">
-              +
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div class="load-more-chars">
-        <button type="button" class="btn btn-secondary" id="loadMoreChars">
-          加载更多单字
+        <button
+          type="button"
+          class="btn btn-outline"
+          id="exportBtn"
+          title="导出所有单字"
+        >
+          📦 导出单字
+        </button>
+        <button type="button" class="btn btn-primary" id="downloadBtn">
+          ⬇️ 下载原图
         </button>
       </div>
     </div>
-  </section>
+  </header>
 
-  <!-- 评论区 -->
-  <section class="comments-section">
-    <div class="container">
-      <h2>评论 <span class="comment-count">(45)</span></h2>
+  <main class="main-container">
+    <section class="viewer-section">
+      <div class="viewer-card">
+        <div class="viewer-toolbar">
+          <div class="toolbar-group">
+            <button type="button" class="tool-btn" id="zoomInBtn" title="放大">
+              🔍+
+            </button>
+            <button type="button" class="tool-btn" id="zoomOutBtn" title="缩小">
+              🔍−
+            </button>
+            <button type="button" class="tool-btn" id="fitBtn" title="适应窗口">
+              ⊡
+            </button>
+            <button
+              type="button"
+              class="tool-btn"
+              id="resetBtn"
+              title="重置视图"
+            >
+              ↻
+            </button>
+            <span class="zoom-level" id="zoomLevel">100%</span>
+          </div>
 
-      <!-- 评论输入 -->
-      <div class="comment-composer">
-        <div class="composer-avatar">我</div>
-        <div class="composer-input-wrapper">
-          <textarea
-            class="comment-textarea"
-            placeholder="分享你对这幅作品的看法..."
-            rows="3"
-          ></textarea>
-          <div class="composer-footer">
-            <span class="char-hint">还可以输入 500 字</span>
-            <button type="button" class="btn btn-primary btn-small">
-              发表评论
+          <div class="toolbar-divider"></div>
+
+          <div class="toolbar-group">
+            <button
+              type="button"
+              class="tool-btn tool-btn-primary"
+              id="addBoxBtn"
+              title="手动添加单字"
+            >
+              ➕ 添加单字
+            </button>
+            <button
+              type="button"
+              class="tool-btn tool-btn-danger"
+              id="cancelDrawBtn"
+              style="display: none"
+              title="取消绘制"
+            >
+              ❌ 取消
             </button>
           </div>
-        </div>
-      </div>
 
-      <!-- 评论列表 -->
-      <div class="comments-list">
-        <div class="comment-item">
-          <div class="comment-avatar">李</div>
-          <div class="comment-body">
-            <div class="comment-header">
-              <span class="comment-author">李墨香</span>
-              <span class="comment-time">3天前</span>
-            </div>
-            <p class="comment-text">
-              兰亭序的行书韵律真是绝妙，每个字都流畅自然，笔势连贯却又不失章法。王羲之不愧是书圣！
-            </p>
-            <div class="comment-actions">
-              <button type="button" class="comment-action">
-                <span class="action-icon"></span>
-                <span class="action-count">23</span>
-              </button>
-              <button type="button" class="comment-action">
-                <span class="action-text">回复</span>
-              </button>
-            </div>
+          <div class="toolbar-divider"></div>
+
+          <div class="toolbar-group">
+            <label class="tool-toggle"
+              ><input type="checkbox" id="showBoxesToggle" checked />
+              <span>显示标注框</span></label
+            >
+            <label class="tool-toggle"
+              ><input type="checkbox" id="showLabelsToggle" checked />
+              <span>显示文字标签</span></label
+            >
+          </div>
+
+          <div class="toolbar-spacer"></div>
+
+          <div class="toolbar-hint" id="toolbarHint">
+            💡 拖拽移动 · 滚轮缩放 · 点击单字查看详情
           </div>
         </div>
 
-        <div class="comment-item">
-          <div class="comment-avatar">张</div>
-          <div class="comment-body">
-            <div class="comment-header">
-              <span class="comment-author">张书生</span>
-              <span class="comment-time">5天前</span>
-            </div>
-            <p class="comment-text">
-              临摹了无数遍，每次都有新的感悟。天下第一行书，名不虚传！
-            </p>
-            <div class="comment-actions">
-              <button type="button" class="comment-action">
-                <span class="action-icon"></span>
-                <span class="action-count">18</span>
-              </button>
-              <button type="button" class="comment-action">
-                <span class="action-text">回复</span>
-              </button>
-            </div>
+        <div class="viewer-container" id="viewerContainer">
+          <canvas id="viewerCanvas"></canvas>
+          <div class="boxes-overlay" id="boxesOverlay"></div>
+          <div
+            class="loading-overlay"
+            id="loadingOverlay"
+            style="display: none"
+          >
+            <div class="loading-spinner"></div>
+            <p>加载中...</p>
           </div>
         </div>
       </div>
+    </section>
 
-      <div class="load-more-comments">
-        <button type="button" class="btn btn-secondary">查看更多评论</button>
-      </div>
-    </div>
-  </section>
-</main>
-
-<!-- 单字详情弹窗 -->
-<div
-  class="modal hidden"
-  id="charModal"
-  role="dialog"
-  aria-labelledby="charModalTitle"
-  aria-modal="true"
->
-  <div class="modal-overlay" id="charModalOverlay"></div>
-  <div class="modal-content char-modal-content">
-    <div class="modal-header">
-      <h2 id="charModalTitle">单字详情</h2>
-      <button
-        type="button"
-        class="modal-close"
-        id="charModalClose"
-        aria-label="关闭"
-      >
-        ×
-      </button>
-    </div>
-    <div class="modal-body">
-      <div class="char-detail-grid">
-        <div class="char-detail-image">
-          <img id="charDetailImage" src="" alt="单字放大" />
+    <section class="chars-section">
+      <div class="chars-header">
+        <div class="header-left">
+          <h2 class="section-title">单字列表</h2>
+          <span class="char-count-badge" id="charCount">0 个字</span>
         </div>
+        <div class="header-right">
+          <div class="search-box">
+            <input type="search" id="charSearch" placeholder="搜索单字..." />
+            <span class="search-icon">🔍</span>
+          </div>
+          <select id="sortSelect" class="sort-select">
+            <option value="default">默认顺序</option>
+            <option value="position">按位置</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="chars-grid" id="charsGrid"></div>
+
+      <div class="empty-state" id="emptyState" style="display: none">
+        <div class="empty-icon">📭</div>
+        <p class="empty-text">未找到匹配的单字</p>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal" id="charModal" style="display: none">
+    <div class="modal-overlay" id="modalOverlay"></div>
+    <div class="modal-content">
+      <button class="modal-close" id="modalClose">×</button>
+      <div class="modal-body">
+        <div class="char-detail-preview" id="modalPreview"></div>
         <div class="char-detail-info">
-          <div class="char-detail-text" id="charDetailText">永</div>
+          <h3 class="char-detail-text" id="modalCharText">永</h3>
           <div class="char-detail-meta">
-            <p>
-              <strong>来源：</strong><span id="charDetailSource">兰亭集序</span>
+            <p class="meta-row">
+              <span class="meta-label">作品：</span
+              ><span class="meta-value" id="modalWorkTitle">-</span>
             </p>
-            <p>
-              <strong>作者：</strong><span id="charDetailAuthor">王羲之</span>
+            <p class="meta-row">
+              <span class="meta-label">序号：</span
+              ><span class="meta-value" id="modalCharIndex">1</span>
             </p>
-            <p>
-              <strong>位置：</strong>第 <span id="charDetailIndex">1</span> 字
+            <p class="meta-row">
+              <span class="meta-label">位置：</span
+              ><span class="meta-value" id="modalCharPosition">x: 0, y: 0</span>
             </p>
           </div>
-          <div class="char-detail-actions">
-            <button type="button" class="btn btn-primary">添加到字集</button>
-            <button type="button" class="btn btn-outline">下载单字</button>
+          <div class="char-actions">
+            <button type="button" class="btn btn-outline" id="downloadCharBtn">
+              下载此字
+            </button>
+            <button type="button" class="btn btn-outline" id="copyCharBtn">
+              复制文字
+            </button>
           </div>
         </div>
       </div>
     </div>
   </div>
-</div>
+</main>
 {% endblock %} {% block extra_js %}
+<script src="/static/js/work_data.js" defer></script>
+<script src="/static/js/api_mock.js" defer></script>
 <script src="/static/js/work_detail.js" defer></script>
 {% endblock %}
