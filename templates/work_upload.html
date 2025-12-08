@@ -1,271 +1,369 @@
-{% extends "base.html" %}
-
-{% block title %}作品上传 · iCalligraphy{% endblock %}
-
-{% block extra_css %}
+{% extends "base.html" %} {% block title %}作品上传 · 墨智帖{% endblock %} {%
+block extra_css %}
 <link rel="stylesheet" href="/static/css/work_upload.css" />
-{% endblock %}
+{% endblock %} {% block content %}
+<main class="container upload-main">
+  <!-- 页面标题 -->
+  <section class="upload-header">
+    <h1>上传书法作品</h1>
+    <p class="subtitle">分享你的书法作品，让更多人欣赏和学习</p>
+  </section>
 
-{% block content %}
-    <main class="container upload-main">
-      <!-- 页面标题 -->
-      <section class="upload-header">
-        <h1>上传书法作品</h1>
-        <p class="subtitle">分享你的书法作品，让更多人欣赏和学习</p>
-      </section>
+  <!-- 步骤指示器 -->
+  <section class="upload-steps">
+    <div class="step-item active" data-step="1">
+      <div class="step-number">1</div>
+      <div class="step-label">上传图片</div>
+    </div>
+    <div class="step-divider"></div>
+    <div class="step-item" data-step="2">
+      <div class="step-number">2</div>
+      <div class="step-label">填写信息</div>
+    </div>
+    <div class="step-divider"></div>
+    <div class="step-item" data-step="3">
+      <div class="step-number">3</div>
+      <div class="step-label">单字分割</div>
+    </div>
+    <div class="step-divider"></div>
+    <div class="step-item" data-step="4">
+      <div class="step-number">4</div>
+      <div class="step-label">提交审核</div>
+    </div>
+  </section>
 
-      <!-- 步骤指示器 -->
-      <section class="upload-steps">
-        <div class="step-item active" data-step="1">
-          <div class="step-number">1</div>
-          <div class="step-label">上传图片</div>
+  <!-- 步骤1: 图片上传 -->
+  <section class="upload-section" id="step1" data-step="1">
+    <div class="section-card">
+      <h2 class="section-title">上传作品图片</h2>
+
+      <!-- 图片上传区域 -->
+      <div class="upload-area" id="uploadArea">
+        <input type="file" id="imageInput" accept="image/*" hidden />
+        <div class="upload-prompt" id="uploadPrompt">
+          <div class="upload-icon">📷</div>
+          <h3>点击或拖拽上传图片</h3>
+          <p>支持 JPG、PNG、WEBP 格式，建议尺寸不小于 1000x1000 像素</p>
+          <button type="button" class="btn btn-primary" id="selectImageBtn">
+            选择图片
+          </button>
         </div>
-        <div class="step-divider"></div>
-        <div class="step-item" data-step="2">
-          <div class="step-number">2</div>
-          <div class="step-label">填写信息</div>
-        </div>
-        <div class="step-divider"></div>
-        <div class="step-item" data-step="3">
-          <div class="step-number">3</div>
-          <div class="step-label">单字分割</div>
-        </div>
-        <div class="step-divider"></div>
-        <div class="step-item" data-step="4">
-          <div class="step-number">4</div>
-          <div class="step-label">提交审核</div>
-        </div>
-      </section>
 
-      <!-- 步骤1: 图片上传 -->
-      <section class="upload-section" id="step1" data-step="1">
-        <div class="section-card">
-          <h2 class="section-title">上传作品图片</h2>
-
-          <!-- 图片上传区域 -->
-          <div class="upload-area" id="uploadArea">
-            <input type="file" id="imageInput" accept="image/*" hidden />
-            <div class="upload-prompt" id="uploadPrompt">
-              <div class="upload-icon">📷</div>
-              <h3>点击或拖拽上传图片</h3>
-              <p>支持 JPG、PNG、WEBP 格式，建议尺寸不小于 1000x1000 像素</p>
-              <button type="button" class="btn btn-primary" id="selectImageBtn">选择图片</button>
-            </div>
-
-            <!-- 图片预览 -->
-            <div class="image-preview hidden" id="imagePreview">
-              <img id="previewImage" src="" alt="预览图片" />
-              <div class="preview-actions">
-                <button type="button" class="btn btn-outline btn-small" id="rotateLeftBtn" title="向左旋转">↶</button>
-                <button type="button" class="btn btn-outline btn-small" id="rotateRightBtn" title="向右旋转">↷</button>
-                <button type="button" class="btn btn-outline btn-small" id="removeImageBtn">重新上传</button>
-              </div>
-            </div>
-          </div>
-
-          <div class="section-footer">
-            <button type="button" class="btn btn-primary btn-large" id="step1Next" disabled>下一步</button>
-          </div>
-        </div>
-      </section>
-
-      <!-- 步骤2: 填写作品信息 -->
-      <section class="upload-section hidden" id="step2" data-step="2">
-        <div class="section-card">
-          <h2 class="section-title">填写作品信息</h2>
-
-          <form id="workInfoForm" class="work-form">
-            <div class="form-row">
-              <div class="form-group">
-                <label for="workTitle" class="form-label">作品标题 <span class="required">*</span></label>
-                <input type="text" id="workTitle" class="form-input" placeholder="如：兰亭集序" maxlength="100" required />
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label for="workAuthor" class="form-label">作者 <span class="required">*</span></label>
-                <input type="text" id="workAuthor" class="form-input" placeholder="如：王羲之" maxlength="50" required />
-              </div>
-              <div class="form-group">
-                <label for="workDynasty" class="form-label">朝代</label>
-                <select id="workDynasty" class="form-select">
-                  <option value="">请选择</option>
-                  <option value="商周">商周</option>
-                  <option value="秦汉">秦汉</option>
-                  <option value="魏晋">魏晋</option>
-                  <option value="南北朝">南北朝</option>
-                  <option value="隋唐">隋唐</option>
-                  <option value="宋元">宋元</option>
-                  <option value="明清">明清</option>
-                  <option value="近现代">近现代</option>
-                  <option value="当代">当代</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label for="workStyle" class="form-label">书法风格 <span class="required">*</span></label>
-                <select id="workStyle" class="form-select" required>
-                  <option value="">请选择</option>
-                  <option value="kai">楷书</option>
-                  <option value="xing">行书</option>
-                  <option value="cao">草书</option>
-                  <option value="li">隶书</option>
-                  <option value="zhuan">篆书</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label for="workSource" class="form-label">来源类型 <span class="required">*</span></label>
-                <select id="workSource" class="form-select" required>
-                  <option value="">请选择</option>
-                  <option value="classic">经典碑帖</option>
-                  <option value="original">原创作品</option>
-                  <option value="copy">临摹作品</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group full-width">
-                <label for="workDesc" class="form-label">作品描述</label>
-                <textarea id="workDesc" class="form-textarea" placeholder="简单介绍作品的背景、特点或创作心得..." rows="4" maxlength="500"></textarea>
-                <div class="char-counter">
-                  <span id="descCharCount">0</span> / 500
-                </div>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group full-width">
-                <label for="workTags" class="form-label">标签</label>
-                <input type="text" id="workTags" class="form-input" placeholder="用逗号分隔，如：经典,名家,行书" maxlength="100" />
-                <p class="form-hint">添加标签有助于他人检索到你的作品</p>
-              </div>
-            </div>
-          </form>
-
-          <div class="section-footer">
-            <button type="button" class="btn btn-secondary" id="step2Prev">上一步</button>
-            <button type="button" class="btn btn-primary btn-large" id="step2Next">下一步</button>
-          </div>
-        </div>
-      </section>
-
-      <!-- 步骤3: 单字分割 -->
-      <section class="upload-section hidden" id="step3" data-step="3">
-        <div class="section-card">
-          <h2 class="section-title">单字分割（可选）</h2>
-          <p class="section-desc">在图片上标记单个字的位置，方便他人检索和学习。如不需要可直接跳过。</p>
-
-          <!-- 分割工具栏 -->
-          <div class="split-toolbar">
-            <button type="button" class="btn btn-outline btn-small" id="autoSplitBtn">
-              <span class="btn-icon">🔲</span>
-              <span>智能识别</span>
+        <!-- 图片预览 -->
+        <div class="image-preview hidden" id="imagePreview">
+          <img id="previewImage" src="" alt="预览图片" />
+          <div class="preview-actions">
+            <button
+              type="button"
+              class="btn btn-outline btn-small"
+              id="rotateLeftBtn"
+              title="向左旋转"
+            >
+              ↶
             </button>
-            <button type="button" class="btn btn-outline btn-small" id="addBoxBtn">
-              <span class="btn-icon">➕</span>
-              <span>手动添加</span>
+            <button
+              type="button"
+              class="btn btn-outline btn-small"
+              id="rotateRightBtn"
+              title="向右旋转"
+            >
+              ↷
             </button>
-            <button type="button" class="btn btn-outline btn-small" id="clearBoxesBtn">
-              <span class="btn-icon">🗑️</span>
-              <span>清除所有</span>
+            <button
+              type="button"
+              class="btn btn-outline btn-small"
+              id="removeImageBtn"
+            >
+              重新上传
             </button>
-            <div class="toolbar-divider"></div>
-            <span class="box-count">已标记：<strong id="boxCount">0</strong> 个字</span>
-          </div>
-
-          <!-- 分割画布 -->
-          <div class="split-canvas-container">
-            <canvas id="splitCanvas"></canvas>
-            <div class="canvas-hint">
-              <p>提示：点击"手动添加"后，在图片上拖拽鼠标框选单字区域</p>
-            </div>
-          </div>
-
-          <!-- 自动识别文本 -->
-          <div class="form-row">
-            <div class="form-group full-width">
-              <label for="ocrText" class="form-label">自动识别文本</label>
-              <textarea id="ocrText" class="form-textarea" placeholder="点击“智能识别”后自动填入，可自行修改" rows="4"></textarea>
-            </div>
-          </div>
-
-          <!-- 字符标注列表 -->
-          <div class="char-labels" id="charLabels">
-            <!-- 动态生成的字符标注项 -->
-          </div>
-
-          <div class="section-footer">
-            <button type="button" class="btn btn-secondary" id="step3Prev">上一步</button>
-            <button type="button" class="btn btn-outline" id="step3Skip">跳过此步</button>
-            <button type="button" class="btn btn-primary btn-large" id="step3Next">下一步</button>
           </div>
         </div>
-      </section>
+      </div>
 
-      <!-- 步骤4: 提交审核 -->
-      <section class="upload-section hidden" id="step4" data-step="4">
-        <div class="section-card">
-          <h2 class="section-title">确认并提交</h2>
+      <div class="section-footer">
+        <button
+          type="button"
+          class="btn btn-primary btn-large"
+          id="step1Next"
+          disabled
+        >
+          下一步
+        </button>
+      </div>
+    </div>
+  </section>
 
-          <!-- 作品预览卡片 -->
-          <div class="work-summary">
-            <div class="summary-image">
-              <img id="summaryImage" src="" alt="作品预览" />
-            </div>
-            <div class="summary-info">
-              <h3 id="summaryTitle">作品标题</h3>
-              <div class="summary-meta">
-                <p><strong>作者：</strong><span id="summaryAuthor"></span></p>
-                <p><strong>朝代：</strong><span id="summaryDynasty"></span></p>
-                <p><strong>风格：</strong><span id="summaryStyle"></span></p>
-                <p><strong>来源：</strong><span id="summarySource"></span></p>
-                <p><strong>单字数：</strong><span id="summaryCharCount"></span></p>
-              </div>
-              <div class="summary-desc" id="summaryDesc"></div>
-              <div class="summary-tags" id="summaryTags"></div>
-            </div>
-          </div>
+  <!-- 步骤2: 填写作品信息 -->
+  <section class="upload-section hidden" id="step2" data-step="2">
+    <div class="section-card">
+      <h2 class="section-title">填写作品信息</h2>
 
-          <!-- 草稿保存提示 -->
-          <div class="draft-section">
-            <div class="draft-info">
-              <span class="draft-icon">💾</span>
-              <div>
-                <p class="draft-title">草稿已自动保存</p>
-                <p class="draft-desc">你可以随时返回继续编辑，或直接提交审核</p>
-              </div>
-            </div>
-            <button type="button" class="btn btn-outline btn-small" id="saveDraftBtn">手动保存草稿</button>
-          </div>
-
-          <!-- 提交须知 -->
-          <div class="submit-notice">
-            <h4>提交须知：</h4>
-            <ul>
-              <li>确保作品图片清晰，内容完整</li>
-              <li>作品信息真实准确，便于检索</li>
-              <li>遵守版权规定，不上传侵权内容</li>
-              <li>提交后将进入审核队列，审核通过后即可公开展示</li>
-            </ul>
-            <label class="checkbox-label">
-              <input type="checkbox" id="agreeTerms" />
-              <span>我已阅读并同意以上须知</span>
-            </label>
-          </div>
-
-          <div class="section-footer">
-            <button type="button" class="btn btn-secondary" id="step4Prev">上一步</button>
-            <button type="button" class="btn btn-primary btn-large" id="submitBtn" disabled>提交审核</button>
+      <form id="workInfoForm" class="work-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="workTitle" class="form-label"
+              >作品标题 <span class="required">*</span></label
+            >
+            <input
+              type="text"
+              id="workTitle"
+              class="form-input"
+              placeholder="如：兰亭集序"
+              maxlength="100"
+              required
+            />
           </div>
         </div>
-      </section>
-    </main>
-{% endblock %}
 
-{% block extra_js %}
+        <div class="form-row">
+          <div class="form-group">
+            <label for="workAuthor" class="form-label"
+              >作者 <span class="required">*</span></label
+            >
+            <input
+              type="text"
+              id="workAuthor"
+              class="form-input"
+              placeholder="如：王羲之"
+              maxlength="50"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="workDynasty" class="form-label">朝代</label>
+            <select id="workDynasty" class="form-select">
+              <option value="">请选择</option>
+              <option value="商周">商周</option>
+              <option value="秦汉">秦汉</option>
+              <option value="魏晋">魏晋</option>
+              <option value="南北朝">南北朝</option>
+              <option value="隋唐">隋唐</option>
+              <option value="宋元">宋元</option>
+              <option value="明清">明清</option>
+              <option value="近现代">近现代</option>
+              <option value="当代">当代</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="workStyle" class="form-label"
+              >书法风格 <span class="required">*</span></label
+            >
+            <select id="workStyle" class="form-select" required>
+              <option value="">请选择</option>
+              <option value="kai">楷书</option>
+              <option value="xing">行书</option>
+              <option value="cao">草书</option>
+              <option value="li">隶书</option>
+              <option value="zhuan">篆书</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="workSource" class="form-label"
+              >来源类型 <span class="required">*</span></label
+            >
+            <select id="workSource" class="form-select" required>
+              <option value="">请选择</option>
+              <option value="classic">经典碑帖</option>
+              <option value="original">原创作品</option>
+              <option value="copy">临摹作品</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group full-width">
+            <label for="workDesc" class="form-label">作品描述</label>
+            <textarea
+              id="workDesc"
+              class="form-textarea"
+              placeholder="简单介绍作品的背景、特点或创作心得..."
+              rows="4"
+              maxlength="500"
+            ></textarea>
+            <div class="char-counter">
+              <span id="descCharCount">0</span> / 500
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group full-width">
+            <label for="workTags" class="form-label">标签</label>
+            <input
+              type="text"
+              id="workTags"
+              class="form-input"
+              placeholder="用逗号分隔，如：经典,名家,行书"
+              maxlength="100"
+            />
+            <p class="form-hint">添加标签有助于他人检索到你的作品</p>
+          </div>
+        </div>
+      </form>
+
+      <div class="section-footer">
+        <button type="button" class="btn btn-secondary" id="step2Prev">
+          上一步
+        </button>
+        <button type="button" class="btn btn-primary btn-large" id="step2Next">
+          下一步
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 步骤3: 单字分割 -->
+  <section class="upload-section hidden" id="step3" data-step="3">
+    <div class="section-card">
+      <h2 class="section-title">单字分割（可选）</h2>
+      <p class="section-desc">
+        在图片上标记单个字的位置，方便他人检索和学习。如不需要可直接跳过。
+      </p>
+
+      <!-- 分割工具栏 -->
+      <div class="split-toolbar">
+        <button
+          type="button"
+          class="btn btn-outline btn-small"
+          id="autoSplitBtn"
+        >
+          <span class="btn-icon">🔲</span>
+          <span>智能识别</span>
+        </button>
+        <button type="button" class="btn btn-outline btn-small" id="addBoxBtn">
+          <span class="btn-icon">➕</span>
+          <span>手动添加</span>
+        </button>
+        <button
+          type="button"
+          class="btn btn-outline btn-small"
+          id="clearBoxesBtn"
+        >
+          <span class="btn-icon">🗑️</span>
+          <span>清除所有</span>
+        </button>
+        <div class="toolbar-divider"></div>
+        <span class="box-count"
+          >已标记：<strong id="boxCount">0</strong> 个字</span
+        >
+      </div>
+
+      <!-- 分割画布 -->
+      <div class="split-canvas-container">
+        <canvas id="splitCanvas"></canvas>
+        <div class="canvas-hint">
+          <p>提示：点击"手动添加"后，在图片上拖拽鼠标框选单字区域</p>
+        </div>
+      </div>
+
+      <!-- 自动识别文本 -->
+      <div class="form-row">
+        <div class="form-group full-width">
+          <label for="ocrText" class="form-label">自动识别文本</label>
+          <textarea
+            id="ocrText"
+            class="form-textarea"
+            placeholder="点击“智能识别”后自动填入，可自行修改"
+            rows="4"
+          ></textarea>
+        </div>
+      </div>
+
+      <!-- 字符标注列表 -->
+      <div class="char-labels" id="charLabels">
+        <!-- 动态生成的字符标注项 -->
+      </div>
+
+      <div class="section-footer">
+        <button type="button" class="btn btn-secondary" id="step3Prev">
+          上一步
+        </button>
+        <button type="button" class="btn btn-outline" id="step3Skip">
+          跳过此步
+        </button>
+        <button type="button" class="btn btn-primary btn-large" id="step3Next">
+          下一步
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 步骤4: 提交审核 -->
+  <section class="upload-section hidden" id="step4" data-step="4">
+    <div class="section-card">
+      <h2 class="section-title">确认并提交</h2>
+
+      <!-- 作品预览卡片 -->
+      <div class="work-summary">
+        <div class="summary-image">
+          <img id="summaryImage" src="" alt="作品预览" />
+        </div>
+        <div class="summary-info">
+          <h3 id="summaryTitle">作品标题</h3>
+          <div class="summary-meta">
+            <p><strong>作者：</strong><span id="summaryAuthor"></span></p>
+            <p><strong>朝代：</strong><span id="summaryDynasty"></span></p>
+            <p><strong>风格：</strong><span id="summaryStyle"></span></p>
+            <p><strong>来源：</strong><span id="summarySource"></span></p>
+            <p><strong>单字数：</strong><span id="summaryCharCount"></span></p>
+          </div>
+          <div class="summary-desc" id="summaryDesc"></div>
+          <div class="summary-tags" id="summaryTags"></div>
+        </div>
+      </div>
+
+      <!-- 草稿保存提示 -->
+      <div class="draft-section">
+        <div class="draft-info">
+          <span class="draft-icon">💾</span>
+          <div>
+            <p class="draft-title">草稿已自动保存</p>
+            <p class="draft-desc">你可以随时返回继续编辑，或直接提交审核</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          class="btn btn-outline btn-small"
+          id="saveDraftBtn"
+        >
+          手动保存草稿
+        </button>
+      </div>
+
+      <!-- 提交须知 -->
+      <div class="submit-notice">
+        <h4>提交须知：</h4>
+        <ul>
+          <li>确保作品图片清晰，内容完整</li>
+          <li>作品信息真实准确，便于检索</li>
+          <li>遵守版权规定，不上传侵权内容</li>
+          <li>提交后将进入审核队列，审核通过后即可公开展示</li>
+        </ul>
+        <label class="checkbox-label">
+          <input type="checkbox" id="agreeTerms" />
+          <span>我已阅读并同意以上须知</span>
+        </label>
+      </div>
+
+      <div class="section-footer">
+        <button type="button" class="btn btn-secondary" id="step4Prev">
+          上一步
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary btn-large"
+          id="submitBtn"
+          disabled
+        >
+          提交审核
+        </button>
+      </div>
+    </div>
+  </section>
+</main>
+{% endblock %} {% block extra_js %}
 <script src="/static/js/work_upload.js" defer></script>
 {% endblock %}

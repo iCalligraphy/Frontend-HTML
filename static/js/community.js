@@ -530,7 +530,7 @@ class CommunityManager {
         if (navigator.share) {
             navigator.share({
                 title: title,
-                text: '来自 iCalligraphy 书法社区',
+                text: '来自 墨智帖 书法社区',
                 url: window.location.href
             }).catch(err => console.log('分享失败:', err));
         } else {
