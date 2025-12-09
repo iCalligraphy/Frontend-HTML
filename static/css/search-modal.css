@@ -1,0 +1,16 @@
+/* search-modal.css — 弹窗样式 */
+.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:1200}
+.modal.show{display:flex}
+.modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,0.45)}
+.modal-panel{position:relative;background:#fff;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,0.2);width:720px;max-width:94%;z-index:2;overflow:hidden}
+.modal-close{position:absolute;right:12px;top:8px;border:0;background:transparent;font-size:22px;cursor:pointer}
+.modal-body{padding:18px;display:flex;gap:12px}
+#modalPreview{width:340px;height:340px;display:flex;align-items:center;justify-content:center;background:#faf5ef;border:1px solid #eee;border-radius:6px}
+.modal-meta{flex:1;font-size:14px;color:#333}
+.modal-meta div{margin-bottom:8px}
+.modal-actions{margin-top:12px}
+.modal-actions button{padding:8px 12px;border-radius:4px;border:1px solid #ddd;background:#fff;cursor:pointer}
+@media (max-width:720px){
+  .modal-body{flex-direction:column}
+  #modalPreview{width:100%;height:220px}
+}

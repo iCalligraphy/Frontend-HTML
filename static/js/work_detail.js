@@ -498,9 +498,37 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
 
+    // 添加“读帖”按钮（localStorage 方案）
+    const prevReadPostBtn = document.getElementById('readPostBtn');
+    if (prevReadPostBtn) prevReadPostBtn.remove();
+    const readPostBtn = document.createElement('button');
+    readPostBtn.type = 'button';
+    readPostBtn.className = 'btn btn-outline';
+    readPostBtn.id = 'readPostBtn';
+    readPostBtn.innerHTML = '📝 读帖';
+
+    readPostBtn.onclick = async (e) => {
+      e.stopPropagation();
+      readPostBtn.disabled = true;
+      readPostBtn.innerHTML = '⏳ 处理中...';
+      try {
+        const imageData = await captureCharImage(box);
+        if (!imageData) throw new Error('图片截取失败');
+        // 存入 localStorage
+        localStorage.setItem('readPostImage', imageData);
+        window.location.href = '/read-post';
+      } catch (err) {
+        alert('读帖失败：' + (err.message || '未知错误'));
+        readPostBtn.disabled = false;
+        readPostBtn.innerHTML = '📝 读帖';
+      }
+    };
+
+    // 插入到弹窗按钮区
     const modalActions = charModal.querySelector('.char-actions') || (() => {
       const el = document.createElement('div'); el.className='char-actions'; charModal.querySelector('.modal-body').appendChild(el); return el;
     })();
+    modalActions.insertBefore(readPostBtn, modalActions.firstChild);
     modalActions.insertBefore(collectBtn, modalActions.firstChild);
 
     charModal.style.display = 'flex';

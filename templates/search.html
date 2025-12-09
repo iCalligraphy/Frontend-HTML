@@ -1,7 +1,133 @@
 {% extends "base.html" %} {% block title %}检索 · 墨智帖{% endblock %} {% block
-content %}
+extra_css %}
+<!-- 页面专用样式，拆分为小文件便于维护 -->
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/search-layout.css') }}"
+/>
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/search-cards.css') }}"
+/>
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/search-modal.css') }}"
+/>
+{% endblock %} {% block content %}
 <main class="container">
   <h1>检索</h1>
-  <p>页面建设中：后续将支持实时搜索、结果展示切换与筛选。</p>
+
+  <form id="searchForm" class="search-form" onsubmit="return false;">
+    <label for="q">关键词</label>
+    <input
+      id="q"
+      name="q"
+      type="search"
+      placeholder="请输入作品名称或单字，回车搜索"
+      autocomplete="off"
+    />
+    <button id="searchBtn" type="button">搜索</button>
+  </form>
+
+  <section class="search-results">
+    <div class="results-col" style="flex: 1; margin-right: 12px">
+      <h2>作品</h2>
+      <div id="worksResults" class="results-list">
+        <!-- 作品搜索结果将由 JS 渲染 -->
+      </div>
+    </div>
+
+    <div class="results-col" style="width: 360px">
+      <h2>单字</h2>
+      <div id="charsResults" class="results-list">
+        <!-- 单字搜索结果将由 JS 渲染 -->
+      </div>
+    </div>
+  </section>
+
+  <!-- 单字详情弹窗（由 JS 打开/填充） -->
+  <div
+    id="charModal"
+    class="modal"
+    aria-hidden="true"
+    role="dialog"
+    aria-modal="true"
+    style="display: none"
+  >
+    <div id="searchModalOverlay" class="modal-backdrop"></div>
+    <div class="modal-panel">
+      <button id="searchModalClose" class="modal-close" aria-label="关闭">
+        ×
+      </button>
+      <div class="modal-body">
+        <h3 id="modalCharText">字</h3>
+        <div id="modalPreview">预览</div>
+
+        <div id="modalMeta" class="modal-meta">
+          <div><strong>书体：</strong><span id="modalStyle">-</span></div>
+          <div><strong>出自：</strong><span id="modalWork">-</span></div>
+          <div><strong>笔画：</strong><span id="modalStrokeCount">-</span></div>
+          <div><strong>笔顺：</strong><span id="modalStrokeOrder">-</span></div>
+          <div><strong>识别：</strong><span id="modalConfidence">-</span></div>
+          <div>
+            <strong>采集时间：</strong><span id="modalCollectedAt">-</span>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button id="searchDownloadCharBtn" type="button">下载</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- 作品详情弹窗（由 JS 打开/填充） -->
+  <div
+    id="workModal"
+    class="modal"
+    aria-hidden="true"
+    role="dialog"
+    aria-modal="true"
+    style="display: none"
+  >
+    <div id="workModalOverlay" class="modal-backdrop"></div>
+    <div class="modal-panel">
+      <button id="workModalClose" class="modal-close" aria-label="关闭">
+        ×
+      </button>
+      <div class="modal-body">
+        <div
+          id="workModalPreview"
+          style="
+            width: 220px;
+            height: 160px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #faf5ef;
+            border: 1px solid #eee;
+            border-radius: 6px;
+            margin-right: 12px;
+          "
+        ></div>
+        <div class="modal-meta">
+          <h3 id="workModalTitle">作品名称</h3>
+          <div id="workModalMeta"></div>
+          <div class="modal-actions" style="margin-top: 12px">
+            <a
+              id="workModalOpenPage"
+              class="btn"
+              href="#"
+              target="_blank"
+              rel="noopener"
+              >打开作品页</a
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </main>
-{% endblock %} {% block footer_note %}{% endblock %}
+{% endblock %} {% block footer_note %}{% endblock %} {% block extra_js %}
+<script src="{{ url_for('static', filename='js/api_mock.js') }}"></script>
+<script src="{{ url_for('static', filename='js/search.js') }}"></script>
+{% endblock %}

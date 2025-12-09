@@ -1,0 +1,12 @@
+/* search-cards.css — 作品卡片与单字卡 */
+.result-work-card{display:flex;gap:12px;align-items:flex-start;padding:12px;border-radius:8px;border:1px solid #f0e8df;margin-bottom:10px;background:#fff}
+.result-work-card .thumb{width:120px;height:90px;background:#faf5ef;border:1px solid #eee;border-radius:6px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.result-work-card .thumb img{width:100%;height:100%;object-fit:cover}
+.result-work-card .info{flex:1}
+.result-work-card .info h3{margin:0;font-size:16px}
+.result-work-card .info p{margin:6px 0;color:#666;font-size:13px}
+.result-work-card .actions{margin-top:8px}
+.result-work-card .actions button{padding:6px 10px;border-radius:4px;border:0;background:var(--color-theme,#8B4513);color:#fff;cursor:pointer}
+
+.char-card{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;width:120px;height:120px;margin:6px;border:1px solid #eee;border-radius:8px;cursor:pointer;background:#fff}
+.char-card .char-text{font-size:36px;font-family:KaiTi, STKaiti, serif;color:#2e2e2e}

@@ -10,8 +10,8 @@
         { id: 2, title: "秦宫诗", style: "楷书", dynasty: "清代", author_name: "未知", image_url: "/static/images/test.webp" }
       ];
       this.characters = [
-        { id: 1, text: "永", work_id: 1, position: [570,100,640,175], stroke_count:5, image_url: "/static/uploads/char_1.png", ocr_confidence:0.98, created_at:"2025-12-03T10:00:00" },
-        { id: 2, text: "春", work_id: 2, position: [570,100,640,175], stroke_count:9, image_url: "/static/uploads/char_2.png", ocr_confidence:0.95, created_at:"2025-12-04T10:00:00" }
+        { id: 1, text: "永", work_id: 1, position: [570,100,640,175], stroke_count:5, image_url: "/static/images/char_1.png", ocr_confidence:0.98, created_at:"2025-12-03T10:00:00" },
+        { id: 2, text: "春", work_id: 2, position: [570,100,640,175], stroke_count:9, image_url: "/static/images/char_2.png", ocr_confidence:0.95, created_at:"2025-12-04T10:00:00" }
       ];
       this.storageKey = "iCalligraphy_my_collection";
       if (!localStorage.getItem(this.storageKey)) localStorage.setItem(this.storageKey, JSON.stringify([]));
