@@ -1,25 +1,40 @@
 /* ========== 个人中心专属样式 ========== */
 
 /* 用户头部信息区 */
+/* 头部横幅 + 用户信息区 */
 .profile-header {
-  background: #fff;
-  border-bottom: 1px solid var(--border);
-  padding: 32px 0;
+  position: relative;
+  background: linear-gradient(180deg, rgba(0,0,0,0.08), rgba(255,255,255,0.02));
+  padding: 20px 0 36px 0;
   margin-bottom: 24px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+}
+
+.profile-header::before{
+  /* 横幅占位背景，可替换为用户自定义背景图 */
+  content: '';
+  position: absolute;
+  inset: 0 0 60% 0;
+  background-image: linear-gradient(90deg, rgba(235,245,255,0.6), rgba(255,250,240,0.6));
+  pointer-events: none;
 }
 
 .profile-header-inner {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 48px;
-  align-items: start;
+  grid-template-columns: 1fr 320px;
+  gap: 24px;
+  align-items: center;
+  position: relative;
+  z-index: 2;
 }
 
 /* 用户卡片 */
 .user-card {
   display: flex;
-  gap: 24px;
-  align-items: flex-start;
+  gap: 20px;
+  align-items: center;
 }
 
 .avatar-section {
@@ -30,45 +45,58 @@
 .avatar {
   width: 140px;
   height: 140px;
-  border-radius: 12px;
+  border-radius: 50%;
   object-fit: cover;
-  border: 3px solid var(--border);
-  background: var(--bg-xuan);
+  border: 4px solid #fff;
+  background: linear-gradient(180deg,#fff,#f7f2ec);
   display: block;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
 }
 
 .avatar-upload-btn {
   position: absolute;
-  bottom: 8px;
-  right: 8px;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
   background: var(--theme-brown);
   color: white;
-  padding: 8px 12px;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
-  transition: background 0.3s ease;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
   border: none;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
 }
 
-.avatar-upload-btn:hover {
-  background: #6d380e;
-}
+.avatar-upload-btn:hover { transform: translateX(-50%) translateY(-2px); }
 
 .user-info {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .user-name {
   font-size: 28px;
-  font-weight: 700;
-  margin: 0 0 8px 0;
+  font-weight: 800;
+  margin: 0 0 6px 0;
   color: var(--ink-black);
+  letter-spacing: 0.2px;
+}
+
+/* 姓名一行显示，过长截断并显示省略号 */
+.user-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  display: block;
 }
 
 .user-email {
@@ -80,7 +108,7 @@
 .user-bio {
   color: #666;
   line-height: 1.6;
-  margin: 0 0 20px 0;
+  margin: 6px 0 12px 0;
   font-size: 14px;
 }
 
@@ -92,33 +120,27 @@
 
 /* 统计卡片区 */
 .stats-section {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  align-items: center;
 }
+
 
 .stat-card {
-  background: var(--card-bg);
-  border: 1px solid var(--border);
+  background: linear-gradient(180deg,#fff,#fbf8f2);
+  border: 1px solid rgba(0,0,0,0.04);
   border-radius: 12px;
-  padding: 20px;
+  padding: 14px 18px;
   text-align: center;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  min-width: 100px;
 }
 
-.stat-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-  border-color: var(--theme-brown);
-}
+.stat-card:hover { transform: translateY(-6px); box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
 
-.stat-number {
-  font-size: 32px;
-  font-weight: 700;
-  color: var(--theme-brown);
-  margin-bottom: 8px;
-}
+.stat-number { font-size: 26px; font-weight:800; color:var(--theme-brown); margin-bottom:6px }
 
 .stat-label {
   color: var(--gray);
@@ -127,46 +149,24 @@
 }
 
 /* ========== 标签页 ========== */
-.tabs-wrapper {
-  background: #fff;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 24px;
-  border-radius: 12px 12px 0 0;
-  overflow: hidden;
-}
+.tabs-wrapper { margin-bottom: 18px }
 
-.tabs {
-  display: flex;
-  gap: 0;
-}
+.tabs { display:flex; gap:8px; align-items:center }
 
 .tab-button {
-  flex: 1;
-  padding: 16px;
-  border: none;
-  background: #fff;
-  cursor: pointer;
-  font-size: 15px;
-  font-weight: 600;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
   color: var(--gray);
-  transition: all 0.3s ease;
-  border-bottom: 3px solid transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+  font-weight:700;
+  cursor:pointer;
+  transition: all 0.18s ease;
 }
 
-.tab-button:hover {
-  background: var(--bg-xuan);
-  color: var(--ink-black);
-}
+.tab-button:hover { background: rgba(0,0,0,0.03); color:var(--ink-black) }
 
-.tab-button.active {
-  color: var(--theme-brown);
-  border-bottom-color: var(--theme-brown);
-  background: var(--bg-xuan);
-}
+.tab-button.active { background: var(--theme-brown); color:#fff; box-shadow: 0 6px 18px rgba(139,69,19,0.14) }
 
 .tab-icon {
   font-size: 18px;
