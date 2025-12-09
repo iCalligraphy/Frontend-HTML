@@ -533,5 +533,42 @@ class ReadPostApp {
 
 // 初始化应用
 document.addEventListener('DOMContentLoaded', () => {
-  new ReadPostApp();
+  const app = new ReadPostApp();
+
+  // 自动识别 img 参数并加载图片
+  const params = new URLSearchParams(window.location.search);
+  const imgParam = params.get('img');
+  if (imgParam) {
+    // 支持 base64 或图片 URL
+    const src = decodeURIComponent(imgParam);
+    // 判断是否为 base64
+    if (src.startsWith('data:image/')) {
+      // base64 -> File（带文件名和类型）
+      const arr = src.split(',');
+      const mime = arr[0].match(/:(.*?);/)[1];
+      const bstr = atob(arr[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+      }
+      // File 构造，文件名为 image.png
+      const file = new File([u8arr], 'image.png', { type: mime });
+      app.loadImage(file);
+    } else {
+      // 普通 URL，fetch 后转 File
+      fetch(src)
+        .then(res => res.blob())
+        .then(blob => {
+          // 尝试获取 MIME 类型
+          const mime = blob.type || 'image/png';
+          // File 构造，文件名为 image.png
+          const file = new File([blob], 'image.png', { type: mime });
+          app.loadImage(file);
+        })
+        .catch(() => {
+          app.showToast('图片加载失败', 'error');
+        });
+    }
+  }
 });

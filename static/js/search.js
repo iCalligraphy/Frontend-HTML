@@ -103,28 +103,87 @@ document.addEventListener('DOMContentLoaded', () => {
       card.style.alignItems = 'center';
       card.style.justifyContent = 'center';
       card.style.width = '120px';
-      card.style.height = '120px';
+      card.style.height = '170px'; // 增高以容纳按钮
       card.style.margin = '6px';
       card.style.border = '1px solid #eee';
       card.style.borderRadius = '8px';
       card.style.cursor = 'pointer';
       card.dataset.id = c.id;
 
+      // 优先用 imageData 显示 PNG
+      let preview;
+      if (c.imageData && c.imageData.startsWith('data:image')) {
+        preview = document.createElement('img');
+        preview.src = c.imageData;
+        preview.alt = c.text || c.char || '?';
+        preview.style.maxWidth = '80px';
+        preview.style.maxHeight = '80px';
+        preview.style.objectFit = 'contain';
+      } else if (c.image_url) {
+        preview = document.createElement('img');
+        preview.src = c.image_url;
+        preview.alt = c.text || c.char || '?';
+        preview.style.maxWidth = '80px';
+        preview.style.maxHeight = '80px';
+        preview.style.objectFit = 'contain';
+      } else {
+        preview = document.createElement('canvas');
+        preview.width = 80;
+        preview.height = 80;
+        const ctx = preview.getContext('2d');
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, 80, 80);
+        ctx.fillStyle = '#8B4513';
+        ctx.font = 'bold 48px KaiTi, STKaiti, serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(c.text || c.char || '?', 40, 40);
+      }
+      card.appendChild(preview);
+
       const text = document.createElement('div');
       text.className = 'char-text';
       text.textContent = c.text || c.char || '?';
-      text.style.fontSize = '36px';
+      text.style.fontSize = '24px';
       text.style.fontFamily = "KaiTi, STKaiti, serif";
       text.style.color = '#2e2e2e';
-
+      text.style.marginTop = '4px';
       card.appendChild(text);
 
       const meta = document.createElement('div');
       meta.style.fontSize = '12px';
       meta.style.color = '#666';
-      meta.style.marginTop = '6px';
+      meta.style.marginTop = '2px';
       meta.textContent = c.work ? (c.work.title || c.work_title || '') : (c.work_title || '');
       card.appendChild(meta);
+
+      // 读帖按钮
+      const readBtn = document.createElement('button');
+      readBtn.type = 'button';
+      readBtn.textContent = '读帖';
+      readBtn.style.marginTop = '8px';
+      readBtn.style.fontSize = '13px';
+      readBtn.style.padding = '2px 10px';
+      readBtn.style.borderRadius = '12px';
+      readBtn.style.border = '1px solid #ccc';
+      readBtn.style.background = '#f7f7f7';
+      readBtn.style.cursor = 'pointer';
+      readBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        // 跳转到读帖页面，带图片参数
+        let imgSrc = '';
+        if (c.imageData && c.imageData.startsWith('data:image')) {
+          imgSrc = encodeURIComponent(c.imageData);
+        } else if (c.image_url) {
+          imgSrc = encodeURIComponent(c.image_url);
+        }
+        if (imgSrc) {
+          window.open(`/read-post?img=${imgSrc}`, '_blank');
+        } else {
+          alert('没有可用图片');
+        }
+      });
+      card.appendChild(readBtn);
 
       card.addEventListener('click', async (e) => {
         const id = card.dataset.id;
