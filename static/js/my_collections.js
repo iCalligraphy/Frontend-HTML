@@ -284,13 +284,126 @@ function initModals() {
     detailOverlay.addEventListener('click', () => closeDetailModal());
   }
 
+  // 通用 modal-close 代理：处理页面上所有 modal 的关闭按钮，避免单个绑定遗漏
+  document.addEventListener('click', function(e) {
+    const closeBtn = e.target.closest && e.target.closest('.modal-close');
+    if (!closeBtn) return;
+    const modalEl = closeBtn.closest && closeBtn.closest('.modal');
+    if (modalEl) {
+      modalEl.classList.add('hidden');
+      // 清除显示回退样式
+      modalEl.style.display = '';
+      document.body.style.overflow = '';
+    }
+  });
+
+  // 单字详情弹窗（charModal）关闭绑定
+  const charModal = document.getElementById('charModal');
+  const charModalOverlay = document.getElementById('charModalOverlay');
+  const charModalClose = document.getElementById('charModalClose');
+  if (charModalClose) charModalClose.addEventListener('click', () => closeCharModal());
+  if (charModalOverlay) charModalOverlay.addEventListener('click', () => closeCharModal());
+
   // ESC键关闭弹窗
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
       closeCollectionModal();
       closeDetailModal();
+      closeCharModal();
     }
   });
+}
+
+/**
+ * 打开单字详情弹窗（基于 detail 列表内的项）
+ */
+function openCharModalFromItem(item) {
+  if (!item) return;
+  const char = item.dataset.char || (item.querySelector('.char-label') && item.querySelector('.char-label').textContent) || '?';
+  const source = item.querySelector('.char-source') ? item.querySelector('.char-source').textContent : '';
+
+  openCharModal({ text: char, work: source });
+}
+
+function openCharModal(data = {}) {
+  const modal = document.getElementById('charModal');
+  if (!modal) return;
+
+  const text = data.text || '-';
+  const work = data.work || '-';
+
+  const titleEl = document.getElementById('modalCharText');
+  const workEl = document.getElementById('modalWork');
+  const styleEl = document.getElementById('modalStyle');
+  const previewEl = document.getElementById('modalPreview');
+  const strokeCountEl = document.getElementById('modalStrokeCount');
+  const strokeOrderEl = document.getElementById('modalStrokeOrder');
+  const confidenceEl = document.getElementById('modalConfidence');
+  const annotationsEl = document.getElementById('modalAnnotations');
+  const collectedAtEl = document.getElementById('modalCollectedAt');
+
+  titleEl.textContent = text;
+  workEl.textContent = work;
+  styleEl.textContent = ''; // unknown in this simplified view
+  strokeCountEl.textContent = '-';
+  strokeOrderEl.textContent = '-';
+  confidenceEl.textContent = '-';
+  annotationsEl.textContent = '-';
+  collectedAtEl.textContent = '-';
+
+  // render preview (simple canvas)
+  previewEl.innerHTML = '';
+  const canvas = document.createElement('canvas');
+  canvas.width = 340; canvas.height = 340;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle = '#8B4513';
+  ctx.font = 'bold 200px KaiTi, STKaiti, serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(text, canvas.width/2, canvas.height/2);
+  previewEl.appendChild(canvas);
+
+  modal.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+
+  // bind modal action buttons (download/remove/view)
+  const downloadBtn = document.getElementById('downloadCharBtn');
+  const viewAnnoBtn = document.getElementById('viewAnnotationsBtn');
+  const removeBtn = document.getElementById('removeCharBtn');
+
+  if (downloadBtn) {
+    downloadBtn.onclick = () => downloadCanvasAsImage(canvas, `${text}.png`);
+  }
+  if (viewAnnoBtn) {
+    viewAnnoBtn.onclick = () => alert('读帖功能开发中');
+  }
+  if (removeBtn) {
+    removeBtn.onclick = () => {
+      if (confirm(`确定要从字集中移除 “${text}” 吗？`)) {
+        // try to remove from detail grid if present
+        const item = Array.from(document.querySelectorAll('.detail-char-item')).find(it => (it.dataset.char || '').toString() === text.toString());
+        if (item) item.remove();
+        closeCharModal();
+      }
+    };
+  }
+}
+
+function closeCharModal() {
+  const modal = document.getElementById('charModal');
+  if (!modal) return;
+  modal.classList.add('hidden');
+  const previewEl = document.getElementById('modalPreview');
+  if (previewEl) previewEl.innerHTML = '';
+  document.body.style.overflow = '';
+}
+
+function downloadCanvasAsImage(canvas, filename) {
+  if (!canvas) return;
+  const link = document.createElement('a');
+  link.download = filename || 'char.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
 }
 
 /**
@@ -406,12 +519,85 @@ function createCollectionCard(data) {
  * 打开字集详情弹窗
  */
 function openDetailModal(collectionId) {
-  const modal = document.getElementById('detailModal');
-  modal.classList.remove('hidden');
-  document.body.style.overflow = 'hidden';
+  let modal = document.getElementById('detailModal');
+  try {
+    // 如果已经在 DOM 中，直接显示
+    if (modal) {
+      modal.classList.remove('hidden');
+      // 设置回退内联样式，确保在被覆盖或优先级问题下可见
+      modal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    } else {
+      // 动态创建回退 modal，以防模板未包含 detailModal
+      modal = document.createElement('div');
+      modal.id = 'detailModal';
+      modal.className = 'modal';
+      modal.style.display = 'flex';
+      modal.innerHTML = `
+        <div class="modal-overlay" id="detailOverlay"></div>
+        <div class="modal-content modal-large">
+          <div class="modal-header">
+            <h2 id="detailTitle">字集详情</h2>
+            <button type="button" class="modal-close" id="detailClose" aria-label="关闭">×</button>
+          </div>
+          <div class="modal-body">
+            <div class="detail-toolbar">
+              <div class="detail-search"><input type="search" id="charSearch" class="search-input" placeholder="搜索单字..." /></div>
+              <div class="detail-actions">
+                <button type="button" class="btn btn-outline btn-small" id="selectModeBtn">批量选择</button>
+                <button type="button" class="btn btn-outline btn-small" id="exportBtn">导出</button>
+              </div>
+            </div>
+            <div class="detail-char-grid" id="detailCharGrid"></div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+
+      // 绑定关闭事件
+      const detailOverlay = document.getElementById('detailOverlay');
+      const detailClose = document.getElementById('detailClose');
+      if (detailOverlay) detailOverlay.addEventListener('click', () => closeDetailModal());
+      if (detailClose) detailClose.addEventListener('click', () => closeDetailModal());
+
+      document.body.style.overflow = 'hidden';
+    }
+  } catch (err) {
+    console.error('openDetailModal error:', err);
+  }
 
   // 实际应用中应该加载对应字集的详细数据
   console.log('加载字集详情:', collectionId);
+
+  // 尝试填充 detailCharGrid：从对应的 collection 卡片复制预览单字
+  try {
+    const grid = document.getElementById('detailCharGrid');
+    if (grid) {
+      grid.innerHTML = '';
+      // 查找同 collectionId 的卡片
+      const cardBtn = document.querySelector(`button[data-collection="${collectionId}"]`);
+      const card = cardBtn ? cardBtn.closest('.collection-card') : null;
+      if (card) {
+        const chars = Array.from(card.querySelectorAll('.char-display')).map(el => el.textContent.trim());
+        chars.forEach(ch => {
+          const item = document.createElement('div');
+          item.className = 'detail-char-item';
+          item.dataset.char = ch;
+          item.innerHTML = `
+            <div class="char-card">
+              <div class="char-image" aria-hidden="true"></div>
+              <div class="char-label">${ch}</div>
+              <div class="char-source">作者未知</div>
+              <button type="button" class="char-remove" aria-label="移除" title="从字集中移除">×</button>
+            </div>
+          `;
+          grid.appendChild(item);
+        });
+      }
+    }
+  } catch (e) {
+    console.warn('填充 detailCharGrid 出错', e);
+  }
 }
 
 /**
@@ -453,6 +639,15 @@ function initCollectionDetails() {
         e.target.closest('.char-remove')) {
       handleRemoveCharacter(e.target.closest('.detail-char-item'));
     }
+  });
+
+  // 点击单字打开详情（非批量选择模式）
+  document.querySelectorAll('.detail-char-item').forEach(item => {
+    item.addEventListener('click', function(e) {
+      if (this.classList.contains('selectable')) return; // 批量选择模式下不打开
+      if (e.target.classList.contains('char-remove') || e.target.closest('.char-remove')) return;
+      openCharModalFromItem(this);
+    });
   });
 }
 

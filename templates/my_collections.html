@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 {% block title %}我的字集 · 墨智帖{% endblock %}
+{% block extra_css %}
+  <link rel="stylesheet" href="/static/css/my_collections.css" />
+{% endblock %}
+
 {% block content %}
-    <link rel="stylesheet" href="/static/css/main.css" />
-    <link rel="stylesheet" href="/static/css/my_collections.css" />
-  </head>
-  <body>
     <main class="container collections-main">
       <!-- 页面标题与操作栏 -->
       <section class="collections-header">
@@ -285,6 +285,55 @@
             </div>
           </div>
 
+            <!-- 单字详情弹窗（从 test 移植，供详情内单字查看） -->
+            <div class="modal hidden" id="charModal" role="dialog" aria-labelledby="modalCharText" aria-modal="true">
+              <div class="modal-overlay" id="charModalOverlay"></div>
+              <div class="modal-content">
+                <button type="button" class="modal-close" id="charModalClose" aria-label="关闭">×</button>
+
+                <div class="modal-header">
+                  <h2 class="modal-title" id="modalCharText">永</h2>
+                  <div class="modal-meta">
+                    <span class="meta-badge" id="modalStyle">行书</span>
+                    <span class="meta-item" id="modalWork">兰亭序</span>
+                  </div>
+                </div>
+
+                <div class="modal-body">
+                  <div class="char-preview-large" id="modalPreview"></div>
+
+                  <div class="char-info">
+                    <div class="info-row">
+                      <span class="info-label">笔画数：</span>
+                      <span class="info-value" id="modalStrokeCount">-</span>
+                    </div>
+                    <div class="info-row">
+                      <span class="info-label">笔顺：</span>
+                      <span class="info-value" id="modalStrokeOrder">-</span>
+                    </div>
+                    <div class="info-row">
+                      <span class="info-label">识别度：</span>
+                      <span class="info-value" id="modalConfidence">-</span>
+                    </div>
+                    <div class="info-row">
+                      <span class="info-label">读帖数：</span>
+                      <span class="info-value" id="modalAnnotations">-</span>
+                    </div>
+                    <div class="info-row">
+                      <span class="info-label">收藏时间：</span>
+                      <span class="info-value" id="modalCollectedAt">-</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="modal-actions">
+                  <button type="button" class="btn btn-outline" id="downloadCharBtn">⬇️ 下载</button>
+                  <button type="button" class="btn btn-outline" id="viewAnnotationsBtn">📝 查看读帖</button>
+                  <button type="button" class="btn btn-danger" id="removeCharBtn">🗑️ 移除</button>
+                </div>
+              </div>
+            </div>
+
           <!-- 单字网格（详细视图） -->
           <div class="detail-char-grid" id="detailCharGrid">
             <div class="detail-char-item" data-char="永">
@@ -324,14 +373,8 @@
       </div>
     </div>
 
-    <footer class="site-footer">
-      <div class="container footer-inner">
-        <p>© 2025 墨智帖 · 传统与创新并重</p>
-        <p class="note">本页为示例界面，真实数据与交互将在后续接入。</p>
-      </div>
-    </footer>
-
-    <script src="/static/js/main.js" defer></script>
-    <script src="/static/js/my_collections.js" defer></script>
+    {% block extra_js %}
+      <script src="/static/js/my_collections.js" defer></script>
+    {% endblock %}
   </body>
 </html>
