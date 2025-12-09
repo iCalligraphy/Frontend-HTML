@@ -1,0 +1,3 @@
+/* Search CSS moved into modular files: layout, cards, modal. */
+/* 保留小量全局或兼容样式（不要把样式坨在一起） */
+:root{--color-theme:#8B4513}
