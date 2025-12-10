@@ -952,12 +952,9 @@
   text-overflow: ellipsis;
 }
 
-.btn-follow {
+.btn-follow, .btn-following {
   padding: 6px 12px;
-  border: 2px solid var(--theme-brown);
   border-radius: 20px;
-  background: transparent;
-  color: var(--theme-brown);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -965,9 +962,28 @@
   flex-shrink: 0;
 }
 
+.btn-follow {
+  border: 2px solid var(--theme-brown);
+  background: transparent;
+  color: var(--theme-brown);
+}
+
 .btn-follow:hover {
   background: var(--theme-brown);
   color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(184, 136, 90, 0.2);
+}
+
+.btn-following {
+  border: 2px solid var(--border);
+  background: var(--bg-xuan);
+  color: var(--ink-black);
+}
+
+.btn-following:hover {
+  background: #fff;
+  border-color: var(--theme-brown);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(184, 136, 90, 0.2);
 }
