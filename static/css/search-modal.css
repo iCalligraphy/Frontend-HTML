@@ -1,16 +1,62 @@
-/* search-modal.css — 弹窗样式 */
+/* search-modal.css — 调整为示例弹窗视觉 */
 .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:1200}
 .modal.show{display:flex}
-.modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,0.45)}
-.modal-panel{position:relative;background:#fff;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,0.2);width:720px;max-width:94%;z-index:2;overflow:hidden}
-.modal-close{position:absolute;right:12px;top:8px;border:0;background:transparent;font-size:22px;cursor:pointer}
-.modal-body{padding:18px;display:flex;gap:12px}
-#modalPreview{width:340px;height:340px;display:flex;align-items:center;justify-content:center;background:#faf5ef;border:1px solid #eee;border-radius:6px}
+.modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,0.18)}
+
+/* 外层面板：白底 + 棕色描边 + 圆角 */
+.modal-panel{position:relative;background:#fff;border-radius:14px;box-shadow:0 18px 40px rgba(0,0,0,0.08);border:2px solid var(--theme-brown,#8B4513);width:860px;max-width:96%;z-index:2;overflow:hidden;padding:18px}
+.modal-close{position:absolute;right:18px;top:14px;border:0;background:transparent;font-size:20px;cursor:pointer;color:var(--theme-brown,#8B4513);font-weight:700}
+
+.modal-body{display:flex;gap:28px;align-items:flex-start;padding:12px}
+
+/* 预览框：白色内框 + 细内边距，模拟图片边缘留白 */
+#modalPreview{width:140px;height:140px;display:flex;align-items:center;justify-content:center;background:#fff;border-radius:10px;padding:10px;box-shadow:inset 0 0 0 6px rgba(248,243,235,0.95)}
+#modalPreview img{display:block;max-width:100%;max-height:100%;border-radius:6px}
+
+/* 右侧信息区 */
 .modal-meta{flex:1;font-size:14px;color:#333}
-.modal-meta div{margin-bottom:8px}
-.modal-actions{margin-top:12px}
-.modal-actions button{padding:8px 12px;border-radius:4px;border:1px solid #ddd;background:#fff;cursor:pointer}
+.modal-meta .meta-row{display:flex;gap:12px;align-items:flex-start;white-space:nowrap;margin:8px 0}
+.modal-meta .meta-label{color:#888;min-width:56px}
+.modal-meta .meta-value{color:var(--theme-brown,#8B4513);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:340px}
+
+/* 标题大字样 */
+.char-detail-text{color:var(--theme-brown,#8B4513);font-size:44px;font-family:'KaiTi','STKaiti',serif;font-weight:700;margin:6px 0}
+
+/* 按钮行：一行显示，窄屏横向滚动 */
+.modal-actions{margin-top:18px;display:flex;gap:14px;flex-wrap:nowrap;align-items:center;overflow-x:auto;padding:6px 4px}
+.modal-actions button{padding:8px 14px;border-radius:8px;border:1.5px solid var(--theme-brown,#8B4513);background:#fff;color:var(--theme-brown,#8B4513);font-weight:600;cursor:pointer;transition:all 0.18s;flex:0 0 auto}
+.modal-actions button.btn-outline{background:#fffbe9}
+.modal-actions button.btn-primary{background:var(--theme-brown,#8B4513);color:#fff;border-color:var(--theme-brown,#8B4513)}
+.modal-actions button[disabled]{background:#e9f7ef;color:#2f7d3a;border-color:#c8e6c9}
+
+.char-actions button,.modal-actions button{background:#fffbe9;border:1.5px solid var(--theme-brown,#8B4513);color:var(--theme-brown,#8B4513);font-weight:600}
+.char-actions button.btn-primary,.modal-actions button.btn-primary{background:var(--theme-brown,#8B4513);color:#fff}
+.char-actions button:hover,.modal-actions button:hover{background:var(--theme-brown,#8B4513);color:#fff}
+
+@media (max-width:920px){
+  .modal-panel{width:94%}
+}
 @media (max-width:720px){
-  .modal-body{flex-direction:column}
+  .modal-body{flex-direction:column;gap:12px}
   #modalPreview{width:100%;height:220px}
+  .modal-actions{justify-content:flex-start}
+}
+
+/* 美化 workModal 中的打开作品页链接按钮 */
+#workModalOpenPage {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1.5px solid var(--theme-brown,#8B4513);
+  background: #fffbe9;
+  color: var(--theme-brown,#8B4513);
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.18s ease;
+}
+#workModalOpenPage:hover {
+  background: var(--theme-brown,#8B4513);
+  color: #fff;
 }
