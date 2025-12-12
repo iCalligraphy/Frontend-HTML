@@ -282,6 +282,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderCharCards() {
     charsGrid.innerHTML = '';
+    console.debug && console.debug('renderCharCards: filteredBoxes length=', filteredBoxes.length);
     charCountEl.textContent = `${filteredBoxes.length} 个字`;
     if (filteredBoxes.length === 0) { emptyState.style.display = 'block'; return; }
     emptyState.style.display = 'none';
@@ -321,7 +322,7 @@ document.addEventListener('DOMContentLoaded', () => {
       card.appendChild(previewContainer);
       card.appendChild(textEl);
 
-      card.addEventListener('click', () => { const charId = box.id !== undefined ? box.id : index; highlightChar(charId); showCharDetail(box, index); });
+      card.addEventListener('click', () => { console.debug && console.debug('char card click', box, index); const charId = box.id !== undefined ? box.id : index; highlightChar(charId); showCharDetail(box, index); });
 
       charsGrid.appendChild(card);
     });
@@ -376,6 +377,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function showCharDetail(box, index) {
+    console.debug && console.debug('showCharDetail called', box, index, 'charModal=', charModal);
     modalCharText.textContent = box.char || '?';
     modalWorkTitle.textContent = currentWork.title || '';
     modalCharIndex.textContent = index + 1;
@@ -673,13 +675,41 @@ document.addEventListener('DOMContentLoaded', () => {
     downloadBtn.addEventListener('click', () => { const link = document.createElement('a'); link.href = image.src; link.download = `${currentWork.title}_原图.png`; link.click(); });
     exportBtn.addEventListener('click', exportAllChars);
 
-    modalClose.addEventListener('click', closeModal);
-    modalOverlay.addEventListener('click', closeModal);
+    if (modalClose) modalClose.addEventListener('click', closeModal);
+    else console.warn('modalClose element not found');
+    if (modalOverlay) modalOverlay.addEventListener('click', closeModal);
+    else console.warn('modalOverlay element not found');
 
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         if (charModal.style.display === 'flex') closeModal();
         else if (isDrawMode) exitDrawMode();
+      }
+    });
+
+    // 事件委托：确保点击右侧的 char-card 也能打开详情弹窗
+    document.addEventListener('click', function(e) {
+      // 忽略工具按钮、删除按钮等
+      if (e.target.closest('.char-card-btn') || e.target.closest('.delete-box-btn') || e.target.closest('.char-remove')) return;
+      const card = e.target.closest('.char-card');
+      if (!card) return;
+      const id = card.dataset.id;
+      if (id === undefined) return;
+      // 找到对应 box
+      const boxIndex = filteredBoxes.findIndex(b => (b.id !== undefined ? String(b.id) : String(filteredBoxes.indexOf(b))) === String(id));
+      let box = null;
+      let index = null;
+      if (boxIndex !== -1) {
+        box = filteredBoxes[boxIndex]; index = boxIndex;
+      } else {
+        // fallback: try to match by char label
+        const ch = card.querySelector('.char-card-text') ? card.querySelector('.char-card-text').textContent.trim() : (card.dataset.char || '');
+        const found = filteredBoxes.findIndex(b => (b.char||'') === ch);
+        if (found !== -1) { box = filteredBoxes[found]; index = found; }
+      }
+      if (box) {
+        highlightChar(box.id !== undefined ? box.id : index);
+        showCharDetail(box, index);
       }
     });
 

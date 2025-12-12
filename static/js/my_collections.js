@@ -48,6 +48,45 @@ function initCollectionActions() {
     }
   });
 
+  // 卡片内单字预览点击：先打开对应字集详情，再打开单字详情
+  document.addEventListener('click', function(e) {
+    const charItem = e.target.closest && e.target.closest('.char-item');
+    if (!charItem) return;
+
+    // 阻止在预览上的移除按钮触发
+    if (e.target.closest && e.target.closest('.char-remove')) return;
+
+    // 找到所属的 collection card
+    const collectionCard = charItem.closest('.collection-card');
+    // 尝试从卡片的查看详情按钮读取 collectionId
+    let collectionId = null;
+    if (collectionCard) {
+      const btn = collectionCard.querySelector('button[data-collection]');
+      if (btn) collectionId = btn.dataset.collection;
+    }
+
+    // 打开详情弹窗（如果有 id 就传，否则也打开默认弹窗）
+    try {
+      openDetailModal(collectionId);
+    } catch (err) {
+      console.warn('openDetailModal failed', err);
+      openDetailModal();
+    }
+
+    // 在详情弹窗打开后，直接打开单字详情弹窗显示这个字
+    const ch = charItem.dataset.char || (charItem.textContent && charItem.textContent.trim()) || '?';
+    // 小延迟等 detailCharGrid 填充（openDetailModal 内部可能同步填充，但用微任务保险）
+    setTimeout(() => {
+      // 查找 detailCharGrid 中对应项并打开，如果找不到则直接用文本打开小弹窗
+      const gridItem = Array.from(document.querySelectorAll('.detail-char-item')).find(it => (it.dataset.char||'').toString() === ch.toString());
+      if (gridItem) {
+        openCharModalFromItem(gridItem);
+      } else {
+        openCharModal({ text: ch, work: '' });
+      }
+    }, 100);
+  });
+
   // 查看详情按钮
   document.addEventListener('click', function(e) {
     if (e.target.classList.contains('btn-secondary') ||
@@ -118,8 +157,231 @@ function handleDeleteCollection(collectionCard) {
  * 处理添加单字
  */
 function handleAddCharacter(collectionId) {
-  // 实际应用中应该跳转到单字选择页面或打开选择弹窗
-  alert('功能开发中：将跳转至单字选择页面');
+  // 打开添加单字选择弹窗
+  openAddCharModal(collectionId);
+}
+
+/**
+ * 打开添加单字弹窗
+ */
+function openAddCharModal(collectionId) {
+  const modal = document.getElementById('addCharModal');
+  if (!modal) {
+    // 如果弹窗不存在，创建它
+    createAddCharModal();
+  }
+
+  // 设置当前字集ID
+  const modalEl = document.getElementById('addCharModal');
+  if (modalEl) modalEl.dataset.collectionId = collectionId;
+
+  // 加载模拟单字数据
+  loadMockCharacters();
+
+  // 显示弹窗
+  if (modalEl) {
+    modalEl.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+/**
+ * 关闭添加单字弹窗
+ */
+function closeAddCharModal() {
+  const modal = document.getElementById('addCharModal');
+  if (modal) {
+    modal.classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+}
+
+/**
+ * 加载模拟单字数据
+ */
+function loadMockCharacters() {
+  const mockChars = [
+    { char: '永', source: '王羲之 · 兰亭序', style: 'xing' },
+    { char: '和', source: '颜真卿 · 多宝塔碑', style: 'kai' },
+    { char: '静', source: '欧阳询 · 九成宫', style: 'kai' },
+    { char: '雅', source: '柳公权 · 玄秘塔碑', style: 'kai' },
+    { char: '韵', source: '怀素 · 自叙帖', style: 'cao' },
+    { char: '墨', source: '张旭 · 古诗四帖', style: 'cao' },
+    { char: '云', source: '赵孟頫 · 胆巴碑', style: 'xing' },
+    { char: '山', source: '米芾 · 蜀素帖', style: 'xing' }
+  ];
+
+  const grid = document.getElementById('addCharGrid');
+  if (!grid) return;
+
+  grid.innerHTML = mockChars.map(item => `
+    <div class="add-char-item" data-char="${item.char}" data-style="${item.style}">
+      <div class="char-card">
+        <div class="char-image" aria-hidden="true">
+          <span class="char-display-large">${item.char}</span>
+        </div>
+        <div class="char-label">${item.char}</div>
+        <div class="char-source">${item.source}</div>
+        <button type="button" class="char-add-btn" title="添加到字集">
+          <span>+</span>
+        </button>
+      </div>
+    </div>
+  `).join('');
+
+  // 添加单字点击事件
+  grid.querySelectorAll('.char-add-btn').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const charItem = this.closest('.add-char-item');
+      const char = charItem.dataset.char;
+      addCharToCollection(char);
+    });
+  });
+}
+
+/**
+ * 添加单字到字集
+ */
+function addCharToCollection(char) {
+  const modal = document.getElementById('addCharModal');
+  const collectionId = modal?.dataset.collectionId;
+
+  // 模拟添加逻辑（实际应调用后端API）
+  console.log(`添加单字 "${char}" 到字集 ${collectionId}`);
+
+  // 在对应卡片预览中添加单字
+  if (collectionId) {
+    const cardBtn = document.querySelector(`button[data-collection="${collectionId}"]`);
+    const card = cardBtn ? cardBtn.closest('.collection-card') : null;
+    if (card) {
+      const grid = card.querySelector('.char-grid');
+      if (grid) {
+        const item = document.createElement('div');
+        item.className = 'char-item';
+        item.dataset.char = char;
+        item.innerHTML = `<span class="char-display">${char}</span>`;
+        // insert before the "more" element if exists
+        const more = grid.querySelector('.char-more');
+        if (more) grid.insertBefore(item, more);
+        else grid.appendChild(item);
+
+        // 更新卡片 meta 中的数量
+        const metaEl = card.querySelector('.collection-meta');
+        if (metaEl) {
+          const match = metaEl.textContent.match(/(\d+)个字/);
+          if (match) {
+            const newCount = parseInt(match[1]) + 1;
+            metaEl.textContent = metaEl.textContent.replace(/(\d+)个字/, `${newCount}个字`);
+          } else {
+            metaEl.textContent = `1个字 · ${metaEl.textContent}`;
+          }
+        }
+      }
+    }
+  }
+
+  // 显示成功提示
+  alert(`已将 "${char}" 添加到字集`);
+
+  // 关闭弹窗
+  closeAddCharModal();
+
+  // 更新统计数据
+  updateStats();
+}
+
+/**
+ * 创建添加单字弹窗
+ */
+function createAddCharModal() {
+  const modalHTML = `
+    <div class="modal hidden" id="addCharModal" role="dialog" aria-labelledby="addCharTitle" aria-modal="true">
+      <div class="modal-overlay" id="addCharOverlay"></div>
+      <div class="modal-content modal-large">
+        <div class="modal-header">
+          <h2 id="addCharTitle">添加单字</h2>
+          <button type="button" class="modal-close" id="addCharClose" aria-label="关闭">×</button>
+        </div>
+        <div class="modal-body">
+          <!-- 搜索栏 -->
+          <div class="detail-toolbar">
+            <div class="detail-search">
+              <input type="search" id="addCharSearch" class="search-input" placeholder="搜索单字、作者或作品..." />
+            </div>
+            <div class="detail-actions">
+              <select id="addCharStyleFilter" class="select-field">
+                <option value="all">全部风格</option>
+                <option value="kai">楷书</option>
+                <option value="xing">行书</option>
+                <option value="cao">草书</option>
+                <option value="li">隶书</option>
+                <option value="zhuan">篆书</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- 单字网格 -->
+          <div class="detail-char-grid" id="addCharGrid">
+            <!-- 动态生成单字卡片 -->
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // 添加到页面
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+  // 绑定关闭事件
+  document.getElementById('addCharClose')?.addEventListener('click', closeAddCharModal);
+  document.getElementById('addCharOverlay')?.addEventListener('click', closeAddCharModal);
+
+  // 搜索功能
+  document.getElementById('addCharSearch')?.addEventListener('input', function() {
+    filterAddChars(this.value.trim());
+  });
+
+  // 风格筛选
+  document.getElementById('addCharStyleFilter')?.addEventListener('change', function() {
+    filterAddCharsByStyle(this.value);
+  });
+}
+
+/**
+ * 筛选单字（搜索）
+ */
+function filterAddChars(keyword) {
+  const items = document.querySelectorAll('#addCharGrid .add-char-item');
+  const lowerKeyword = (keyword || '').toLowerCase();
+
+  items.forEach(item => {
+    const char = item.dataset.char || '';
+    const label = item.querySelector('.char-label')?.textContent || '';
+    const source = item.querySelector('.char-source')?.textContent || '';
+
+    if (!keyword || char.includes(keyword) || label.toLowerCase().includes(lowerKeyword) || source.toLowerCase().includes(lowerKeyword)) {
+      item.style.display = '';
+    } else {
+      item.style.display = 'none';
+    }
+  });
+}
+
+/**
+ * 按风格筛选单字
+ */
+function filterAddCharsByStyle(style) {
+  const items = document.querySelectorAll('#addCharGrid .add-char-item');
+  if (!items) return;
+  if (!style || style === 'all') {
+    items.forEach(i => i.style.display = '');
+    return;
+  }
+  items.forEach(item => {
+    const st = item.dataset.style || '';
+    item.style.display = (st === style) ? '' : 'none';
+  });
 }
 
 /**
@@ -387,6 +649,20 @@ function openCharModal(data = {}) {
       }
     };
   }
+  // 读帖按钮：将 canvas 导出为 dataURL 写入 localStorage，然后跳转到 /read-post
+  const readPostBtn = document.getElementById('readPostCharBtn');
+  if (readPostBtn) {
+    readPostBtn.onclick = () => {
+      try {
+        const dataURL = canvas.toDataURL('image/png');
+        localStorage.setItem('readPostImage', dataURL);
+        window.location.href = '/read-post';
+      } catch (e) {
+        console.error('readPost error', e);
+        alert('无法发送到读帖页面');
+      }
+    };
+  }
 }
 
 function closeCharModal() {
@@ -407,15 +683,82 @@ function downloadCanvasAsImage(canvas, filename) {
 }
 
 /**
+ * 动态创建创建/编辑字集弹窗（当模板未包含时备用）
+ */
+function createCollectionModal() {
+  if (document.getElementById('collectionModal')) return;
+  const html = `
+    <div class="modal hidden" id="collectionModal" role="dialog" aria-labelledby="modalTitle" aria-modal="true">
+      <div class="modal-overlay" id="modalOverlay"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="modalTitle">创建字集</h2>
+          <button type="button" class="modal-close" id="modalClose" aria-label="关闭">×</button>
+        </div>
+        <div class="modal-body">
+          <form id="collectionForm" class="form">
+            <div class="form-group">
+              <label for="collectionName" class="form-label">字集名称 <span class="required">*</span></label>
+              <input type="text" id="collectionName" class="form-input" maxlength="50" required />
+            </div>
+            <div class="form-group">
+              <label for="collectionDesc" class="form-label">描述（选填）</label>
+              <textarea id="collectionDesc" class="form-textarea" rows="3" maxlength="200"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="collectionStyle" class="form-label">主要风格</label>
+              <select id="collectionStyle" class="form-select">
+                <option value="">不限</option>
+                <option value="kai">楷书</option>
+                <option value="xing">行书</option>
+                <option value="cao">草书</option>
+                <option value="li">隶书</option>
+                <option value="zhuan">篆书</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">可见性</label>
+              <div class="radio-group">
+                <label class="radio-label"><input type="radio" name="visibility" value="private" checked /> 私密</label>
+                <label class="radio-label"><input type="radio" name="visibility" value="public" /> 公开</label>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="modalCancel">取消</button>
+          <button type="button" class="btn btn-primary" id="modalConfirm">确定</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', html);
+
+  // 绑定基础事件
+  document.getElementById('modalClose')?.addEventListener('click', () => closeCollectionModal());
+  document.getElementById('modalCancel')?.addEventListener('click', () => closeCollectionModal());
+  document.getElementById('modalOverlay')?.addEventListener('click', () => closeCollectionModal());
+  document.getElementById('modalConfirm')?.addEventListener('click', () => handleCollectionSubmit());
+}
+
+/**
  * 打开创建/编辑字集弹窗
  */
 function openCollectionModal(mode = 'create') {
-  const modal = document.getElementById('collectionModal');
-  const title = document.getElementById('modalTitle');
+  let modal = document.getElementById('collectionModal');
+  let title = document.getElementById('modalTitle');
+
+  // 如果缺失 modal，则动态创建一个（保证按钮在任意页面都可用）
+  if (!modal) {
+    createCollectionModal();
+    modal = document.getElementById('collectionModal');
+    title = document.getElementById('modalTitle');
+  }
 
   if (mode === 'create') {
-    title.textContent = '创建字集';
-    document.getElementById('collectionForm').reset();
+    if (title) title.textContent = '创建字集';
+    const formEl = document.getElementById('collectionForm');
+    if (formEl && typeof formEl.reset === 'function') formEl.reset();
   }
 
   modal.classList.remove('hidden');
@@ -503,7 +846,6 @@ function createCollectionCard(data) {
     </div>
     <div class="collection-preview">
       <div class="char-grid">
-        <div class="char-more">空</div>
       </div>
     </div>
     <div class="collection-footer">
@@ -637,10 +979,10 @@ function initCollectionDetails() {
   document.addEventListener('click', function(e) {
     if (e.target.classList.contains('char-remove') ||
         e.target.closest('.char-remove')) {
+      e.stopPropagation(); // 阻止事件冒泡到父元素
       handleRemoveCharacter(e.target.closest('.detail-char-item'));
     }
   });
-
   // 点击单字打开详情（非批量选择模式）
   document.querySelectorAll('.detail-char-item').forEach(item => {
     item.addEventListener('click', function(e) {
@@ -648,6 +990,40 @@ function initCollectionDetails() {
       if (e.target.classList.contains('char-remove') || e.target.closest('.char-remove')) return;
       openCharModalFromItem(this);
     });
+  });
+
+  // 事件委托：支持动态生成的 .detail-char-item 点击打开（优先于单独绑定）
+  document.addEventListener('click', function(e) {
+    const item = e.target.closest && e.target.closest('.detail-char-item');
+    if (!item) return;
+    if (e.target.classList.contains('char-remove') || e.target.closest('.char-remove')) return;
+    if (item.classList.contains('selectable')) return;
+    openCharModalFromItem(item);
+  });
+
+  // ========== 新增：单字点击跳转到读帖界面 ==========
+  document.addEventListener('click', function(e) {
+    const charItem = e.target.closest && e.target.closest('.detail-char-item');
+    // 确保点击的是单字卡片，而不是移除按钮
+    if (charItem && !e.target.closest('.char-remove')) {
+      const char = charItem.dataset.char;
+      const charLabel = charItem.querySelector('.char-label')?.textContent || char;
+      const charSource = charItem.querySelector('.char-source')?.textContent || '';
+      
+      // 存储单字信息到 localStorage，供读帖页面使用
+      try {
+        localStorage.setItem('selectedChar', JSON.stringify({
+          char: charLabel,
+          source: charSource,
+          timestamp: Date.now()
+        }));
+      } catch (err) {
+        console.warn('localStorage write failed', err);
+      }
+      
+      // 跳转到读帖页面
+      window.location.href = '/read-post';
+    }
   });
 }
 
