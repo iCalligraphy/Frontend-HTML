@@ -1,7 +1,7 @@
 // ========== 个人中心页面 JavaScript (支持 Mock 模式) ========== 
 
 let API_BASE = 'http://localhost:5000';
-let USE_MOCK_DATA = true; // 改为 false 时使用真实 API
+let USE_MOCK_DATA = false; // 默认使用真实 API，可通过页面调试面板切换
 
 let currentUser = null;
 let currentPage = {
@@ -183,7 +183,10 @@ const MockAPI = {
       };
     }
 
-    return { ok: false };
+    return {
+      ok: false,
+      json: async () => ({ error: '未找到匹配的API' })
+    };
   },
 
   async post(url, data) {
@@ -221,7 +224,52 @@ const MockAPI = {
       };
     }
 
-    return { ok: false };
+    return {
+      ok: false,
+      json: async () => ({ error: '未找到匹配的API' })
+    };
+  },
+  
+  async put(url, data) {
+    // 模拟网络延迟
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    // 处理用户资料更新
+    if (url.includes('/api/users/profile')) {
+      localStorage.setItem('mockUserData', JSON.stringify({
+        ...MockDataGenerator.generateUser(),
+        ...data
+      }));
+      return {
+        ok: true,
+        json: async () => ({
+          message: '资料更新成功',
+          user: { ...MockDataGenerator.generateUser(), ...data }
+        })
+      };
+    } 
+    // 处理密码修改
+    else if (url.includes('/api/users/password')) {
+      // 模拟原密码验证，在实际应用中应该验证原密码是否正确
+      // 这里假设原密码是固定的 'test123'，仅用于测试
+      if (data.old_password !== 'test123') {
+        return {
+          ok: false,
+          json: async () => ({ error: '原密码错误' })
+        };
+      }
+      
+      // 原密码正确，返回成功响应
+      return {
+        ok: true,
+        json: async () => ({ message: '密码修改成功' })
+      };
+    }
+
+    return {
+      ok: false,
+      json: async () => ({ error: '未找到匹配的API' })
+    };
   }
 };
 
@@ -379,60 +427,162 @@ function initEventListeners() {
   });
 
   // 统计卡片点击事件
-  document.getElementById('worksStatCard').addEventListener('click', function() {
-    switchTab('works');
-  });
+  const worksStatCard = document.getElementById('worksStatCard');
+  if (worksStatCard) {
+    worksStatCard.addEventListener('click', function() {
+      switchTab('works');
+    });
+  }
   
-  document.getElementById('collectionsStatCard').addEventListener('click', function() {
-    switchTab('collections');
-  });
+  const collectionsStatCard = document.getElementById('collectionsStatCard');
+  if (collectionsStatCard) {
+    collectionsStatCard.addEventListener('click', function() {
+      switchTab('collections');
+    });
+  }
   
-  document.getElementById('postsStatCard').addEventListener('click', function() {
-    switchTab('posts');
-  });
+  // postsStatCard 元素已移除，注释掉或移除相关代码
+  // const postsStatCard = document.getElementById('postsStatCard');
+  // if (postsStatCard) {
+  //   postsStatCard.addEventListener('click', function() {
+  //     switchTab('posts');
+  //   });
+  // }
   
-  document.getElementById('followersStatCard').addEventListener('click', function() {
-    showFollowers();
-  });
+  const followersStatCard = document.getElementById('followersStatCard');
+  if (followersStatCard) {
+    followersStatCard.addEventListener('click', function() {
+      showFollowers();
+    });
+  }
 }
 
 // ========== 统一 fetch 函数 ========== 
 async function customFetch(url, options = {}) {
+  console.log('[customFetch] 请求开始:', {
+    url,
+    method: options.method || 'GET',
+    useMock: USE_MOCK_DATA,
+    hasToken: !!localStorage.getItem('access_token')
+  });
+  
   if (USE_MOCK_DATA) {
-    if (options.method === 'POST') {
-      return await MockAPI.post(url, options.body && typeof options.body === 'string' ? JSON.parse(options.body) : options.body);
-    } else {
-      return await MockAPI.get(url);
+    console.log('[customFetch] 使用 Mock 数据模式');
+    // 根据请求方法调用相应的 MockAPI 方法
+    const method = options.method || 'GET';
+    const body = options.body && typeof options.body === 'string' ? JSON.parse(options.body) : options.body;
+    
+    switch (method.toUpperCase()) {
+      case 'POST':
+        return await MockAPI.post(url, body);
+      case 'PUT':
+        return await MockAPI.put(url, body);
+      default:
+        return await MockAPI.get(url);
     }
   } else {
-    return await fetch(url, options);
+    // 真实 API 调用，添加 Token 管理和错误处理
+    const token = localStorage.getItem('access_token');
+    
+    // 合并请求头
+    let headers = {
+      ...options.headers,
+    };
+    
+    // 仅在 body 存在且不是 FormData 时设置 Content-Type
+    if (options.body && !(options.body instanceof FormData)) {
+      headers['Content-Type'] = 'application/json';
+    }
+    
+    // 添加 Authorization 头
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    // 更新 options
+    const fetchOptions = {
+      ...options,
+      headers,
+    };
+    
+    try {
+      const response = await fetch(url, fetchOptions);
+      
+      console.log('[customFetch] 请求成功:', {
+        url,
+        status: response.status,
+        statusText: response.statusText
+      });
+      
+      // 处理 401 未授权错误
+      if (response.status === 401) {
+        console.error('[customFetch] 401 未授权，跳转到登录页面');
+        // 清除本地存储的 Token
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user');
+        
+        // 跳转到登录页面
+        window.location.href = '/auth';
+        return;
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('[customFetch] API 请求错误:', error);
+      throw new Error('网络错误，请稍后重试');
+    }
   }
 }
 
 // ========== 加载用户信息 ========== 
 async function loadUserInfo() {
+  console.log('[loadUserInfo] 开始加载用户信息');
+  
+  // 显示加载状态
+  showLoadingState();
+  
   try {
-    const response = await customFetch(`${API_BASE}/api/auth/me`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('access_token') || 'mock-token'}`
-      }
-    });
+    const response = await customFetch(`${API_BASE}/api/auth/me`);
 
     if (!response.ok) {
-      if (response.status === 401 && !USE_MOCK_DATA) {
-        localStorage.removeItem('access_token');
-        window.location.href = '/auth';
-        return;
-      }
-      throw new Error('加载失败');
+      const errorData = await response.json().catch(() => ({}));
+      console.error('[loadUserInfo] 加载失败:', errorData);
+      throw new Error(errorData.error || '加载用户信息失败');
     }
 
-    currentUser = await response.json();
+    const responseData = await response.json();
+    // 后端返回的是 {user: {...}}，所以需要获取 user 属性
+    currentUser = responseData.user;
+    console.log('[loadUserInfo] 加载成功，用户信息:', currentUser);
+    
     renderUserInfo();
     loadWorks(); // 默认加载作品
+    
+    // 隐藏加载状态
+    hideLoadingState();
   } catch (error) {
+    console.error('[loadUserInfo] 异常:', error);
+    hideLoadingState();
     showToast('加载用户信息失败: ' + error.message, 'error');
   }
+}
+
+// ========== 显示加载状态 ========== 
+function showLoadingState() {
+  // 在用户信息区域显示加载状态
+  document.querySelectorAll('.profile-header, .tabs-content').forEach(el => {
+    el.style.opacity = '0.6';
+  });
+  
+  // 如果需要，可以添加更详细的加载指示器
+}
+
+// ========== 隐藏加载状态 ========== 
+function hideLoadingState() {
+  document.querySelectorAll('.profile-header, .tabs-content').forEach(el => {
+    el.style.opacity = '1';
+  });
 }
 
 // ========== 渲染用户信息 ========== 
@@ -440,30 +590,67 @@ function renderUserInfo() {
   if (!currentUser) return;
 
   // 基本信息
-  document.getElementById('userName').textContent = currentUser.username;
-  document.getElementById('userEmail').textContent = currentUser.email;
-  document.getElementById('userBio').textContent = currentUser.bio || '暂无简介';
+  const userNameEl = document.getElementById('userName');
+  const userBioEl = document.getElementById('userBio');
+  
+  if (userNameEl) {
+    userNameEl.textContent = currentUser.username;
+  }
+  
+  // 注意：userEmail 元素在 HTML 中不存在，只在设置表单中使用 editEmail 元素
+  if (userBioEl) {
+    userBioEl.textContent = currentUser.bio || '暂无简介';
+  }
   
   // 头像
   const avatarImg = document.getElementById('userAvatar');
-  if (currentUser.avatar) {
-    avatarImg.src = `${API_BASE}/uploads/${currentUser.avatar}`;
-  } else if (USE_MOCK_DATA) {
-    // Mock 模式下使用默认头像或生成一个颜色背景
-    avatarImg.style.background = 'linear-gradient(135deg, #8b4513, #6d380e)';
-    avatarImg.style.display = 'flex';
-    avatarImg.style.alignItems = 'center';
-    avatarImg.style.justifyContent = 'center';
-    avatarImg.style.color = 'white';
-    avatarImg.style.fontSize = '48px';
-    avatarImg.textContent = currentUser.username.charAt(0).toUpperCase();
+  if (avatarImg) {
+    if (currentUser.avatar) {
+      avatarImg.src = `${API_BASE}/uploads/${currentUser.avatar}`;
+      // 重置样式，确保图片显示
+      avatarImg.style.background = '';
+      avatarImg.style.display = '';
+      avatarImg.style.alignItems = '';
+      avatarImg.style.justifyContent = '';
+      avatarImg.style.color = '';
+      avatarImg.style.fontSize = '';
+      avatarImg.textContent = '';
+    } else if (USE_MOCK_DATA) {
+      // Mock 模式下使用默认头像或生成一个颜色背景
+      avatarImg.style.background = 'linear-gradient(135deg, #8b4513, #6d380e)';
+      avatarImg.style.display = 'flex';
+      avatarImg.style.alignItems = 'center';
+      avatarImg.style.justifyContent = 'center';
+      avatarImg.style.color = 'white';
+      avatarImg.style.fontSize = '48px';
+      avatarImg.textContent = currentUser.username.charAt(0).toUpperCase();
+    }
   }
 
   // 统计数据
-  document.getElementById('worksCount').textContent = currentUser.stats.works_count;
-  document.getElementById('collectionsCount').textContent = currentUser.stats.collections_count;
-  document.getElementById('postsCount').textContent = currentUser.stats.posts_count;
-  document.getElementById('followersCount').textContent = currentUser.stats.followers_count;
+  const worksCountEl = document.getElementById('worksCount');
+  const collectionsCountEl = document.getElementById('collectionsCount');
+  const postsCountEl = document.getElementById('postsCount');
+  const followersCountEl = document.getElementById('followersCount');
+  
+  // 兼容 Mock 数据和真实 API 数据格式
+  const userStats = currentUser.stats || currentUser;
+  
+  if (worksCountEl) {
+    worksCountEl.textContent = userStats.works_count;
+  }
+  
+  if (collectionsCountEl) {
+    collectionsCountEl.textContent = userStats.collections_count;
+  }
+  
+  if (postsCountEl) {
+    postsCountEl.textContent = userStats.posts_count;
+  }
+  
+  if (followersCountEl) {
+    followersCountEl.textContent = userStats.followers_count;
+  }
 
   // 填充设置表单
   document.getElementById('editEmail').value = currentUser.email;
@@ -514,7 +701,9 @@ async function loadWorks(page = 1) {
     if (!response.ok) throw new Error('加载失败');
 
     const data = await response.json();
-    renderWorksGrid(data.items);
+    // 兼容真实 API 和 Mock 数据格式
+    const works = data.works || data.items || [];
+    renderWorksGrid(works);
     currentPage.works = page;
   } catch (error) {
     document.getElementById('worksContainer').innerHTML = 
@@ -572,7 +761,9 @@ async function loadCollections(page = 1) {
     if (!response.ok) throw new Error('加载失败');
 
     const data = await response.json();
-    const works = data.items.map(col => col.work).filter(w => w);
+    // 兼容真实 API 和 Mock 数据格式
+    const collections = data.items || [];
+    const works = collections.map(col => col.work).filter(w => w);
     renderCollectionsGrid(works);
     currentPage.collections = page;
   } catch (error) {
@@ -631,7 +822,9 @@ async function loadPosts(page = 1) {
     if (!response.ok) throw new Error('加载失败');
 
     const data = await response.json();
-    renderPostsList(data.items);
+    // 兼容真实 API 和 Mock 数据格式
+    const posts = data.posts || data.items || [];
+    renderPostsList(posts);
     currentPage.posts = page;
   } catch (error) {
     document.getElementById('postsContainer').innerHTML = 
@@ -677,31 +870,58 @@ function renderPostsList(posts) {
 async function updateProfile() {
   const email = document.getElementById('editEmail').value.trim();
   const bio = document.getElementById('editBio').value.trim();
+  const saveBtn = document.getElementById('saveProfileBtn');
+  
+  // 保存原始按钮文本
+  const originalBtnText = saveBtn.textContent;
 
+  console.log('[updateProfile] 开始更新资料:', { email, bio });
+
+  // 表单验证
   if (!email) {
     showToast('邮箱地址不能为空', 'error');
     return;
   }
+  
+  // 邮箱格式验证
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    showToast('请输入有效的邮箱地址', 'error');
+    return;
+  }
+  
+  // 显示加载状态
+  saveBtn.textContent = '保存中...';
+  saveBtn.disabled = true;
 
   try {
     const response = await customFetch(`${API_BASE}/api/users/profile`, {
       method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('access_token') || 'mock-token'}`,
-        'Content-Type': 'application/json'
-      },
       body: JSON.stringify({ email, bio })
     });
 
+    console.log('[updateProfile] 响应状态:', { ok: response.ok, status: response.status });
+
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || '更新失败');
+      const errorData = await response.json().catch(() => ({}));
+      console.error('[updateProfile] 更新失败:', errorData);
+      throw new Error(errorData.error || '更新失败');
     }
 
+    const result = await response.json();
+    console.log('[updateProfile] 更新成功:', result);
+
     showToast('资料更新成功', 'success');
+    console.log('[updateProfile] 开始重新加载用户信息');
     await loadUserInfo();
+    console.log('[updateProfile] 用户信息重新加载完成');
   } catch (error) {
+    console.error('[updateProfile] 异常:', error);
     showToast('资料更新失败: ' + error.message, 'error');
+  } finally {
+    // 恢复按钮状态
+    saveBtn.textContent = originalBtnText;
+    saveBtn.disabled = false;
   }
 }
 
@@ -710,7 +930,12 @@ async function changePassword() {
   const oldPassword = document.getElementById('oldPassword').value;
   const newPassword = document.getElementById('newPassword').value;
   const confirmPassword = document.getElementById('confirmPassword').value;
+  const changeBtn = document.getElementById('changePasswordBtn');
+  
+  // 保存原始按钮文本
+  const originalBtnText = changeBtn.textContent;
 
+  // 表单验证
   if (!oldPassword || !newPassword || !confirmPassword) {
     showToast('请填写所有密码字段', 'error');
     return;
@@ -725,14 +950,14 @@ async function changePassword() {
     showToast('新密码长度至少为 6 个字符', 'error');
     return;
   }
+  
+  // 显示加载状态
+  changeBtn.textContent = '修改中...';
+  changeBtn.disabled = true;
 
   try {
     const response = await customFetch(`${API_BASE}/api/users/password`, {
       method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('access_token') || 'mock-token'}`,
-        'Content-Type': 'application/json'
-      },
       body: JSON.stringify({
         old_password: oldPassword,
         new_password: newPassword
@@ -740,8 +965,8 @@ async function changePassword() {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || '修改失败');
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || '修改失败');
     }
 
     showToast('密码修改成功', 'success');
@@ -752,6 +977,10 @@ async function changePassword() {
     document.getElementById('confirmPassword').value = '';
   } catch (error) {
     showToast('密码修改失败: ' + error.message, 'error');
+  } finally {
+    // 恢复按钮状态
+    changeBtn.textContent = originalBtnText;
+    changeBtn.disabled = false;
   }
 }
 
@@ -778,30 +1007,41 @@ async function handleAvatarUpload(e) {
     return;
   }
 
+  // 显示上传中提示
+  const avatarUploadBtn = document.querySelector('.avatar-upload-btn');
+  const originalBtnText = avatarUploadBtn.innerHTML;
+  avatarUploadBtn.innerHTML = '<span>上传中...</span>';
+  avatarUploadBtn.style.pointerEvents = 'none';
+
   try {
     const formData = new FormData();
     formData.append('avatar', file);
 
+    // 使用 fetch 直接调用，因为 FormData 不需要 Content-Type 头
+    const token = localStorage.getItem('access_token');
     const response = await fetch(`${API_BASE}/api/users/avatar`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        'Authorization': `Bearer ${token}`
       },
       body: formData
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || '上传失败');
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || '上传失败');
     }
 
     showToast('头像上传成功', 'success');
     await loadUserInfo();
   } catch (error) {
     showToast('头像上传失败: ' + error.message, 'error');
+  } finally {
+    // 恢复按钮状态
+    avatarUploadBtn.innerHTML = originalBtnText;
+    avatarUploadBtn.style.pointerEvents = 'auto';
+    e.target.value = '';
   }
-
-  e.target.value = '';
 }
 
 // ========== 显示粉丝列表 ========== 
@@ -892,13 +1132,17 @@ function closeMockDataModal() {
 // ========== 退出登录 ========== 
 async function logout() {
   if (!confirm('确定要退出登录吗？')) return;
+  
+  const logoutBtn = document.getElementById('logoutBtn');
+  const originalBtnText = logoutBtn.textContent;
+  
+  // 显示加载状态
+  logoutBtn.textContent = '退出中...';
+  logoutBtn.disabled = true;
 
   try {
     await customFetch(`${API_BASE}/api/auth/logout`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('access_token') || 'mock-token'}`
-      }
+      method: 'POST'
     });
 
     // 清理本地存储
@@ -911,7 +1155,19 @@ async function logout() {
       window.location.href = '/';
     }, 1000);
   } catch (error) {
-    showToast('退出登录失败: ' + error.message, 'error');
+    // 即使API调用失败，也要清理本地存储
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user');
+    
+    showToast('已退出登录', 'success');
+    setTimeout(() => {
+      window.location.href = '/';
+    }, 1000);
+  } finally {
+    // 恢复按钮状态（虽然会跳转，但还是添加以防万一）
+    logoutBtn.textContent = originalBtnText;
+    logoutBtn.disabled = false;
   }
 }
 
