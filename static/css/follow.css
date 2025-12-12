@@ -502,3 +502,19 @@
 * {
   box-sizing: border-box;
 }
+
+/* 隐藏意见反馈按钮 */
+.nav-tab[href="/community/feedback"] {
+    display: none;
+}
+
+/* 话题页面按钮适配 */
+.topics-page .btn-follow-large {
+  margin-top: 16px;
+}
+
+.topics-page .topic-footer {
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  margin-top: auto;
+}

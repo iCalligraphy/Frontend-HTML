@@ -302,6 +302,71 @@
   gap: 16px;
 }
 
+/* 话题选择器样式 - 新增 */
+.topic-selector {
+  margin-bottom: 4px;
+  width: 100%;
+}
+
+.topic-selector select {
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  font-size: 15px;
+  font-family: inherit;
+  background: var(--bg-xuan);
+  color: var(--ink-black);
+  transition: all 0.3s ease;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23887' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  background-size: 16px;
+  padding-right: 40px;
+  box-sizing: border-box;
+}
+
+.topic-selector select:focus {
+  outline: none;
+  border-color: var(--theme-brown);
+  background-color: #fff;
+  box-shadow: 0 0 0 3px rgba(184, 136, 90, 0.1);
+}
+
+.topic-selector select:invalid {
+  color: var(--gray);
+}
+
+.topic-selector-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-black);
+}
+
+.topic-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(184, 136, 90, 0.1);
+  border-radius: 12px;
+  font-size: 12px;
+  color: var(--theme-brown);
+  font-weight: 500;
+  margin-left: 8px;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .topic-selector select {
+    padding: 12px 14px;
+    font-size: 14px;
+  }
+}
+
 .input-field,
 .textarea-field {
   width: 100%;
@@ -426,12 +491,15 @@
   overflow: hidden;
   width: 100%;
   box-sizing: border-box;
+  position: relative; /* 新增：为绝对定位的子元素提供参照 */
+  z-index: 1; /* 新增：设置基础层级 */
 }
 
 .post-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
   border-color: var(--theme-brown);
+  z-index: 10; /* 新增：悬浮时提高层级，确保菜单不被遮挡 */
 }
 
 /* 帖子头部 */
@@ -1179,4 +1247,248 @@
     grid-column: 2;
     display: flex !important; /* 强制显示 */
   }
+}
+
+/* 帖子菜单样式 - 新增 */
+.post-menu {
+  position: absolute;
+  top: 100%; /* 修改：相对于父元素底部定位 */
+  right: 10px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  min-width: 160px;
+  overflow: hidden;
+  animation: fadeIn 0.2s ease;
+  display: none;
+  margin-top: 8px; /* 新增：与父元素保持间距 */
+}
+
+.post-menu.active {
+  display: block;
+}
+
+.post-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--ink-black);
+  transition: all 0.2s ease;
+  font-family: inherit;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.post-menu-item:last-child {
+  border-bottom: none;
+}
+
+.post-menu-item:hover {
+  background: var(--bg-xuan);
+}
+
+.post-menu-item.delete {
+  color: #c84b31;
+}
+
+.post-menu-item.report {
+  color: #ff9800;
+}
+
+.post-menu-item .menu-icon {
+  font-size: 16px;
+}
+
+/* 模态框样式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.modal-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 16px;
+  padding: 28px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  transform: translateY(-20px);
+  transition: transform 0.3s ease;
+}
+
+.modal-overlay.active .modal-content {
+  transform: translateY(0);
+}
+
+.modal-header {
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.modal-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink-black);
+  margin-bottom: 8px;
+}
+
+.modal-message {
+  color: var(--gray);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.modal-btn {
+  flex: 1;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.modal-btn.cancel {
+  background: var(--bg-xuan);
+  color: var(--ink-black);
+  border-color: var(--border);
+}
+
+.modal-btn.cancel:hover {
+  background: #f0f0f0;
+}
+
+.modal-btn.confirm {
+  background: linear-gradient(135deg, var(--theme-brown) 0%, #a67c52 100%);
+  color: #fff;
+}
+
+.modal-btn.confirm:hover {
+  background: linear-gradient(135deg, #a67c52 0%, var(--theme-brown) 100%);
+  transform: translateY(-2px);
+}
+
+.modal-btn.delete {
+  background: linear-gradient(135deg, #c84b31 0%, #d32f2f 100%);
+  color: #fff;
+}
+
+.modal-btn.delete:hover {
+  background: linear-gradient(135deg, #d32f2f 0%, #c84b31 100%);
+  transform: translateY(-2px);
+}
+
+.modal-btn.report {
+  background: linear-gradient(135deg, #ff9800 0%, #ff5722 100%);
+  color: #fff;
+}
+
+.modal-btn.report:hover {
+  background: linear-gradient(135deg, #ff5722 0%, #ff9800 100%);
+  transform: translateY(-2px);
+}
+
+/* 关闭按钮 */
+.modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 20px;
+  color: var(--gray);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+  background: var(--bg-xuan);
+  color: var(--ink-black);
+}
+
+/* 确认消息样式 */
+.confirmation-message {
+  position: fixed;
+  top: 100px;
+  right: 20px;
+  background: var(--ink-black);
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  z-index: 10001;
+  opacity: 0;
+  transform: translateX(100%);
+  transition: all 0.3s ease;
+}
+
+.confirmation-message.show {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.confirmation-message.success {
+  background: #4a7c59;
+}
+
+.confirmation-message.error {
+  background: #c84b31;
+}
+
+.confirmation-message.info {
+  background: #2c5aa0;
+}
+
+/* 动画 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 隐藏意见反馈按钮 */
+.nav-tab[href="/community/feedback"] {
+    display: none;
 }

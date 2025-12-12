@@ -360,3 +360,106 @@
 :root {
   --border-light: rgba(184, 136, 90, 0.2);
 }
+
+  .post-menu {
+    position: absolute;
+    top: 50px;
+    right: 10px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    min-width: 160px;
+    overflow: hidden;
+    animation: fadeIn 0.2s ease;
+    display: none;
+  }
+
+  .post-menu.active {
+    display: block;
+  }
+
+  .post-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border: none;
+    background: transparent;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--ink-black);
+    transition: all 0.2s ease;
+    font-family: inherit;
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  .post-menu-item:last-child {
+    border-bottom: none;
+  }
+
+  .post-menu-item:hover {
+    background: var(--bg-xuan);
+  }
+
+  .post-menu-item.delete {
+    color: #c84b31;
+  }
+
+  .post-menu-item.report {
+    color: #ff9800;
+  }
+
+  .post-menu-item .menu-icon {
+    font-size: 16px;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* 确认消息样式 */
+  .confirmation-message {
+    position: fixed;
+    top: 100px;
+    right: 20px;
+    background: var(--ink-black);
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    z-index: 10001;
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.3s ease;
+  }
+
+  .confirmation-message.show {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .confirmation-message.success {
+    background: #4a7c59;
+  }
+
+  .confirmation-message.info {
+    background: #2c5aa0;
+  }
+`;
+document.head.appendChild(style);
+
+/* 隐藏意见反馈按钮 */
+.nav-tab[href="/community/feedback"] {
+    display: none;
+}

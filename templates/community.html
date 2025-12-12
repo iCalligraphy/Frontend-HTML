@@ -32,7 +32,7 @@
             <span class="tab-icon">🔔</span>
             <span class="tab-text">消息通知</span>
             <span class="notification-badge" id="navNotificationBadge" style="display: none;">0</span>
-          </a>
+           </a>
           <a href="/community/feedback" class="nav-tab">
             <span class="tab-icon">💬</span>
             <span class="tab-text">意见反馈</span>
@@ -71,6 +71,19 @@
             <div class="composer-card">
               <h3>发布新帖</h3>
               <div class="composer-form">
+                <!-- 话题选择器 - 新增 -->
+                <div class="topic-selector">
+                  <label class="topic-selector-label" for="postTopic">选择话题（可选）</label>
+                  <select id="postTopic" name="topic">
+                    <option value="" selected>请选择话题</option>
+                    <option value="technique">技法交流</option>
+                    <option value="appreciation">作品欣赏</option>
+                    <option value="qna">问答求助</option>
+                    <option value="materials">文房四宝</option>
+                    <option value="events">活动赛事</option>
+                  </select>
+                </div>
+
                 <input type="text" id="postTitle" class="input-field" placeholder="标题（选填）" maxlength="100" />
                 <textarea id="postContent" class="textarea-field" placeholder="分享你的书法心得、练习成果或提出问题..." rows="4" maxlength="2000"></textarea>
                 <div class="composer-footer">

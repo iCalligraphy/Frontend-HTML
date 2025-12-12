@@ -209,6 +209,7 @@ class CommunityManager {
         const postContent = document.getElementById('postContent');
         const charCount = document.getElementById('charCount');
         const publishBtn = document.getElementById('publishBtn');
+        const postTopic = document.getElementById('postTopic'); // 新增
 
         if (!postContent || !publishBtn) return;
 
@@ -229,6 +230,8 @@ class CommunityManager {
         publishBtn.addEventListener('click', () => {
             const title = document.getElementById('postTitle')?.value.trim() || '';
             const content = postContent.value.trim();
+            const topicValue = postTopic ? postTopic.value : ''; // 新增
+            const topicName = postTopic && topicValue ? postTopic.options[postTopic.selectedIndex].text : ''; // 修改：只有当有值时才获取名称
 
             if (!content) {
                 this.showToast('请输入帖子内容', 'error');
@@ -242,6 +245,8 @@ class CommunityManager {
                 time: '刚刚',
                 title: title,
                 content: content,
+                topic: topicValue, // 新增
+                topicName: topicName, // 新增
                 likes: 0,
                 comments: 0,
                 shares: 0
@@ -253,11 +258,30 @@ class CommunityManager {
                 postsList.insertBefore(newPost, postsList.firstChild);
             }
 
+            // 保存帖子到对应话题的本地存储（新增）
+            if (topicValue) {
+                this.savePostToTopic(topicValue, {
+                    author: this.currentUser?.username || '我',
+                    avatar: this.currentUser?.avatar || '我',
+                    time: '刚刚',
+                    content: content,
+                    title: title,
+                    likes: 0,
+                    comments: 0,
+                    isQuickPost: false
+                });
+            }
+
             // 清空输入框
             const titleInput = document.getElementById('postTitle');
             if (titleInput) titleInput.value = '';
             postContent.value = '';
             if (charCount) charCount.textContent = '0';
+
+            // 重置话题选择器（新增）
+            if (postTopic) {
+                postTopic.selectedIndex = 0;
+            }
 
             // 显示成功提示
             this.showToast('发布成功！', 'success');
@@ -268,11 +292,41 @@ class CommunityManager {
     }
 
     /**
+     * 保存帖子到话题本地存储
+     */
+    savePostToTopic(topicSlug, postData) {
+        try {
+            // 从本地存储获取该话题的帖子列表
+            const key = `topic_posts_${topicSlug}`;
+            let topicPosts = JSON.parse(localStorage.getItem(key) || '[]');
+
+            // 添加新帖子
+            topicPosts.unshift({
+                ...postData,
+                id: Date.now(),
+                timestamp: new Date().toISOString()
+            });
+
+            // 保存回本地存储
+            localStorage.setItem(key, JSON.stringify(topicPosts));
+
+            console.log(`帖子已保存到话题: ${topicSlug}`);
+        } catch (error) {
+            console.error('保存帖子到话题失败:', error);
+        }
+    }
+
+    /**
      * 创建帖子元素
      */
     createPostElement(data) {
         const article = document.createElement('article');
         article.className = 'post-card';
+
+        // 如果有话题，添加data属性
+        if (data.topic) {
+            article.dataset.topic = data.topic;
+        }
 
         article.innerHTML = `
             <div class="post-header">
@@ -287,6 +341,7 @@ class CommunityManager {
             </div>
             <div class="post-body">
                 ${data.title ? `<h3 class="post-title">${data.title}</h3>` : ''}
+                ${data.topicName ? `<div style="margin-bottom: 8px;"><span class="topic-badge">${data.topicName}</span></div>` : ''}
                 <p class="post-content">${data.content}</p>
             </div>
             <div class="post-footer">
@@ -457,13 +512,10 @@ class CommunityManager {
             });
         });
 
-        // 绑定菜单按钮
+        // 绑定菜单按钮 - 修改为使用新方法
         const menuBtn = post.querySelector('.post-menu-btn');
         if (menuBtn) {
-            menuBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.showPostMenu(e.target);
-            });
+            this.bindPostMenuButton(menuBtn);
         }
     }
 
@@ -541,12 +593,292 @@ class CommunityManager {
         }
     }
 
-    /**
+        /**
      * 显示帖子菜单
      */
     showPostMenu(button) {
-        // 简单的菜单实现
-        this.showToast('更多功能开发中', 'info');
+        // 关闭其他打开的菜单
+        document.querySelectorAll('.post-menu.active').forEach(menu => {
+            menu.classList.remove('active');
+        });
+
+        const post = button.closest('.post-card');
+        const isHovered = post.matches(':hover'); // 检查是否处于hover状态
+        const postHeader = post.querySelector('.post-header');
+        const authorName = post.querySelector('.author-name').textContent;
+        const isOwnPost = authorName === (this.currentUser?.username || '我') || authorName === '我';
+
+        // 创建菜单
+        let menu = post.querySelector('.post-menu');
+        if (!menu) {
+            menu = document.createElement('div');
+            menu.className = 'post-menu';
+            menu.innerHTML = isOwnPost
+                ? `
+                    <button class="post-menu-item delete" data-action="delete">
+                        <span class="menu-icon">🗑️</span>
+                        <span>删除帖子</span>
+                    </button>
+                `
+                : `
+                    <button class="post-menu-item report" data-action="report">
+                        <span class="menu-icon">🚩</span>
+                        <span>举报帖子</span>
+                    </button>
+                `;
+            post.appendChild(menu);
+
+            // 绑定菜单项点击事件
+            menu.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const action = e.target.closest('.post-menu-item')?.dataset.action;
+                if (action === 'delete') {
+                    this.showDeleteModal(post);
+                } else if (action === 'report') {
+                    this.showReportModal(post);
+                }
+                menu.classList.remove('active');
+            });
+        }
+
+        // 计算定位
+        const buttonRect = button.getBoundingClientRect();
+        const postRect = post.getBoundingClientRect();
+
+        // 调整定位，考虑到hover时的transform效果
+        let topPosition = buttonRect.bottom - postRect.top;
+
+        // 如果帖子处于hover状态，需要额外调整位置
+        if (isHovered) {
+            topPosition += 4; // 抵消translateY(-4px)的效果
+        }
+
+        menu.style.top = `${topPosition}px`;
+        menu.style.right = `${postRect.right - buttonRect.right}px`;
+
+        // 显示菜单
+        menu.classList.add('active');
+
+        // 点击其他地方关闭菜单
+        const closeMenu = (e) => {
+            if (!menu.contains(e.target) && e.target !== button) {
+                menu.classList.remove('active');
+                document.removeEventListener('click', closeMenu);
+            }
+        };
+
+        setTimeout(() => {
+            document.addEventListener('click', closeMenu);
+        }, 10);
+    }
+
+    /**
+     * 显示删除确认模态框
+     */
+    showDeleteModal(post) {
+        // 创建模态框
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <button class="modal-close" aria-label="关闭">×</button>
+                <div class="modal-header">
+                    <h3 class="modal-title">删除帖子</h3>
+                    <p class="modal-message">你确定要删除该条帖子？删除后将无法恢复。</p>
+                </div>
+                <div class="modal-actions">
+                    <button class="modal-btn cancel">取消</button>
+                    <button class="modal-btn delete">确定删除</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // 显示模态框
+        setTimeout(() => {
+            modal.classList.add('active');
+        }, 10);
+
+        // 绑定事件
+        const closeModal = () => {
+            modal.classList.remove('active');
+            setTimeout(() => {
+                document.body.removeChild(modal);
+            }, 300);
+        };
+
+        // 关闭按钮
+        modal.querySelector('.modal-close').addEventListener('click', closeModal);
+
+        // 取消按钮
+        modal.querySelector('.modal-btn.cancel').addEventListener('click', closeModal);
+
+        // 确定删除按钮
+        modal.querySelector('.modal-btn.delete').addEventListener('click', () => {
+            this.deletePost(post);
+            closeModal();
+            this.showConfirmation('删除成功！', 'success');
+        });
+
+        // 点击模态框背景关闭
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+    }
+
+    /**
+     * 显示举报确认模态框
+     */
+    showReportModal(post) {
+        // 创建模态框
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <button class="modal-close" aria-label="关闭">×</button>
+                <div class="modal-header">
+                    <h3 class="modal-title">举报帖子</h3>
+                    <p class="modal-message">你确定要举报该条帖子？我们会尽快审核处理。</p>
+                </div>
+                <div class="modal-actions">
+                    <button class="modal-btn cancel">取消</button>
+                    <button class="modal-btn report">确定举报</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // 显示模态框
+        setTimeout(() => {
+            modal.classList.add('active');
+        }, 10);
+
+        // 绑定事件
+        const closeModal = () => {
+            modal.classList.remove('active');
+            setTimeout(() => {
+                document.body.removeChild(modal);
+            }, 300);
+        };
+
+        // 关闭按钮
+        modal.querySelector('.modal-close').addEventListener('click', closeModal);
+
+        // 取消按钮
+        modal.querySelector('.modal-btn.cancel').addEventListener('click', closeModal);
+
+        // 确定举报按钮
+        modal.querySelector('.modal-btn.report').addEventListener('click', () => {
+            this.reportPost(post);
+            closeModal();
+            this.showConfirmation('举报成功！感谢你的反馈。', 'success');
+        });
+
+        // 点击模态框背景关闭
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+    }
+
+    /**
+     * 删除帖子
+     */
+    deletePost(post) {
+        // 如果有话题，也从话题存储中删除
+        const topic = post.dataset.topic;
+        if (topic) {
+            this.removePostFromTopic(topic, post);
+        }
+
+        // 从DOM中移除帖子
+        post.style.opacity = '0.5';
+        post.style.transform = 'scale(0.95)';
+
+        setTimeout(() => {
+            post.remove();
+        }, 300);
+    }
+
+    /**
+     * 从话题存储中删除帖子
+     */
+    removePostFromTopic(topicSlug, postElement) {
+        try {
+            const key = `topic_posts_${topicSlug}`;
+            let topicPosts = JSON.parse(localStorage.getItem(key) || '[]');
+
+            // 简单过滤：移除最近添加的帖子（实际应用中应该根据ID匹配）
+            if (topicPosts.length > 0) {
+                topicPosts.shift(); // 移除第一个（最近添加的）
+                localStorage.setItem(key, JSON.stringify(topicPosts));
+                console.log(`从话题 ${topicSlug} 中删除了一条帖子`);
+            }
+        } catch (error) {
+            console.error('从话题存储中删除帖子失败:', error);
+        }
+    }
+
+    /**
+     * 举报帖子
+     */
+    reportPost(post) {
+        const author = post.querySelector('.author-name').textContent;
+        const content = post.querySelector('.post-content').textContent.substring(0, 100);
+
+        // 保存举报记录
+        const reports = JSON.parse(localStorage.getItem('post_reports') || '[]');
+        reports.push({
+            id: Date.now(),
+            author: author,
+            content: content,
+            timestamp: new Date().toISOString(),
+            status: 'pending'
+        });
+        localStorage.setItem('post_reports', JSON.stringify(reports));
+
+        // 视觉反馈
+        const reportBtn = post.querySelector('.post-menu-btn');
+        if (reportBtn) {
+            reportBtn.innerHTML = '🚩';
+            reportBtn.style.color = '#ff9800';
+        }
+    }
+
+    /**
+     * 显示确认消息
+     */
+    showConfirmation(message, type = 'success') {
+        // 创建消息元素
+        let msgElement = document.getElementById('confirmationMessage');
+        if (!msgElement) {
+            msgElement = document.createElement('div');
+            msgElement.id = 'confirmationMessage';
+            msgElement.className = 'confirmation-message';
+            document.body.appendChild(msgElement);
+        }
+
+        msgElement.textContent = message;
+        msgElement.className = `confirmation-message ${type} show`;
+
+        setTimeout(() => {
+            msgElement.classList.remove('show');
+        }, 3000);
+    }
+
+    /**
+     * 绑定帖子菜单按钮事件
+     */
+    bindPostMenuButton(button) {
+        button.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.showPostMenu(button);
+        });
     }
 
     /**

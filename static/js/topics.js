@@ -114,12 +114,8 @@ class TopicsManager {
     if (!searchInput) return;
 
     searchInput.addEventListener('input', (e) => {
-      const keyword = e.target.value.trim();
-      if (keyword) {
-        this.searchTopics(keyword);
-      } else {
-        this.updateContent();
-      }
+      const keyword = e.target.value.toLowerCase().trim();
+      this.searchTopics(keyword);
     });
   }
 
@@ -281,21 +277,13 @@ class TopicsManager {
     const topicsGrid = document.getElementById('topicsGrid');
     if (!topicsGrid) return;
 
-    // 检查是否有搜索关键词
-    const searchInput = document.querySelector('.topics-search-input');
-    const keyword = searchInput ? searchInput.value.trim().toLowerCase() : '';
-
-    if (keyword) {
-      // 有搜索关键词，显示搜索结果
-      this.searchTopics(keyword);
-      return;
-    }
-
     // 根据当前标签页筛选话题
     let topicsToShow;
     if (this.currentTab === 'following') {
+      // 只显示已关注的话题
       topicsToShow = this.allTopics.filter(topic => topic.isFollowed);
     } else {
+      // 显示所有话题
       topicsToShow = [...this.allTopics];
     }
 
@@ -303,7 +291,7 @@ class TopicsManager {
     topicsToShow = this.applyFilter(topicsToShow, this.currentFilter);
 
     if (topicsToShow.length === 0) {
-      this.showEmptyState(topicsGrid, this.currentTab === 'following' ? 'following' : 'general');
+      this.showEmptyState(topicsGrid);
       return;
     }
 
@@ -312,21 +300,6 @@ class TopicsManager {
 
     // 绑定卡片事件
     this.bindTopicCardEvents();
-
-    // 添加淡入动画
-    setTimeout(() => {
-      const cards = topicsGrid.querySelectorAll('.topic-card');
-      cards.forEach((card, index) => {
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(10px)';
-
-        setTimeout(() => {
-          card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-          card.style.opacity = '1';
-          card.style.transform = 'translateY(0)';
-        }, index * 50);
-      });
-    }, 50);
   }
 
   /**
@@ -345,69 +318,115 @@ class TopicsManager {
   }
 
   /**
-   * 搜索话题
-   */
-  searchTopics(keyword) {
-    const grid = document.getElementById('topicsGrid');
+ * 创建话题卡片
+ */
+createTopicCard(topic, index) {
+  const isLarge = topic.id === 'technique' && this.currentTab === 'all';
+  const isFollowing = this.followedTopics.has(topic.name);
 
-    if (!keyword.trim()) {
-      // 清空搜索，显示正常内容
-      this.updateContent();
-      return;
-    }
+  return `
+    <div class="topic-card ${isLarge ? 'large' : ''}"
+         data-category="${topic.id}"
+         data-index="${index}">
+      ${topic.isFollowed ? '<div class="topic-followed-badge">✓ 已关注</div>' : ''}
+      <div class="topic-header">
+        <span class="topic-icon" style="color: ${topic.color}; background: ${this.hexToRgba(topic.color, 0.1)};">
+          ${topic.icon}
+        </span>
+        <h2>${topic.name}</h2>
+      </div>
+      <p class="topic-desc">${topic.description}</p>
+      <div class="topic-stats">
+        <span>${topic.postCount.toLocaleString()} 帖子</span>
+        <span>今日更新 ${topic.todayPosts}</span>
+      </div>
+      <div class="topic-footer">
+        <button class="btn-follow-large ${isFollowing ? 'btn-following' : 'btn-follow'}"
+                data-action="${isFollowing ? 'unfollow' : 'follow'}"
+                data-topic-name="${topic.name}">
+          ${isFollowing ? '已关注' : '关注话题'}
+        </button>
+      </div>
+    </div>
+  `;
+}
 
-    // 根据当前标签页筛选话题
-    let topicsToShow;
-    if (this.currentTab === 'following') {
-      topicsToShow = this.allTopics.filter(topic => topic.isFollowed);
-    } else {
-      topicsToShow = [...this.allTopics];
-    }
+/**
+ * 绑定话题卡片事件
+ */
+bindTopicCardEvents() {
 
-    // 应用当前筛选器
-    topicsToShow = this.applyFilter(topicsToShow, this.currentFilter);
+  // 关注按钮点击事件
+  const followButtons = document.querySelectorAll('.btn-follow-large');
+  followButtons.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
 
-    // 应用搜索筛选
-    const searchResults = topicsToShow.filter(topic => {
-      const topicName = topic.name.toLowerCase();
-      const topicDesc = topic.description.toLowerCase();
-      const searchTerm = keyword.toLowerCase();
+      const topicName = btn.dataset.topicName;
+      const isFollowing = btn.textContent === '已关注';
 
-      return topicName.includes(searchTerm) || topicDesc.includes(searchTerm);
+      this.toggleFollowTopic(topicName);
+
+      // 更新按钮状态
+      if (isFollowing) {
+        btn.textContent = '关注话题';
+        btn.classList.remove('btn-following');
+        btn.classList.add('btn-follow');
+        btn.dataset.action = 'follow';
+      } else {
+        btn.textContent = '已关注';
+        btn.classList.remove('btn-follow');
+        btn.classList.add('btn-following');
+        btn.dataset.action = 'unfollow';
+      }
     });
+  });
+}
 
-    if (searchResults.length === 0) {
-      this.showEmptyState(grid, 'search');
-      return;
+/**
+ * 切换话题关注状态
+ */
+toggleFollowTopic(topicName) {
+  const isFollowing = this.followedTopics.has(topicName);
+  const topic = this.allTopics.find(t => t.name === topicName);
+
+  if (isFollowing) {
+    // 取消关注
+    this.followedTopics.delete(topicName);
+    this.showToast(`已取消关注 ${topicName}`, 'info');
+
+    // 更新话题状态
+    if (topic) {
+      topic.isFollowed = false;
     }
+  } else {
+    // 关注
+    this.followedTopics.add(topicName);
+    this.showToast(`已成功关注 ${topicName}`, 'success');
 
-    // 生成搜索结果
-    grid.innerHTML = searchResults.map((topic, index) => this.createTopicCard(topic, index)).join('');
-
-    // 绑定卡片事件
-    this.bindTopicCardEvents();
-
-    // 添加淡入动画
-    setTimeout(() => {
-      const cards = grid.querySelectorAll('.topic-card');
-      cards.forEach((card, index) => {
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(10px)';
-
-        setTimeout(() => {
-          card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-          card.style.opacity = '1';
-          card.style.transform = 'translateY(0)';
-        }, index * 50);
-      });
-    }, 50);
+    // 更新话题状态
+    if (topic) {
+      topic.isFollowed = true;
+    }
   }
+
+  // 保存到本地存储
+  this.saveFollowedTopics();
+
+  // 更新关注计数
+  this.updateFollowingCount();
+
+  // 如果在"关注话题"标签页，需要刷新内容
+  if (this.currentTab === 'following') {
+    this.updateContent();
+  }
+}
 
   /**
    * 显示空状态
    */
-  showEmptyState(container, type = 'following') {
-    if (type === 'following') {
+  showEmptyState(container) {
+    if (this.currentTab === 'following') {
       container.innerHTML = `
         <div class="topics-empty-state">
           <div class="empty-icon">📚</div>
@@ -418,7 +437,7 @@ class TopicsManager {
           </button>
         </div>
       `;
-    } else if (type === 'search') {
+    } else {
       container.innerHTML = `
         <div class="topics-empty-state">
           <div class="empty-icon">🔍</div>
@@ -429,99 +448,46 @@ class TopicsManager {
           </button>
         </div>
       `;
-    } else {
-      container.innerHTML = `
-        <div class="topics-empty-state">
-          <div class="empty-icon">📚</div>
-          <h3>暂无话题</h3>
-          <p>当前没有可显示的话题</p>
-          <button class="btn btn-primary" onclick="window.location.reload()">
-            刷新页面
-          </button>
-        </div>
-      `;
     }
   }
 
   /**
-   * 创建话题卡片
+   * 搜索话题
    */
-  createTopicCard(topic, index) {
-    const isLarge = topic.id === 'technique' && this.currentTab === 'all';
-
-    return `
-      <div class="topic-card ${isLarge ? 'large' : ''}"
-           data-category="${topic.id}"
-           data-index="${index}">
-        ${topic.isFollowed ? '<div class="topic-followed-badge">✓ 已关注</div>' : ''}
-        <div class="topic-header">
-          <span class="topic-icon" style="color: ${topic.color}; background: ${this.hexToRgba(topic.color, 0.1)};">
-            ${topic.icon}
-          </span>
-          <h2>${topic.name}</h2>
-        </div>
-        <p class="topic-desc">${topic.description}</p>
-        <div class="topic-stats">
-          <span>${topic.postCount.toLocaleString()} 帖子</span>
-          <span>今日更新 ${topic.todayPosts}</span>
-        </div>
-        <div class="topic-footer">
-          <button class="btn-view-all ${topic.isFollowed ? 'following' : ''}"
-                  data-action="${topic.isFollowed ? 'unfollow' : 'follow'}"
-                  data-topic-name="${topic.name}">
-            ${topic.isFollowed ? '✓ 已关注' : '关注话题'}
-          </button>
-          <button class="btn-view-all" data-action="view" data-category="${topic.id}">
-            查看详情 →
-          </button>
-        </div>
-      </div>
-    `;
-  }
-
-  /**
-   * 绑定话题卡片事件
-   */
-  bindTopicCardEvents() {
-    // 卡片点击事件（跳转到话题详情）
+  searchTopics(keyword) {
     const topicCards = document.querySelectorAll('.topic-card');
+    const grid = document.getElementById('topicsGrid');
+
+    if (!keyword.trim()) {
+      // 清空搜索，显示正常内容
+      this.updateContent();
+      return;
+    }
+
     topicCards.forEach(card => {
-      card.addEventListener('click', (e) => {
-        // 如果不是点击在按钮上，则跳转到话题详情
-        if (!e.target.closest('button')) {
-          const category = card.dataset.category;
-          this.viewTopic(category);
-        }
-      });
+      const topicName = card.querySelector('h2').textContent.toLowerCase();
+      const topicDesc = card.querySelector('.topic-desc').textContent.toLowerCase();
+
+      if (topicName.includes(keyword) || topicDesc.includes(keyword)) {
+        card.style.display = '';
+        // 添加淡入动画
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(10px)';
+        setTimeout(() => {
+          card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+          card.style.opacity = '1';
+          card.style.transform = 'translateY(0)';
+        }, 50);
+      } else {
+        card.style.display = 'none';
+      }
     });
 
-    // 按钮点击事件
-    const buttons = document.querySelectorAll('.btn-view-all');
-    buttons.forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-
-        const action = btn.dataset.action;
-        if (action === 'view') {
-          const category = btn.dataset.category;
-          this.viewTopic(category);
-        } else if (action === 'follow' || action === 'unfollow') {
-          const topicName = btn.dataset.topicName;
-          this.toggleFollowTopic(topicName);
-
-          // 更新按钮状态
-          if (action === 'follow') {
-            btn.textContent = '✓ 已关注';
-            btn.classList.add('following');
-            btn.dataset.action = 'unfollow';
-          } else {
-            btn.textContent = '关注话题';
-            btn.classList.remove('following');
-            btn.dataset.action = 'follow';
-          }
-        }
-      });
-    });
+    // 检查是否没有搜索结果
+    const visibleCards = Array.from(topicCards).filter(card => card.style.display !== 'none');
+    if (visibleCards.length === 0 && grid) {
+      this.showEmptyState(grid);
+    }
   }
 
   /**

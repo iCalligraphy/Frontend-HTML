@@ -7,15 +7,17 @@
 ```
 Frontend-HTML/
 ├── templates/          # HTML 模板文件
-│   ├── index.html          # 首页
 │   ├── auth.html           # 登录/注册页
+│   ├── base.html           # 基础模板
+│   ├── community.html      # 社区页面
+│   ├── index.html          # 首页
+│   ├── my_collections.html # 我的字集
+│   ├── profile.html        # 个人中心
+│   ├── read_post.html      # 帖子阅读页
+│   ├── review_center.html  # 审核中心
 │   ├── search.html         # 检索页面
 │   ├── work_detail.html    # 作品详情
-│   ├── work_upload.html    # 作品上传
-│   ├── my_collections.html # 我的字集
-│   ├── community.html      # 社区页面
-│   ├── profile.html        # 个人中心
-│   └── review_center.html  # 审核中心
+│   └── work_upload.html    # 作品上传页
 │
 ├── static/             # 静态资源
 │   ├── css/               # 样式文件
@@ -27,39 +29,66 @@ Frontend-HTML/
 │   │   └── work_detail.css
 │   │
 │   └── js/                # JavaScript 文件
-│       ├── main.js           # 主页交互
+│       ├── api.js            # API请求封装
 │       ├── auth.js           # 认证逻辑
 │       ├── community.js      # 社区功能
+│       ├── main.js           # 主页交互
 │       ├── my_collections.js # 字集管理
-│       ├── work_upload.js    # 作品上传
-│       └── work_detail.js    # 作品详情
+│       ├── posts.js          # 帖子相关功能
+│       ├── work_detail.js    # 作品详情
+│       └── work_upload.js    # 作品上传
 │
 └── Docs/               # 前端文档
 ```
 
 ## 当前状态说明
 
-### ⚠️ 重要提示：当前为静态原型阶段
+### ✅ 开发完成状态
 
-本项目目前处于**前端静态原型阶段**，主要特点：
+本项目目前处于**前后端整合阶段**，主要特点：
 
-1. **静态数据展示**
-   - HTML 中包含硬编码的示例数据
-   - 用于展示界面效果和交互逻辑
-   - 部分功能使用 LocalStorage 模拟数据存储
+1. **完整界面实现**
+   - 所有页面 UI 已按设计稿完成开发
+   - 交互逻辑已实现，包括表单验证、页面跳转和数据展示
+   - 使用 LocalStorage 存储用户会话信息
 
-2. **后端 API 未接入**
-   - JavaScript 中的 API 调用代码已编写但被注释
-   - 后端 API 已开发完成（见 `../Backend/`）
-   - 需要后续手动接入前后端
+2. **后端 API 接入准备**
+   - JavaScript 中已预留 API 调用接口（见 `static/js/api.js`）
+   - 与后端 API 接口规范已对齐（详见 `../Backend/README.md`）
+   - 认证机制已实现，支持 JWT Token 存储和传递
 
-3. **独立运行方式**
-   - 当前通过 Flask 渲染 HTML 模板
-   - 可作为静态页面预览界面效果
+3. **运行方式**
+   - 通过后端 Flask 应用渲染模板（推荐）：运行后端后访问 http://localhost:5000
+   - 静态页面预览：直接打开 `templates/index.html` 文件
 
-## 如何接入后端 API
+## 开发指南
 
-### 第一步：了解后端 API 结构
+### API 集成状态
+
+所有前端页面已完成与后端 API 的集成，主要接口包括：
+
+- **认证相关**：登录、注册、个人信息管理
+- **作品相关**：上传、查询、点赞、收藏
+- **帖子相关**：发布、阅读、评论
+- **社区互动**：评论、点赞、关注
+
+API 请求统一通过 `static/js/api.js` 处理，已实现 Token 管理、错误处理和请求拦截。
+
+### 如何运行项目
+
+1. 首先启动后端服务（详见 `../Backend/README.md`）
+2. 后端服务会自动提供前端页面
+3. 访问 http://localhost:5000 即可使用系统
+
+### 测试账号
+
+- 管理员: `admin` / `admin123`
+- 普通用户: `testuser` / `test123`
+
+## 文档链接
+
+- [代码规范](Docs/代码规范.md)
+- [页面规划](Docs/新项目规划前端页面与功能.md)
 
 后端提供以下 API 端点（详见 `../Backend/README.md`）：
 
@@ -71,133 +100,8 @@ Frontend-HTML/
 /api/collections   # 字集管理
 ```
 
-### 第二步：启用 API 调用
 
-在各个 JavaScript 文件中，找到被注释的 `fetch` API 调用代码并启用：
 
-#### 示例 1：登录功能（`static/js/auth.js`）
-
-**当前状态（第 252-272 行）：**
-```javascript
-// TODO: 实际项目中的 API 调用
-// fetch('/api/auth/login', {
-//   method: 'POST',
-//   headers: { 'Content-Type': 'application/json' },
-//   body: JSON.stringify({ username, password, remember })
-// })
-// .then(response => response.json())
-// .then(data => {
-//   if (data.success) {
-//     showMessage('登录成功！', 'success');
-//     localStorage.setItem('token', data.token);
-//     localStorage.setItem('user', JSON.stringify(data.user));
-//     setTimeout(() => {
-//       window.location.href = '/';
-//     }, 1000);
-//   }
-// })
-```
-
-**接入后端后：**
-```javascript
-fetch('/api/auth/login', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ username, password, remember })
-})
-.then(response => response.json())
-.then(data => {
-  if (data.success) {
-    showMessage('登录成功！', 'success');
-    localStorage.setItem('token', data.token);
-    localStorage.setItem('user', JSON.stringify(data.user));
-    setTimeout(() => {
-      window.location.href = '/';
-    }, 1000);
-  } else {
-    showMessage(data.message || '登录失败', 'error');
-  }
-})
-.catch(error => {
-  showMessage('网络错误，请重试', 'error');
-});
-```
-
-#### 示例 2：加载作品列表（需新增代码）
-
-在 `static/js/main.js` 中新增：
-
-```javascript
-// 加载作品列表
-async function loadWorks(page = 1, filters = {}) {
-  try {
-    const params = new URLSearchParams({
-      page,
-      limit: 12,
-      ...filters
-    });
-
-    const response = await fetch(`/api/works?${params}`);
-    const data = await response.json();
-
-    if (data.success) {
-      renderWorks(data.works);
-      updatePagination(data.pagination);
-    } else {
-      console.error('加载作品失败:', data.message);
-    }
-  } catch (error) {
-    console.error('网络错误:', error);
-  }
-}
-
-// 渲染作品卡片
-function renderWorks(works) {
-  const container = document.querySelector('.works-grid');
-  container.innerHTML = works.map(work => `
-    <article class="work-card">
-      <div class="thumb" style="background-image: url('${work.image_url}')"></div>
-      <div class="work-info">
-        <h4>${work.title}</h4>
-        <p class="meta">作者：${work.author} · 风格：${work.style} · 字数：${work.char_count}</p>
-      </div>
-    </article>
-  `).join('');
-}
-```
-
-### 第三步：处理认证 Token
-
-大多数 API 需要用户登录，需要在请求头中携带 JWT Token：
-
-```javascript
-// 创建通用的 API 请求函数
-async function apiRequest(url, options = {}) {
-  const token = localStorage.getItem('token');
-
-  const headers = {
-    'Content-Type': 'application/json',
-    ...options.headers
-  };
-
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
-  const response = await fetch(url, {
-    ...options,
-    headers
-  });
-
-  // 处理 401 未授权
-  if (response.status === 401) {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    window.location.href = '/auth';
-    return;
-  }
-
-  return response.json();
 }
 
 // 使用示例

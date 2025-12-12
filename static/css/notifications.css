@@ -755,3 +755,8 @@
   left: 50%;
   transform: translate(-50%, -50%);
 }
+
+/* 隐藏意见反馈按钮 */
+.nav-tab[href="/community/feedback"] {
+    display: none;
+}
