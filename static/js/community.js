@@ -53,52 +53,24 @@ class CommunityManager {
             // 获取关注状态
             const isFollowing = await this.isFollowing(post.author.id);
             
-            const postCard = document.createElement('article');
-            postCard.className = 'post-card';
-            postCard.innerHTML = `
-                <div class="post-header">
-                    <div class="post-author">
-                        <div class="author-avatar">${post.author.username.charAt(0)}</div>
-                        <div class="author-info">
-                            <h4 class="author-name">${post.author.username}</h4>
-                            <p class="post-time">${this.formatTime(post.created_at)}</p>
-                        </div>
-                    </div>
-                    <div class="post-actions-header">
-                        <button class="btn-follow ${isFollowing ? 'btn-following' : ''}" 
-                                data-user-id="${post.author.id}" 
-                                data-author-name="${post.author.username}">
-                            ${isFollowing ? '已关注' : '关注'}
-                        </button>
-                        <button class="post-menu-btn" aria-label="更多操作">⋯</button>
-                    </div>
-                </div>
-                <div class="post-body">
-                    ${post.title ? `<h3 class="post-title">${post.title}</h3>` : ''}
-                    <p class="post-content">${post.content}</p>
-                </div>
-                <div class="post-footer">
-                    <button class="post-action" data-action="like">
-                        <span class="action-icon">👍</span>
-                        <span class="action-count">${post.likes_count}</span>
-                    </button>
-                    <button class="post-action" data-action="comment">
-                        <span class="action-icon">💬</span>
-                        <span class="action-count">${post.comments_count}</span>
-                    </button>
-                    <button class="post-action" data-action="share">
-                        <span class="action-icon">↗</span>
-                        <span class="action-text">分享</span>
-                    </button>
-                </div>
-                <div class="comments-section hidden">
-                    <div class="comment-composer">
-                        <input type="text" class="comment-input" placeholder="写下你的评论..." />
-                        <button class="btn btn-small">发送</button>
-                    </div>
-                    <div class="comments-list"></div>
-                </div>
-            `;
+            // 准备帖子数据，确保包含话题信息
+            const postData = {
+                author: post.author.username,
+                avatar: post.author.avatar || post.author.username.charAt(0),
+                time: this.formatTime(post.created_at),
+                title: post.title,
+                content: post.content,
+                likes: post.likes_count,
+                comments: post.comments_count,
+                shares: 0,
+                authorId: post.author.id,
+                isFollowing: isFollowing,
+                topic: post.topic_id,
+                topicName: post.topic ? post.topic.name : ''
+            };
+            
+            // 使用createPostElement函数创建帖子元素
+            const postCard = this.createPostElement(postData);
             postsList.appendChild(postCard);
         }
         
@@ -478,7 +450,8 @@ class CommunityManager {
                     method: 'POST',
                     body: JSON.stringify({
                         title: title,
-                        content: content
+                        content: content,
+                        topic: topicValue // 发送话题ID
                     })
                 });
 
