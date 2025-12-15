@@ -3,14 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{% block title %}iCalligraphy · 发现与分享书法之美{% endblock %}</title>
+    <title>{% block title %}墨智帖 · 发现与分享书法之美{% endblock %}</title>
     <link rel="stylesheet" href="/static/css/main.css" />
     {% block extra_css %}{% endblock %}
   </head>
   <body>
     <header class="site-header">
       <div class="container header-inner">
-        <a class="brand" href="/"><span class="brand-logo">藝</span><span class="brand-text">iCalligraphy</span></a>
+        <a class="brand" href="/"><span class="brand-logo">藝</span><span class="brand-text">墨智帖</span></a>
         <nav class="nav">
           <a href="/" {% if active_page == 'index' %}class="active"{% endif %}>首页</a>
           <a href="/work-upload" {% if active_page == 'work_upload' %}class="active"{% endif %}>作品上传</a>
@@ -77,9 +77,15 @@
                 // 退出登录功能
                 const logoutBtn = document.getElementById('logoutBtn');
                 logoutBtn.addEventListener('click', function() {
+                  // 清除所有相关的localStorage项目
                   localStorage.removeItem('access_token');
                   localStorage.removeItem('refresh_token');
                   localStorage.removeItem('user');
+                  localStorage.removeItem('currentUser');
+                  localStorage.removeItem('checkinData');
+                  localStorage.removeItem('userNotifications');
+                  localStorage.removeItem('followedTopics');
+                  localStorage.removeItem('following');
                   window.location.href = '/';
                 });
               } else {
@@ -97,7 +103,7 @@
 
     <footer class="site-footer">
       <div class="container footer-inner">
-        <p>© 2025 iCalligraphy · 传统与创新并重</p>
+        <p>© 2025 墨智帖 · 传统与创新并重</p>
         {% block footer_note %}
         <p class="note">本页为示例界面，真实数据与交互将在后续接入。</p>
         {% endblock %}

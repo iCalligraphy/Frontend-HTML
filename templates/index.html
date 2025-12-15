@@ -1,155 +1,168 @@
-{% extends "base.html" %}
+{% extends "base.html" %} {% block title %}墨智帖 · 发现与分享书法之美{%
+endblock %} {% block content %}
+<main>
+  <!-- 英雄区 -->
+  <section class="hero">
+    <div class="container hero-inner">
+      <div class="hero-text">
+        <h1>发现与分享书法之美</h1>
+        <p class="subtitle">
+          浏览经典与原创作品，检索单字切片，创建属于你的字集
+        </p>
+      </div>
+      <div class="search-box">
+        <div class="search-type">
+          <button type="button" class="type-btn active" data-type="works">
+            作品
+          </button>
+          <button type="button" class="type-btn" data-type="characters">
+            单字
+          </button>
+          <button type="button" class="type-btn" data-type="collections">
+            字集
+          </button>
+        </div>
+        <div class="search-input">
+          <input
+            id="globalSearchInput"
+            type="search"
+            placeholder="搜索作者/作品/风格…"
+          />
+          <button type="button" id="searchBtn" class="btn btn-primary">
+            搜索
+          </button>
+        </div>
+        <p class="search-tip">提示：输入"王羲之 兰亭"可快速检索相关作品</p>
+      </div>
+    </div>
+  </section>
 
-{% block title %}iCalligraphy · 发现与分享书法之美{% endblock %}
+  <!-- 功能引导卡片 -->
+  <section class="feature-cards">
+    <div class="container grid-3">
+      <article class="card">
+        <h3>精美作品</h3>
+        <p>浏览经典与现代书法作品，支持缩放和拖拽，沉浸式体验。</p>
+      </article>
+      <article class="card">
+        <h3>智能检索</h3>
+        <p>多维度筛选与实时搜索，作品/单字/字集一键切换。</p>
+      </article>
+      <article class="card">
+        <h3>互动社区</h3>
+        <p>发布帖子、点赞评论、每日打卡，共同交流书法心得。</p>
+      </article>
+    </div>
+  </section>
 
-{% block content %}
-    <main>
-      <!-- 英雄区 -->
-      <section class="hero">
-        <div class="container hero-inner">
-          <div class="hero-text">
-            <h1>发现与分享书法之美</h1>
-            <p class="subtitle">浏览经典与原创作品，检索单字切片，创建属于你的字集</p>
-          </div>
-          <div class="search-box">
-            <div class="search-type">
-              <button type="button" class="type-btn active" data-type="works">作品</button>
-              <button type="button" class="type-btn" data-type="characters">单字</button>
-              <button type="button" class="type-btn" data-type="collections">字集</button>
-            </div>
-            <div class="search-input">
-              <input id="globalSearchInput" type="search" placeholder="搜索作者/作品/风格…" />
-              <button type="button" id="searchBtn" class="btn btn-primary">搜索</button>
-            </div>
-            <p class="search-tip">提示：输入"王羲之 兰亭"可快速检索相关作品</p>
-          </div>
+  <!-- 筛选与视图切换 -->
+  <section class="toolbar">
+    <div class="container toolbar-inner">
+      <div class="filters">
+        <div class="filter-group">
+          <span class="label">风格：</span>
+          <button type="button" class="chip" data-style="kai">楷</button>
+          <button type="button" class="chip" data-style="xing">行</button>
+          <button type="button" class="chip" data-style="cao">草</button>
+          <button type="button" class="chip" data-style="li">隶</button>
+          <button type="button" class="chip" data-style="zhuan">篆</button>
         </div>
-      </section>
+        <div class="filter-group">
+          <label for="authorInput" class="label">作者：</label>
+          <input id="authorInput" type="text" placeholder="如 王羲之" />
+        </div>
+        <div class="filter-group">
+          <label for="sourceSelect" class="label">来源：</label>
+          <select id="sourceSelect">
+            <option value="all">全部</option>
+            <option value="system">系统</option>
+            <option value="user">用户</option>
+          </select>
+        </div>
+      </div>
+      <div class="view-switch">
+        <button type="button" id="gridViewBtn" class="view-btn active">
+          网格
+        </button>
+        <button type="button" id="listViewBtn" class="view-btn">列表</button>
+      </div>
+    </div>
+  </section>
 
-      <!-- 功能引导卡片 -->
-      <section class="feature-cards">
-        <div class="container grid-3">
-          <article class="card">
-            <h3>精美作品</h3>
-            <p>浏览经典与现代书法作品，支持缩放和拖拽，沉浸式体验。</p>
-          </article>
-          <article class="card">
-            <h3>智能检索</h3>
-            <p>多维度筛选与实时搜索，作品/单字/字集一键切换。</p>
-          </article>
-          <article class="card">
-            <h3>互动社区</h3>
-            <p>发布帖子、点赞评论、每日打卡，共同交流书法心得。</p>
-          </article>
+  <!-- 作品展示：网格视图 -->
+  <section id="worksGrid" class="works container">
+    <div class="works-grid">
+      <article class="work-card">
+        <div class="thumb"></div>
+        <div class="work-info">
+          <h4>兰亭集序</h4>
+          <p class="meta">作者：王羲之 · 风格：行书 · 字数：324</p>
         </div>
-      </section>
+      </article>
+      <article class="work-card">
+        <div class="thumb"></div>
+        <div class="work-info">
+          <h4>祭侄文稿</h4>
+          <p class="meta">作者：颜真卿 · 风格：草书 · 字数：220</p>
+        </div>
+      </article>
+      <article class="work-card">
+        <div class="thumb"></div>
+        <div class="work-info">
+          <h4>多宝塔碑</h4>
+          <p class="meta">作者：颜真卿 · 风格：楷书 · 字数：160</p>
+        </div>
+      </article>
+      <article class="work-card">
+        <div class="thumb"></div>
+        <div class="work-info">
+          <h4>黄庭坚诗帖</h4>
+          <p class="meta">作者：黄庭坚 · 风格：行书 · 字数：96</p>
+        </div>
+      </article>
+      <article class="work-card">
+        <div class="thumb"></div>
+        <div class="work-info">
+          <h4>张迁碑</h4>
+          <p class="meta">作者：东汉 · 风格：隶书 · 字数：740</p>
+        </div>
+      </article>
+      <article class="work-card">
+        <div class="thumb"></div>
+        <div class="work-info">
+          <h4>石门颂</h4>
+          <p class="meta">作者：魏碑 · 风格：楷书 · 字数：500</p>
+        </div>
+      </article>
+    </div>
+    <div class="pagination">
+      <button type="button" class="page-btn" disabled>上一页</button>
+      <span class="page-info">第 1 页 · 共 10 页</span>
+      <button type="button" class="page-btn">下一页</button>
+    </div>
+  </section>
 
-      <!-- 筛选与视图切换 -->
-      <section class="toolbar">
-        <div class="container toolbar-inner">
-          <div class="filters">
-            <div class="filter-group">
-              <span class="label">风格：</span>
-              <button type="button" class="chip" data-style="kai">楷</button>
-              <button type="button" class="chip" data-style="xing">行</button>
-              <button type="button" class="chip" data-style="cao">草</button>
-              <button type="button" class="chip" data-style="li">隶</button>
-              <button type="button" class="chip" data-style="zhuan">篆</button>
-            </div>
-            <div class="filter-group">
-              <label for="authorInput" class="label">作者：</label>
-              <input id="authorInput" type="text" placeholder="如 王羲之" />
-            </div>
-            <div class="filter-group">
-              <label for="sourceSelect" class="label">来源：</label>
-              <select id="sourceSelect">
-                <option value="all">全部</option>
-                <option value="system">系统</option>
-                <option value="user">用户</option>
-              </select>
-            </div>
-          </div>
-          <div class="view-switch">
-            <button type="button" id="gridViewBtn" class="view-btn active">网格</button>
-            <button type="button" id="listViewBtn" class="view-btn">列表</button>
-          </div>
-        </div>
-      </section>
-
-      <!-- 作品展示：网格视图 -->
-      <section id="worksGrid" class="works container">
-        <div class="works-grid">
-          <article class="work-card">
-            <div class="thumb"></div>
-            <div class="work-info">
-              <h4>兰亭集序</h4>
-              <p class="meta">作者：王羲之 · 风格：行书 · 字数：324</p>
-            </div>
-          </article>
-          <article class="work-card">
-            <div class="thumb"></div>
-            <div class="work-info">
-              <h4>祭侄文稿</h4>
-              <p class="meta">作者：颜真卿 · 风格：草书 · 字数：220</p>
-            </div>
-          </article>
-          <article class="work-card">
-            <div class="thumb"></div>
-            <div class="work-info">
-              <h4>多宝塔碑</h4>
-              <p class="meta">作者：颜真卿 · 风格：楷书 · 字数：160</p>
-            </div>
-          </article>
-          <article class="work-card">
-            <div class="thumb"></div>
-            <div class="work-info">
-              <h4>黄庭坚诗帖</h4>
-              <p class="meta">作者：黄庭坚 · 风格：行书 · 字数：96</p>
-            </div>
-          </article>
-          <article class="work-card">
-            <div class="thumb"></div>
-            <div class="work-info">
-              <h4>张迁碑</h4>
-              <p class="meta">作者：东汉 · 风格：隶书 · 字数：740</p>
-            </div>
-          </article>
-          <article class="work-card">
-            <div class="thumb"></div>
-            <div class="work-info">
-              <h4>石门颂</h4>
-              <p class="meta">作者：魏碑 · 风格：楷书 · 字数：500</p>
-            </div>
-          </article>
-        </div>
-        <div class="pagination">
-          <button type="button" class="page-btn" disabled>上一页</button>
-          <span class="page-info">第 1 页 · 共 10 页</span>
-          <button type="button" class="page-btn">下一页</button>
-        </div>
-      </section>
-
-      <!-- 作品展示：列表视图 -->
-      <section id="worksList" class="works container hidden">
-        <div class="list-wrapper">
-          <div class="list-row">
-            <span class="list-title">兰亭集序</span>
-            <span class="list-meta">王羲之 · 行书 · 324字</span>
-          </div>
-          <div class="list-row">
-            <span class="list-title">祭侄文稿</span>
-            <span class="list-meta">颜真卿 · 草书 · 220字</span>
-          </div>
-          <div class="list-row">
-            <span class="list-title">多宝塔碑</span>
-            <span class="list-meta">颜真卿 · 楷书 · 160字</span>
-          </div>
-        </div>
-        <div class="pagination">
-          <button type="button" class="page-btn" disabled>上一页</button>
-          <span class="page-info">第 1 页 · 共 10 页</span>
-          <button type="button" class="page-btn">下一页</button>
-        </div>
-      </section>
-    </main>
+  <!-- 作品展示：列表视图 -->
+  <section id="worksList" class="works container hidden">
+    <div class="list-wrapper">
+      <div class="list-row">
+        <span class="list-title">兰亭集序</span>
+        <span class="list-meta">王羲之 · 行书 · 324字</span>
+      </div>
+      <div class="list-row">
+        <span class="list-title">祭侄文稿</span>
+        <span class="list-meta">颜真卿 · 草书 · 220字</span>
+      </div>
+      <div class="list-row">
+        <span class="list-title">多宝塔碑</span>
+        <span class="list-meta">颜真卿 · 楷书 · 160字</span>
+      </div>
+    </div>
+    <div class="pagination">
+      <button type="button" class="page-btn" disabled>上一页</button>
+      <span class="page-info">第 1 页 · 共 10 页</span>
+      <button type="button" class="page-btn">下一页</button>
+    </div>
+  </section>
+</main>
 {% endblock %}
