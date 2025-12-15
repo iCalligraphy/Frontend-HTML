@@ -22,13 +22,64 @@ const uploadState = {
 };
 
 // DOM 加载完成后初始化
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
+  // 获取预配置信息
+  await loadWorkConfig();
+  
   initStep1(); // 图片上传
   initStep2(); // 作品信息
   initStep3(); // 单字分割
   initStep4(); // 提交审核
   loadDraft(); // 加载草稿
 });
+
+/**
+ * 加载作品上传预配置信息
+ */
+async function loadWorkConfig() {
+  try {
+    const response = await fetch('/api/works/config');
+    const config = await response.json();
+    
+    // 填充朝代下拉框
+    const dynastySelect = document.getElementById('workDynasty');
+    if (dynastySelect && config.dynasties) {
+      dynastySelect.innerHTML = '';
+      config.dynasties.forEach(dynasty => {
+        const option = document.createElement('option');
+        option.value = dynasty.value;
+        option.textContent = dynasty.label;
+        dynastySelect.appendChild(option);
+      });
+    }
+    
+    // 填充书法风格下拉框
+    const styleSelect = document.getElementById('workStyle');
+    if (styleSelect && config.styles) {
+      styleSelect.innerHTML = '';
+      config.styles.forEach(style => {
+        const option = document.createElement('option');
+        option.value = style.value;
+        option.textContent = style.label;
+        styleSelect.appendChild(option);
+      });
+    }
+    
+    // 填充来源类型下拉框
+    const sourceSelect = document.getElementById('workSource');
+    if (sourceSelect && config.source_types) {
+      sourceSelect.innerHTML = '';
+      config.source_types.forEach(source => {
+        const option = document.createElement('option');
+        option.value = source.value;
+        option.textContent = source.label;
+        sourceSelect.appendChild(option);
+      });
+    }
+  } catch (error) {
+    console.error('加载预配置信息失败:', error);
+  }
+}
 
 /**
  * 步骤1: 图片上传
@@ -578,15 +629,60 @@ function initStep4() {
   });
 
   // 提交
-  submitBtn.addEventListener('click', () => {
-    if (confirm('确定要提交审核吗？')) {
+  submitBtn.addEventListener('click', async () => {
+    if (confirm('确定要提交作品吗？')) {
       // 实际应用中应该发送到服务器
       console.log('提交数据:', uploadState);
-      alert('提交成功！作品已进入审核队列。');
-      // 清空草稿
-      localStorage.removeItem('uploadDraft');
-      // 跳转到首页
-      // window.location.href = 'index.html';
+      
+      try {
+        // 转换图片为文件对象
+        const response = await fetch(uploadState.uploadedImage);
+        const blob = await response.blob();
+        const file = new File([blob], 'work.jpg', { type: 'image/jpeg' });
+        
+        // 准备表单数据
+        const formData = new FormData();
+        formData.append('image', file);
+        formData.append('title', uploadState.workData.title);
+        formData.append('description', uploadState.workData.description);
+        formData.append('style', uploadState.workData.style);
+        formData.append('author_name', uploadState.workData.dynasty ? `${uploadState.workData.dynasty}${uploadState.workData.author}` : uploadState.workData.author);
+        formData.append('source_type', uploadState.workData.source);
+        formData.append('tags', uploadState.workData.tags);
+        
+        // 转换char_boxes为后端期望的characters格式
+        const characters = uploadState.charBoxes.map(box => ({
+          text: box.char,
+          style: uploadState.workData.style,
+          position: [box.x, box.y, box.x + box.width, box.y + box.height],
+          keypoints: []
+        }));
+        formData.append('characters', JSON.stringify(characters));
+        
+        // 发送请求到后端
+        const result = await fetch('/api/works', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+          },
+          body: formData
+        });
+        
+        const data = await result.json();
+        
+        if (result.ok) {
+          alert('提交成功！作品已成功发布。');
+          // 清空草稿
+          localStorage.removeItem('uploadDraft');
+          // 跳转到首页
+          // window.location.href = 'index.html';
+        } else {
+          alert(`提交失败：${data.error || '未知错误'}`);
+        }
+      } catch (error) {
+        console.error('提交错误:', error);
+        alert('提交失败：网络错误或服务器问题');
+      }
     }
   });
 
