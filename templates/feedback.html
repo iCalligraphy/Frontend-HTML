@@ -1,13 +1,8 @@
-{% extends "base.html" %}
-
-{% block title %}意见反馈 · iCalligraphy{% endblock %}
-
-{% block extra_css %}
+{% extends "base.html" %} {% block title %}意见反馈 · 墨智帖{% endblock %} {%
+block extra_css %}
 <link rel="stylesheet" href="/static/css/community.css" />
 <link rel="stylesheet" href="/static/css/feedback.css" />
-{% endblock %}
-
-{% block content %}
+{% endblock %} {% block content %}
 <main class="container community-main feedback-page">
   <!-- 页面标题 -->
   <section class="community-header">
@@ -33,7 +28,12 @@
       <a href="/community/notifications" class="nav-tab">
         <span class="tab-icon">🔔</span>
         <span class="tab-text">消息通知</span>
-        <span class="notification-badge" id="navNotificationBadge" style="display: none;">0</span>
+        <span
+          class="notification-badge"
+          id="navNotificationBadge"
+          style="display: none"
+          >0</span
+        >
       </a>
       <a href="/community/feedback" class="nav-tab active">
         <span class="tab-icon">💬</span>
@@ -48,7 +48,9 @@
     <form class="feedback-form" id="feedbackForm">
       <!-- 反馈类型 -->
       <div class="feedback-form-group">
-        <label class="form-label">反馈类型 <span class="required">*</span></label>
+        <label class="form-label"
+          >反馈类型 <span class="required">*</span></label
+        >
         <div class="feedback-type-selector">
           <button type="button" class="feedback-type-btn" data-type="feature">
             <span class="type-icon">💡</span>
@@ -75,25 +77,46 @@
 
       <!-- 反馈标题 -->
       <div class="feedback-form-group">
-        <label class="form-label" for="feedbackTitle">反馈标题 <span class="required">*</span></label>
-        <input type="text" id="feedbackTitle" class="form-input" placeholder="请简要描述您的反馈" maxlength="100">
+        <label class="form-label" for="feedbackTitle"
+          >反馈标题 <span class="required">*</span></label
+        >
+        <input
+          type="text"
+          id="feedbackTitle"
+          class="form-input"
+          placeholder="请简要描述您的反馈"
+          maxlength="100"
+        />
         <p class="form-hint">请用一句话概括您的反馈内容</p>
       </div>
 
       <!-- 详细描述 -->
       <div class="feedback-form-group">
-        <label class="form-label" for="feedbackContent">详细描述 <span class="required">*</span></label>
-        <textarea id="feedbackContent" class="form-textarea" placeholder="请详细描述您的问题或建议..." rows="6" maxlength="500"></textarea>
-        <div class="char-counter">
-          <span id="charCount">0</span>/500
-        </div>
-        <p class="form-hint">请尽可能详细地描述，这有助于我们更好地理解您的问题</p>
+        <label class="form-label" for="feedbackContent"
+          >详细描述 <span class="required">*</span></label
+        >
+        <textarea
+          id="feedbackContent"
+          class="form-textarea"
+          placeholder="请详细描述您的问题或建议..."
+          rows="6"
+          maxlength="500"
+        ></textarea>
+        <div class="char-counter"><span id="charCount">0</span>/500</div>
+        <p class="form-hint">
+          请尽可能详细地描述，这有助于我们更好地理解您的问题
+        </p>
       </div>
 
       <!-- 联系方式 -->
       <div class="feedback-form-group">
         <label class="form-label" for="feedbackContact">联系方式（选填）</label>
-        <input type="text" id="feedbackContact" class="form-input" placeholder="邮箱或手机号，方便我们回复您">
+        <input
+          type="text"
+          id="feedbackContact"
+          class="form-input"
+          placeholder="邮箱或手机号，方便我们回复您"
+        />
         <p class="form-hint">如需回复请留下联系方式</p>
       </div>
 
@@ -104,7 +127,12 @@
           <div class="upload-icon">📎</div>
           <div class="upload-text">点击或拖拽文件到此区域</div>
           <p class="upload-hint">支持图片、PDF文件，单个文件不超过10MB</p>
-          <input type="file" id="feedbackFiles" multiple style="display: none;">
+          <input
+            type="file"
+            id="feedbackFiles"
+            multiple
+            style="display: none"
+          />
         </div>
         <div id="uploadedFiles" class="uploaded-files"></div>
       </div>
@@ -112,20 +140,24 @@
       <!-- 隐私声明 -->
       <div class="privacy-notice">
         <h4>隐私声明</h4>
-        <p>我们承诺保护您的个人信息安全。您的反馈内容将仅用于改进产品和服务，不会用于其他商业用途。如需删除您的反馈信息，请联系客服。</p>
+        <p>
+          我们承诺保护您的个人信息安全。您的反馈内容将仅用于改进产品和服务，不会用于其他商业用途。如需删除您的反馈信息，请联系客服。
+        </p>
       </div>
 
       <!-- 表单按钮 -->
       <div class="form-buttons">
-        <button type="submit" id="submitFeedback" class="btn-submit">提交反馈</button>
-        <button type="button" id="cancelFeedback" class="btn-cancel">取消</button>
+        <button type="submit" id="submitFeedback" class="btn-submit">
+          提交反馈
+        </button>
+        <button type="button" id="cancelFeedback" class="btn-cancel">
+          取消
+        </button>
       </div>
     </form>
   </div>
 </main>
-{% endblock %}
-
-{% block extra_js %}
+{% endblock %} {% block extra_js %}
 <script src="/static/js/community.js" defer></script>
 <script src="/static/js/feedback.js" defer></script>
 {% endblock %}

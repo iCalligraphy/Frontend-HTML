@@ -1,0 +1,14 @@
+/* search-layout.css — 布局与表单 */
+:root{--search-gap:12px}
+.container{max-width:1100px;margin:0 auto;padding:16px}
+.search-form{display:flex;align-items:center;gap:8px;margin-bottom:16px}
+.search-form input[type=search]{flex:1;padding:8px 10px;border:1px solid #ddd;border-radius:4px}
+.search-form button{padding:8px 12px;border:0;background:var(--color-theme,#8B4513);color:#fff;border-radius:4px;cursor:pointer}
+.search-results{display:flex;gap:var(--search-gap);align-items:flex-start}
+.results-col{display:flex;flex-direction:column}
+.box{background:#fff;border:1px solid #eee;border-radius:8px;padding:12px}
+.box h2{margin:0 0 8px 0;font-size:18px}
+.results-list{min-height:100px;padding:8px}
+@media (max-width:900px){
+  .search-results{flex-direction:column}
+}

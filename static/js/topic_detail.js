@@ -194,7 +194,7 @@ class TopicDetailManager {
    */
   updateTopicUI() {
     // 更新页面标题
-    document.title = `${this.currentTopic.name} · iCalligraphy`;
+    document.title = `${this.currentTopic.name} · 墨智帖`;
 
     // 更新话题名称
     const topicNameElements = document.querySelectorAll('#topicNameDisplay, h1');
@@ -571,7 +571,7 @@ class TopicDetailManager {
     if (navigator.share) {
       navigator.share({
         title: title,
-        text: '来自 iCalligraphy 书法社区',
+        text: '来自 墨智帖 书法社区',
         url: window.location.href
       });
     } else {

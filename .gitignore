@@ -1,1 +1,6 @@
 Docs-reference/*
+# 忽略测试辅助目录（本地演示/临时文件）
+test/
+test_409_fix.html
+test_follow.html
+test-fix.html

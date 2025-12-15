@@ -533,5 +533,52 @@ class ReadPostApp {
 
 // 初始化应用
 document.addEventListener('DOMContentLoaded', () => {
-  new ReadPostApp();
+  const app = new ReadPostApp();
+
+  // 优先从 localStorage 读取图片数据
+  const localImg = localStorage.getItem('readPostImage');
+  if (localImg) {
+    // base64 -> File（带文件名和类型）
+    const arr = localImg.split(',');
+    const mime = arr[0].match(/:(.*?);/)[1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    const file = new File([u8arr], 'image.png', { type: mime });
+    app.loadImage(file);
+    localStorage.removeItem('readPostImage');
+  } else {
+    // 兼容原有 img 参数
+    const params = new URLSearchParams(window.location.search);
+    const imgParam = params.get('img');
+    if (imgParam) {
+      const src = decodeURIComponent(imgParam);
+      if (src.startsWith('data:image/')) {
+        const arr = src.split(',');
+        const mime = arr[0].match(/:(.*?);/)[1];
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) {
+          u8arr[n] = bstr.charCodeAt(n);
+        }
+        const file = new File([u8arr], 'image.png', { type: mime });
+        app.loadImage(file);
+      } else {
+        fetch(src)
+          .then(res => res.blob())
+          .then(blob => {
+            const mime = blob.type || 'image/png';
+            const file = new File([blob], 'image.png', { type: mime });
+            app.loadImage(file);
+          })
+          .catch(() => {
+            app.showToast('图片加载失败', 'error');
+          });
+      }
+    }
+  }
 });
