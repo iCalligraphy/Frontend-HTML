@@ -50,57 +50,6 @@ async function fetchWorksList() {
   }
 }
 
-// 保存单字到后端
-async function saveCharacterToBackend(box) {
-  try {
-    const token = localStorage.getItem('access_token');
-    if (!token) {
-      console.error('未登录，无法保存单字');
-      return;
-    }
-    
-    const workId = currentWork.id;
-    
-    const characterData = {
-      recognition: box.char,
-      style: box.style,
-      x: box.x,
-      y: box.y,
-      width: box.width,
-      height: box.height,
-      strokes: 0, // 默认值，后续可以通过AI识别获取
-      stroke_order: '', // 默认值，后续可以通过AI识别获取
-      keypoints: [] // 默认值，后续可以通过AI识别获取
-    };
-    
-    const response = await fetch(`${API_BASE}/api/works/${workId}/characters`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(characterData)
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(`保存单字失败: ${response.status} ${errorData.error || ''}`);
-    }
-    
-    const result = await response.json();
-    // 更新本地单字的ID为后端返回的ID
-    const localBox = boxes.find(b => b.id === box.id);
-    if (localBox) {
-      localBox.id = result.character.id;
-    }
-    
-    console.log('单字保存成功:', result.character);
-  } catch (error) {
-    console.error('保存单字到后端失败:', error);
-    // 不影响用户体验，只在控制台打印错误
-  }
-}
-
 // DOM 加载完成后初始化
 document.addEventListener('DOMContentLoaded', () => {
   // 从URL路径中提取作品ID，支持 /work/2 格式
@@ -116,6 +65,121 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let currentWork = null;
   let boxes = [];
+
+  // 保存单字到后端
+  async function saveCharacterToBackend(box) {
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        throw new Error('未登录，无法保存单字');
+      }
+      
+      if (!currentWork) {
+        throw new Error('作品数据未加载完成');
+      }
+      
+      const workId = currentWork.id;
+      
+      const characterData = {
+        recognition: box.char,
+        style: box.style,
+        x: box.x,
+        y: box.y,
+        width: box.width,
+        height: box.height,
+        strokes: 0, // 默认值，后续可以通过AI识别获取
+        stroke_order: '', // 默认值，后续可以通过AI识别获取
+        keypoints: [] // 默认值，后续可以通过AI识别获取
+      };
+      
+      const response = await fetch(`${API_BASE}/api/works/${workId}/characters`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(characterData)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`保存单字失败: ${response.status} ${errorData.error || ''}`);
+      }
+      
+      const result = await response.json();
+      // 更新本地单字的ID为后端返回的ID
+      const localBox = boxes.find(b => b.id === box.id);
+      if (localBox) {
+        localBox.id = result.character.id;
+      }
+      
+      console.log('单字保存成功:', result.character);
+      return result.character;
+    } catch (error) {
+      console.error('保存单字到后端失败:', error);
+      throw error;
+    }
+  }
+
+  // 删除单字到后端
+  async function deleteCharacterFromBackend(characterId) {
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        throw new Error('未登录，无法删除单字');
+      }
+      
+      const response = await fetch(`${API_BASE}/api/works/characters/${characterId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`删除单字失败: ${response.status} ${errorData.error || ''}`);
+      }
+      
+      const result = await response.json();
+      console.log('单字删除成功:', result);
+      return result;
+    } catch (error) {
+      console.error('删除单字到后端失败:', error);
+      throw error;
+    }
+  }
+
+  // 修改单字到后端
+  async function updateCharacterToBackend(characterId, updateData) {
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        throw new Error('未登录，无法修改单字');
+      }
+      
+      const response = await fetch(`${API_BASE}/api/works/characters/${characterId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(updateData)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`修改单字失败: ${response.status} ${errorData.error || ''}`);
+      }
+      
+      const result = await response.json();
+      console.log('单字修改成功:', result);
+      return result;
+    } catch (error) {
+      console.error('修改单字到后端失败:', error);
+      throw error;
+    }
+  }
 
   const workSelect = document.getElementById('workSelect');
   const workTitle = document.getElementById('workTitle');
@@ -460,9 +524,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function deleteBox(id) {
     if (!confirm('确定删除这个单字吗？')) return;
+    
+    // 查找要删除的单字
+    const boxToDelete = boxes.find(box => (box.id !== undefined ? box.id : boxes.indexOf(box)) === id);
+    if (!boxToDelete) {
+      alert('未找到要删除的单字');
+      return;
+    }
+    
+    // 从本地移除
     boxes = boxes.filter(box => (box.id !== undefined ? box.id : boxes.indexOf(box)) !== id);
     filteredBoxes = filteredBoxes.filter(box => (box.id !== undefined ? box.id : filteredBoxes.indexOf(box)) !== id);
-    renderBoxes(); renderCharCards(); updateWorkInfo(); saveToLocalStorage();
+    renderBoxes(); renderCharCards(); updateWorkInfo();
+    
+    // 如果有后端ID，发送删除请求
+    if (boxToDelete.id && boxToDelete.id !== Date.now()) {
+      try {
+        deleteCharacterFromBackend(boxToDelete.id);
+        alert('单字已成功删除！');
+      } catch (error) {
+        console.error('删除单字失败:', error);
+        alert(`单字已从本地删除，但删除服务器数据失败：${error.message}`);
+      }
+    } else {
+      alert('单字已成功删除！');
+    }
   }
 
   function saveToLocalStorage() {
@@ -586,9 +672,22 @@ document.addEventListener('DOMContentLoaded', () => {
       const i = boxes.findIndex(b => b.x === box.x && b.y === box.y && b.width === box.width && b.height === box.height);
       if (i !== -1) { boxes[i].char = trimmed; updated = true; }
     }
-    renderBoxes(); renderCharCards(); saveToLocalStorage();
+    renderBoxes(); renderCharCards();
     const boxId = box.id !== undefined ? box.id : index;
     if (selectedCharId === boxId && charModal.style.display === 'flex') modalCharText.textContent = trimmed;
+    
+    // 如果有后端ID，发送更新请求
+    if (box.id && box.id !== Date.now()) {
+      try {
+        updateCharacterToBackend(box.id, { recognition: trimmed });
+        alert('单字已成功修改！');
+      } catch (error) {
+        console.error('修改单字失败:', error);
+        alert(`单字已从本地修改，但修改服务器数据失败：${error.message}`);
+      }
+    } else {
+      alert('单字已成功修改！');
+    }
   }
 
   function highlightChar(id) {
@@ -869,7 +968,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    document.addEventListener('mouseup', (e) => {
+    document.addEventListener('mouseup', async (e) => {
       if (isDrawing && drawTempBox) {
         isDrawing = false;
         const rect = viewerContainer.getBoundingClientRect();
@@ -879,7 +978,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const y = Math.min(drawStartY, endY);
         const width = Math.abs(endX - drawStartX);
         const height = Math.abs(endY - drawStartY);
-        if (width < 10 || height < 10) { alert('绘制的框太小了，请重新绘制'); drawTempBox.remove(); drawTempBox = null; return; }
+        if (width < 10 || height < 10) { 
+          alert('绘制的框太小了，请重新绘制'); 
+          drawTempBox.remove(); 
+          drawTempBox = null; 
+          return; 
+        }
         const char = prompt('请输入这个单字的内容：');
         if (char && char.trim()) {
           const newBox = { 
@@ -899,12 +1003,21 @@ document.addEventListener('DOMContentLoaded', () => {
           renderCharCards(); 
           updateWorkInfo();
           
-          // 保存到后端
-          saveCharacterToBackend(newBox);
+          try {
+            // 保存到后端
+            const savedCharacter = await saveCharacterToBackend(newBox);
+            // 更新本地单字的ID为后端返回的ID
+            newBox.id = savedCharacter.id;
+            alert(`单字"${char}"已添加成功！`);
+          } catch (error) {
+            console.error('保存单字失败:', error);
+            alert(`单字"${char}"已添加到本地，但保存到服务器失败：${error.message}`);
+          }
           
-          alert(`单字"${char}"已添加成功！`);
         }
-        drawTempBox.remove(); drawTempBox = null; exitDrawMode();
+        drawTempBox.remove(); 
+        drawTempBox = null; 
+        exitDrawMode();
       }
       isDragging = false;
     });
@@ -959,3 +1072,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
   initialize();
 });
+
+// 转换OCR数据为单字框（兼容旧数据）
+function convertOcrToBoxes(ocrData) {
+  // 旧数据格式兼容处理
+  if (!ocrData || typeof ocrData !== 'object') return [];
+  
+  // 如果是新格式，直接返回
+  if (Array.isArray(ocrData)) return ocrData;
+  
+  // 尝试从不同字段获取单字框数据
+  const boxes = ocrData.boxes || ocrData.charBoxes || ocrData.words || [];
+  
+  // 如果已经是数组，直接返回
+  if (Array.isArray(boxes)) return boxes;
+  
+  // 否则返回空数组
+  return [];
+}
