@@ -3,6 +3,50 @@
  * 包含字集创建、编辑、删除、单字筛选等功能
  */
 
+// API 请求配置
+const API_BASE_URL = '/api';
+
+// API 请求封装
+async function apiRequest(endpoint, method = 'GET', data = null, token = null) {
+  const url = `${API_BASE_URL}${endpoint}`;
+  const options = {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+  };
+
+  // 添加认证令牌
+  if (token) {
+    options.headers['Authorization'] = `Bearer ${token}`;
+  } else {
+    // 尝试从 localStorage 获取令牌
+    const storedToken = localStorage.getItem('access_token');
+    if (storedToken) {
+      options.headers['Authorization'] = `Bearer ${storedToken}`;
+    }
+  }
+
+  if (data && (method === 'POST' || method === 'PUT')) {
+    options.body = JSON.stringify(data);
+  }
+
+  try {
+    const response = await fetch(url, options);
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || 'API 请求失败');
+    }
+
+    return result;
+  } catch (error) {
+    console.error('API 请求错误:', error);
+    throw error;
+  }
+}
+
 // 等待 DOM 加载完成
 document.addEventListener('DOMContentLoaded', function() {
   // 初始化所有功能
@@ -11,7 +55,13 @@ document.addEventListener('DOMContentLoaded', function() {
   initFiltersAndSearch();
   initModals();
   initCollectionDetails();
+  
+  // 从后端加载字集数据
+  loadCharacterSets();
 });
+
+// 全局变量：当前操作的字集ID
+let currentEditSetId = null;
 
 /**
  * 初始化创建字集按钮
@@ -115,41 +165,91 @@ function initCollectionActions() {
 }
 
 /**
+ * 从后端加载字集列表
+ */
+async function loadCharacterSets() {
+  try {
+    const result = await apiRequest('/character-sets');
+    const characterSets = result.character_sets;
+    
+    // 清空现有字集卡片
+    const container = document.getElementById('collectionsList');
+    container.innerHTML = '';
+    
+    // 创建新的字集卡片
+    characterSets.forEach(set => {
+      const card = createCollectionCard(set);
+      container.appendChild(card);
+    });
+    
+    // 更新统计数据
+    updateStats();
+    
+    // 检查空状态
+    checkEmptyState();
+  } catch (error) {
+    console.error('加载字集列表失败:', error);
+    alert('加载字集列表失败: ' + error.message);
+  }
+}
+
+/**
  * 处理编辑字集
  */
-function handleEditCollection(collectionCard) {
-  const name = collectionCard.querySelector('.collection-name').textContent;
-  const meta = collectionCard.querySelector('.collection-meta').textContent;
-
-  // 填充表单数据
-  document.getElementById('collectionName').value = name;
-  document.getElementById('modalTitle').textContent = '编辑字集';
-
-  // 打开弹窗
-  openCollectionModal('edit');
+async function handleEditCollection(collectionCard) {
+  const setId = collectionCard.dataset.setId;
+  
+  try {
+    // 从后端获取字集详情
+    const result = await apiRequest(`/character-sets/${setId}`);
+    const characterSet = result.character_set;
+    
+    // 填充表单数据
+    document.getElementById('collectionName').value = characterSet.name;
+    document.getElementById('collectionDesc').value = characterSet.description || '';
+    document.getElementById('modalTitle').textContent = '编辑字集';
+    
+    // 设置当前编辑的字集ID
+    currentEditSetId = setId;
+    
+    // 打开弹窗
+    openCollectionModal('edit');
+  } catch (error) {
+    console.error('获取字集详情失败:', error);
+    alert('获取字集详情失败: ' + error.message);
+  }
 }
 
 /**
  * 处理删除字集
  */
-function handleDeleteCollection(collectionCard) {
+async function handleDeleteCollection(collectionCard) {
+  const setId = collectionCard.dataset.setId;
   const name = collectionCard.querySelector('.collection-name').textContent;
 
   if (confirm(`确定要删除字集"${name}"吗？此操作无法撤销。`)) {
-    // 添加删除动画
-    collectionCard.style.animation = 'fadeOut 0.3s ease';
+    try {
+      // 调用API删除字集
+      await apiRequest(`/character-sets/${setId}`, 'DELETE');
+      
+      // 添加删除动画
+      collectionCard.style.animation = 'fadeOut 0.3s ease';
 
-    setTimeout(() => {
-      collectionCard.remove();
+      setTimeout(() => {
+        collectionCard.remove();
 
-      // 更新统计数据
-      updateStats();
+        // 更新统计数据
+        updateStats();
 
-      // 检查是否需要显示空状态
-      checkEmptyState();
+        // 检查是否需要显示空状态
+        checkEmptyState();
 
-      alert('字集已删除');
-    }, 300);
+        alert('字集已删除');
+      }, 300);
+    } catch (error) {
+      console.error('删除字集失败:', error);
+      alert('删除字集失败: ' + error.message);
+    }
   }
 }
 
@@ -197,98 +297,101 @@ function closeAddCharModal() {
 }
 
 /**
- * 加载模拟单字数据
+ * 从后端加载单字数据
  */
-function loadMockCharacters() {
-  const mockChars = [
-    { char: '永', source: '王羲之 · 兰亭序', style: 'xing' },
-    { char: '和', source: '颜真卿 · 多宝塔碑', style: 'kai' },
-    { char: '静', source: '欧阳询 · 九成宫', style: 'kai' },
-    { char: '雅', source: '柳公权 · 玄秘塔碑', style: 'kai' },
-    { char: '韵', source: '怀素 · 自叙帖', style: 'cao' },
-    { char: '墨', source: '张旭 · 古诗四帖', style: 'cao' },
-    { char: '云', source: '赵孟頫 · 胆巴碑', style: 'xing' },
-    { char: '山', source: '米芾 · 蜀素帖', style: 'xing' }
-  ];
+async function loadMockCharacters() {
+  try {
+    // 从后端API获取所有可用单字
+    const result = await apiRequest('/works/characters');
+    const characters = result.characters;
 
-  const grid = document.getElementById('addCharGrid');
-  if (!grid) return;
+    const grid = document.getElementById('addCharGrid');
+    if (!grid) return;
 
-  grid.innerHTML = mockChars.map(item => `
-    <div class="add-char-item" data-char="${item.char}" data-style="${item.style}">
-      <div class="char-card">
-        <div class="char-image" aria-hidden="true">
-          <span class="char-display-large">${item.char}</span>
+    // 处理单字数据，转换为前端需要的格式
+    grid.innerHTML = characters.map(character => `
+      <div class="add-char-item" data-char="${character.recognition}" data-style="${character.style}" data-char-id="${character.id}">
+        <div class="char-card">
+          <div class="char-image" aria-hidden="true" style="background-image: url('${character.work_image_url}'); background-position: -${character.x}px -${character.y}px; background-size: ${character.work_image_width || 'auto'} ${character.work_image_height || 'auto'}; width: ${character.width}px; height: ${character.height}px;"></div>
+          <div class="char-label">${character.recognition}</div>
+          <div class="char-source">${character.source}</div>
+          <button type="button" class="char-add-btn" title="添加到字集">
+            <span>+</span>
+          </button>
         </div>
-        <div class="char-label">${item.char}</div>
-        <div class="char-source">${item.source}</div>
-        <button type="button" class="char-add-btn" title="添加到字集">
-          <span>+</span>
-        </button>
       </div>
-    </div>
-  `).join('');
+    `).join('');
+    
+    // 添加CSS样式，确保char-image元素的背景图片显示正确
+    const style = document.createElement('style');
+    style.textContent = `
+      .char-image {
+        background-repeat: no-repeat;
+        background-color: white;
+        margin: 0 auto;
+      }
+      .char-display-large {
+        display: none;
+      }
+    `;
+    document.head.appendChild(style);
 
-  // 添加单字点击事件
-  grid.querySelectorAll('.char-add-btn').forEach(btn => {
-    btn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      const charItem = this.closest('.add-char-item');
-      const char = charItem.dataset.char;
-      addCharToCollection(char);
+    // 添加单字点击事件
+    grid.querySelectorAll('.char-add-btn').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const charItem = this.closest('.add-char-item');
+        const char = charItem.dataset.char;
+        addCharToCollection(char);
+      });
     });
-  });
+  } catch (error) {
+    console.error('加载单字数据失败:', error);
+    alert('加载单字数据失败: ' + error.message);
+  }
 }
 
 /**
  * 添加单字到字集
  */
-function addCharToCollection(char) {
+async function addCharToCollection(char) {
   const modal = document.getElementById('addCharModal');
   const collectionId = modal?.dataset.collectionId;
 
-  // 模拟添加逻辑（实际应调用后端API）
-  console.log(`添加单字 "${char}" 到字集 ${collectionId}`);
-
-  // 在对应卡片预览中添加单字
-  if (collectionId) {
-    const cardBtn = document.querySelector(`button[data-collection="${collectionId}"]`);
-    const card = cardBtn ? cardBtn.closest('.collection-card') : null;
-    if (card) {
-      const grid = card.querySelector('.char-grid');
-      if (grid) {
-        const item = document.createElement('div');
-        item.className = 'char-item';
-        item.dataset.char = char;
-        item.innerHTML = `<span class="char-display">${char}</span>`;
-        // insert before the "more" element if exists
-        const more = grid.querySelector('.char-more');
-        if (more) grid.insertBefore(item, more);
-        else grid.appendChild(item);
-
-        // 更新卡片 meta 中的数量
-        const metaEl = card.querySelector('.collection-meta');
-        if (metaEl) {
-          const match = metaEl.textContent.match(/(\d+)个字/);
-          if (match) {
-            const newCount = parseInt(match[1]) + 1;
-            metaEl.textContent = metaEl.textContent.replace(/(\d+)个字/, `${newCount}个字`);
-          } else {
-            metaEl.textContent = `1个字 · ${metaEl.textContent}`;
-          }
-        }
-      }
-    }
+  if (!collectionId) {
+    alert('无法获取字集信息');
+    return;
   }
 
-  // 显示成功提示
-  alert(`已将 "${char}" 添加到字集`);
+  try {
+    // 查找当前要添加的单字元素，获取真实的单字ID
+    const charItem = document.querySelector(`.add-char-item[data-char="${char}"]`);
+    if (!charItem) {
+      throw new Error('未找到该单字元素');
+    }
+    
+    const charId = charItem.dataset.charId;
+    if (!charId) {
+      throw new Error('无法获取单字ID');
+    }
+    
+    // 调用API添加单字到字集
+    await apiRequest(`/character-sets/${collectionId}/characters`, 'POST', {
+      character_id: parseInt(charId)
+    });
 
-  // 关闭弹窗
-  closeAddCharModal();
+    // 显示成功提示
+    alert(`已将 "${char}" 添加到字集`);
 
-  // 更新统计数据
-  updateStats();
+    // 关闭弹窗
+    closeAddCharModal();
+
+    // 重新加载字集列表，更新卡片信息
+    await loadCharacterSets();
+  } catch (error) {
+    console.error('添加单字失败:', error);
+    alert('添加单字失败: ' + error.message);
+  }
 }
 
 /**
@@ -581,10 +684,29 @@ function initModals() {
  */
 function openCharModalFromItem(item) {
   if (!item) return;
+  
+  // 获取单字信息
   const char = item.dataset.char || (item.querySelector('.char-label') && item.querySelector('.char-label').textContent) || '?';
   const source = item.querySelector('.char-source') ? item.querySelector('.char-source').textContent : '';
+  const charId = item.dataset.charId;
+  const workImageUrl = item.querySelector('.char-image') ? item.querySelector('.char-image').style.backgroundImage.replace(/url\(['"]?([^'"]+)['"]?\)/, '$1') : '';
+  const x = Math.abs(item.querySelector('.char-image') ? parseInt(item.querySelector('.char-image').style.backgroundPositionX) : 0);
+  const y = Math.abs(item.querySelector('.char-image') ? parseInt(item.querySelector('.char-image').style.backgroundPositionY) : 0);
+  const width = item.querySelector('.char-image') ? parseInt(item.querySelector('.char-image').style.width) : 0;
+  const height = item.querySelector('.char-image') ? parseInt(item.querySelector('.char-image').style.height) : 0;
 
-  openCharModal({ text: char, work: source });
+  // 调用与作品详情页面相同的弹窗逻辑
+  showCharDetail({
+    char: char,
+    work_title: source,
+    id: charId,
+    x: x,
+    y: y,
+    width: width,
+    height: height,
+    style: '',
+    workImageUrl: workImageUrl
+  }, 0);
 }
 
 function openCharModal(data = {}) {
@@ -593,6 +715,12 @@ function openCharModal(data = {}) {
 
   const text = data.text || '-';
   const work = data.work || '-';
+  const charId = data.charId;
+  const workImageUrl = data.workImageUrl;
+  const x = data.x;
+  const y = data.y;
+  const width = data.width;
+  const height = data.height;
 
   const titleEl = document.getElementById('modalCharText');
   const workEl = document.getElementById('modalWork');
@@ -613,17 +741,57 @@ function openCharModal(data = {}) {
   annotationsEl.textContent = '-';
   collectedAtEl.textContent = '-';
 
-  // render preview (simple canvas)
+  // render preview
   previewEl.innerHTML = '';
-  const canvas = document.createElement('canvas');
-  canvas.width = 340; canvas.height = 340;
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
-  ctx.fillStyle = '#8B4513';
-  ctx.font = 'bold 200px KaiTi, STKaiti, serif';
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(text, canvas.width/2, canvas.height/2);
-  previewEl.appendChild(canvas);
+  let canvas = null;
+  
+  if (workImageUrl && width > 0 && height > 0) {
+    // 使用真实的单字图片
+    const previewContainer = document.createElement('div');
+    previewContainer.style.width = '340px';
+    previewContainer.style.height = '340px';
+    previewContainer.style.display = 'flex';
+    previewContainer.style.justifyContent = 'center';
+    previewContainer.style.alignItems = 'center';
+    previewContainer.style.backgroundColor = 'white';
+    previewContainer.style.overflow = 'hidden';
+    
+    const charImage = document.createElement('div');
+    charImage.style.backgroundImage = `url('${workImageUrl}')`;
+    charImage.style.backgroundPosition = `${x}px ${y}px`;
+    charImage.style.width = `${width}px`;
+    charImage.style.height = `${height}px`;
+    charImage.style.backgroundSize = 'contain';
+    charImage.style.backgroundRepeat = 'no-repeat';
+    charImage.style.transform = 'scale(3)'; // 放大显示，确保清晰
+    
+    previewContainer.appendChild(charImage);
+    previewEl.appendChild(previewContainer);
+    
+    // 创建canvas用于下载和读帖功能
+    canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = function() {
+      ctx.drawImage(img, -x, -y, img.width, img.height);
+    };
+    img.src = workImageUrl;
+  } else {
+    // 回退到 Canvas 绘制
+    canvas = document.createElement('canvas');
+    canvas.width = 340; canvas.height = 340;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = '#8B4513';
+    ctx.font = 'bold 200px KaiTi, STKaiti, serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(text, canvas.width/2, canvas.height/2);
+    previewEl.appendChild(canvas);
+  }
 
   modal.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
@@ -634,7 +802,13 @@ function openCharModal(data = {}) {
   const removeBtn = document.getElementById('removeCharBtn');
 
   if (downloadBtn) {
-    downloadBtn.onclick = () => downloadCanvasAsImage(canvas, `${text}.png`);
+    downloadBtn.onclick = () => {
+      if (canvas) {
+        downloadCanvasAsImage(canvas, `${text}.png`);
+      } else {
+        alert('无法生成图片');
+      }
+    };
   }
   if (viewAnnoBtn) {
     viewAnnoBtn.onclick = () => alert('读帖功能开发中');
@@ -654,9 +828,13 @@ function openCharModal(data = {}) {
   if (readPostBtn) {
     readPostBtn.onclick = () => {
       try {
-        const dataURL = canvas.toDataURL('image/png');
-        localStorage.setItem('readPostImage', dataURL);
-        window.location.href = '/read-post';
+        if (canvas) {
+          const dataURL = canvas.toDataURL('image/png');
+          localStorage.setItem('readPostImage', dataURL);
+          window.location.href = '/read-post';
+        } else {
+          alert('无法生成图片');
+        }
       } catch (e) {
         console.error('readPost error', e);
         alert('无法发送到读帖页面');
@@ -672,6 +850,393 @@ function closeCharModal() {
   const previewEl = document.getElementById('modalPreview');
   if (previewEl) previewEl.innerHTML = '';
   document.body.style.overflow = '';
+}
+
+// 添加与作品详情页面相同的弹窗逻辑
+/**
+ * 显示单字详情弹窗
+ */
+function showCharDetail(box, index) {
+  console.debug && console.debug('showCharDetail called', box, index);
+  
+  // 创建弹窗元素（如果不存在）
+  let charModal = document.getElementById('charModal');
+  if (!charModal) {
+    charModal = createCharModal();
+  }
+  
+  // 获取弹窗元素
+  const modalCharText = document.getElementById('modalCharText');
+  const modalWorkTitle = document.getElementById('modalWorkTitle');
+  const modalCharIndex = document.getElementById('modalCharIndex');
+  const modalCharPosition = document.getElementById('modalCharPosition');
+  const modalPreview = document.getElementById('modalPreview');
+  const modalClose = document.getElementById('modalClose');
+  const modalOverlay = document.getElementById('modalOverlay');
+  
+  // 填充弹窗内容
+  modalCharText.textContent = box.char || '?';
+  modalWorkTitle.textContent = box.work_title || '';
+  modalCharIndex.textContent = index + 1;
+  modalCharPosition.textContent = `x: ${Math.round(box.x)}, y: ${Math.round(box.y)}`;
+  
+  // 创建单字预览
+  modalPreview.innerHTML = '';
+  const largePreview = createLargeCharPreview(box);
+  modalPreview.appendChild(largePreview);
+  
+  // 移除旧的收藏按钮和读帖按钮
+  const prevCollectBtn = document.getElementById('collectCharBtn');
+  if (prevCollectBtn) prevCollectBtn.remove();
+  
+  const prevReadPostBtn = document.getElementById('readPostBtn');
+  if (prevReadPostBtn) prevReadPostBtn.remove();
+  
+  // 创建收藏按钮
+  const collectBtn = document.createElement('button');
+  collectBtn.type = 'button';
+  collectBtn.className = 'btn btn-primary';
+  collectBtn.id = 'collectCharBtn';
+  collectBtn.innerHTML = '⭐ 收藏';
+  
+  // 创建读帖按钮
+  const readPostBtn = document.createElement('button');
+  readPostBtn.type = 'button';
+  readPostBtn.className = 'btn btn-outline';
+  readPostBtn.id = 'readPostBtn';
+  readPostBtn.innerHTML = '📝 读帖';
+  
+  // 添加到弹窗按钮区
+  const modalActions = charModal.querySelector('.char-actions') || (() => {
+    const el = document.createElement('div');
+    el.className = 'char-actions';
+    charModal.querySelector('.modal-body').appendChild(el);
+    return el;
+  })();
+  
+  // 插入按钮到弹窗按钮区
+  modalActions.insertBefore(readPostBtn, modalActions.firstChild);
+  modalActions.insertBefore(collectBtn, modalActions.firstChild);
+  
+  // 添加收藏按钮点击事件
+  const charIdForCollect = Number(box.id !== undefined ? box.id : index);
+  
+  // 检查收藏状态
+  function ensureMockAPI() {
+    return new Promise((resolve, reject) => {
+      if (window.mockAPI) return resolve(window.mockAPI);
+      const existing = document.getElementById('mock-api-script');
+      if (existing) {
+        existing.addEventListener('load', () => { if (window.mockAPI) resolve(window.mockAPI); else reject(new Error('mockAPI 未初始化')); });
+        existing.addEventListener('error', () => reject(new Error('加载 mockAPI 失败')));
+        return;
+      }
+      const script = document.createElement('script');
+      script.id = 'mock-api-script';
+      script.src = '/static/js/api_mock.js';
+      script.onload = () => { if (window.mockAPI) resolve(window.mockAPI); else reject(new Error('mockAPI 未初始化')); };
+      script.onerror = () => reject(new Error('加载 mockAPI 失败'));
+      document.head.appendChild(script);
+    });
+  }
+  
+  ensureMockAPI().then(api => {
+    try {
+      if (api.isCollected(Number(charIdForCollect))) {
+        collectBtn.innerHTML = '✅ 已收藏';
+        collectBtn.disabled = true;
+        collectBtn.className = 'btn btn-outline';
+      }
+    } catch (e) {
+      console.error('检查收藏状态失败:', e);
+    }
+  }).catch(err => console.error('加载 mockAPI 失败:', err));
+  
+  collectBtn.onclick = async (e) => {
+    e.stopPropagation();
+    if (collectBtn.disabled) return;
+    collectBtn.disabled = true;
+    collectBtn.innerHTML = '⏳ 处理中...';
+    try {
+      const api = await ensureMockAPI();
+      
+      // 实现收藏逻辑
+      const charData = {
+        character_id: charIdForCollect,
+        text: box.char || '',
+        work_id: box.work_id || '',
+        work_title: box.work_title || '',
+        work_style: box.style || '',
+        position: [box.x || 0, box.y || 0, (box.x || 0) + (box.width || 0), (box.y || 0) + (box.height || 0)],
+        imageData: null,
+        collected_at: new Date().toISOString()
+      };
+      
+      let res;
+      if (typeof api.collectCharacterWithData === 'function') {
+        res = await api.collectCharacterWithData(charData);
+      } else if (typeof api.collectCharacter === 'function') {
+        res = await api.collectCharacter(Number(charIdForCollect));
+      } else {
+        throw new Error('收藏接口不可用');
+      }
+      
+      if (res && res.code === 201) {
+        collectBtn.innerHTML = '✅ 已收藏';
+        collectBtn.disabled = true;
+        collectBtn.className = 'btn btn-outline';
+        alert('收藏成功！\n已保存单字，可在“我的字集”查看。');
+      } else {
+        collectBtn.innerHTML = '⭐ 收藏';
+        collectBtn.disabled = false;
+        collectBtn.className = 'btn btn-primary';
+        alert(res?.message || '收藏失败');
+      }
+    } catch (err) {
+      console.error('收藏失败', err);
+      collectBtn.innerHTML = '⭐ 收藏';
+      collectBtn.disabled = false;
+      collectBtn.className = 'btn btn-primary';
+      alert('收藏失败：' + (err.message || '未知错误'));
+    }
+  };
+  
+  // 截取单字图片函数
+  function captureCharImage(box) {
+    return new Promise((resolve) => {
+      // 创建一个Image对象加载原始作品图片
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      
+      img.onload = function() {
+        try {
+          // 创建canvas用于截取单字
+          const captureCanvas = document.createElement('canvas');
+          const captureSize = 200;
+          captureCanvas.width = captureSize;
+          captureCanvas.height = captureSize;
+          const ctx = captureCanvas.getContext('2d');
+          
+          // 填充白色背景
+          ctx.fillStyle = '#fff';
+          ctx.fillRect(0, 0, captureSize, captureSize);
+          
+          // 计算单字在作品图片中的位置和尺寸
+          const x = box.x || 0;
+          const y = box.y || 0;
+          const width = box.width || 100;
+          const height = box.height || 100;
+          
+          // 计算缩放比例，确保单字完整显示在captureSize范围内
+          const aspect = width / Math.max(1, height);
+          let destW = captureSize;
+          let destH = captureSize;
+          let dx = 0;
+          let dy = 0;
+          
+          if (aspect > 1) {
+            // 宽大于高，以宽度为基准缩放
+            destH = Math.round(captureSize / aspect);
+            dy = Math.floor((captureSize - destH) / 2);
+          } else if (aspect < 1) {
+            // 高大于宽，以高度为基准缩放
+            destW = Math.round(captureSize * aspect);
+            dx = Math.floor((captureSize - destW) / 2);
+          }
+          
+          // 从原始图片中截取单字
+          ctx.drawImage(img, x, y, width, height, dx, dy, destW, destH);
+          
+          // 将canvas转换为base64图片数据
+          const imageData = captureCanvas.toDataURL('image/png');
+          resolve(imageData);
+        } catch (err) {
+          console.error('截取图片失败:', err);
+          resolve(null);
+        }
+      };
+      
+      img.onerror = function() {
+        console.error('加载图片失败:', box.workImageUrl);
+        resolve(null);
+      };
+      
+      // 设置图片源
+      img.src = box.workImageUrl;
+    });
+  }
+  
+  // 读帖按钮点击事件
+  readPostBtn.onclick = async (e) => {
+    e.stopPropagation();
+    readPostBtn.disabled = true;
+    readPostBtn.innerHTML = '⏳ 处理中...';
+    try {
+      // 截取单字图片
+      readPostBtn.innerHTML = '📸 截取图片...';
+      const imageData = await captureCharImage(box);
+      
+      if (!imageData) {
+        throw new Error('图片截取失败');
+      }
+      
+      // 存储单字信息到 localStorage，供读帖页面使用
+      localStorage.setItem('readPostImage', imageData);
+      localStorage.setItem('readPostCharId', box.id);
+      localStorage.setItem('readPostChar', box.char);
+      localStorage.setItem('readPostWorkId', box.work_id || '');
+      
+      // 跳转到读帖页面
+      readPostBtn.innerHTML = '🚀 跳转中...';
+      window.location.href = '/read-post';
+    } catch (err) {
+      alert('读帖失败：' + (err.message || '未知错误'));
+      readPostBtn.disabled = false;
+      readPostBtn.innerHTML = '📝 读帖';
+    }
+  };
+  
+  // 显示弹窗
+  charModal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  
+  // 绑定关闭事件
+  if (modalClose) modalClose.addEventListener('click', closeModal);
+  if (modalOverlay) modalOverlay.addEventListener('click', closeModal);
+  
+  // 绑定下载和复制按钮事件
+  const downloadBtn = document.getElementById('downloadCharBtn');
+  const copyBtn = document.getElementById('copyCharBtn');
+  
+  if (downloadBtn) {
+    downloadBtn.onclick = () => {
+      const canvas = createLargeCharPreview(box);
+      const link = document.createElement('a');
+      link.download = `${box.char || '单字'}.png`;
+      link.href = canvas.toDataURL();
+      link.click();
+    };
+  }
+  
+  if (copyBtn) {
+    copyBtn.onclick = () => {
+      if (navigator.clipboard && box.char) {
+        navigator.clipboard.writeText(box.char).then(() => {
+          alert(`已复制：${box.char}`);
+        }).catch(() => {
+          alert(`文字：${box.char || '?'}`);
+        });
+      } else {
+        alert(`文字：${box.char || '?'}`);
+      }
+    };
+  }
+}
+
+/**
+ * 创建单字详情弹窗
+ */
+function createCharModal() {
+  // 创建弹窗容器
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.id = 'charModal';
+  modal.style.display = 'none';
+  modal.innerHTML = `
+    <div class="modal-overlay" id="modalOverlay"></div>
+    <div class="modal-content">
+      <button class="modal-close" id="modalClose">×</button>
+      <div class="modal-body">
+        <div class="char-detail-preview" id="modalPreview"></div>
+        <div class="char-detail-info">
+          <h3 class="char-detail-text" id="modalCharText">永</h3>
+          <div class="char-detail-meta">
+            <p class="meta-row">
+              <span class="meta-label">作品：</span>
+              <span class="meta-value" id="modalWorkTitle">-</span>
+            </p>
+            <p class="meta-row">
+              <span class="meta-label">序号：</span>
+              <span class="meta-value" id="modalCharIndex">1</span>
+            </p>
+            <p class="meta-row">
+              <span class="meta-label">位置：</span>
+              <span class="meta-value" id="modalCharPosition">x: 0, y: 0</span>
+            </p>
+          </div>
+          <div class="char-actions">
+            <button type="button" class="btn btn-outline" id="downloadCharBtn">
+              下载此字
+            </button>
+            <button type="button" class="btn btn-outline" id="copyCharBtn">
+              复制文字
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // 添加到页面
+  document.body.appendChild(modal);
+  return modal;
+}
+
+/**
+ * 创建大尺寸单字预览
+ */
+function createLargeCharPreview(box) {
+  const LARGE_SIZE = 180;
+  const canvas = document.createElement('canvas');
+  canvas.width = LARGE_SIZE;
+  canvas.height = LARGE_SIZE;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff'; 
+  ctx.fillRect(0, 0, LARGE_SIZE, LARGE_SIZE);
+  
+  if (box.workImageUrl) {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = function() {
+      const { x, y, width, height } = box;
+      const aspect = width / height;
+      let destW = LARGE_SIZE; 
+      let destH = LARGE_SIZE;
+      let dx = 0;
+      let dy = 0;
+      
+      if (aspect > 1) {
+        destH = Math.round(LARGE_SIZE / aspect);
+        dy = Math.floor((LARGE_SIZE - destH) / 2);
+      } else if (aspect < 1) {
+        destW = Math.round(LARGE_SIZE * aspect);
+        dx = Math.floor((LARGE_SIZE - destW) / 2);
+      }
+      
+      ctx.drawImage(img, x, y, width, height, dx, dy, destW, destH);
+    };
+    img.src = box.workImageUrl;
+  } else {
+    // 如果没有图片，显示文字
+    ctx.font = '140px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#000';
+    ctx.fillText(box.char || '?', LARGE_SIZE / 2, LARGE_SIZE / 2);
+  }
+  
+  return canvas;
+}
+
+/**
+ * 关闭单字详情弹窗
+ */
+function closeModal() {
+  const charModal = document.getElementById('charModal');
+  if (charModal) {
+    charModal.style.display = 'none';
+    document.body.style.overflow = '';
+  }
 }
 
 function downloadCanvasAsImage(canvas, filename) {
@@ -777,40 +1342,46 @@ function closeCollectionModal() {
 /**
  * 处理字集表单提交
  */
-function handleCollectionSubmit() {
+async function handleCollectionSubmit() {
   const name = document.getElementById('collectionName').value.trim();
   const desc = document.getElementById('collectionDesc').value.trim();
   const style = document.getElementById('collectionStyle').value;
-  const visibility = document.querySelector('input[name="visibility"]:checked').value;
 
   if (!name) {
     alert('请输入字集名称');
     return;
   }
 
-  // 创建新字集卡片
-  const newCollection = createCollectionCard({
+  const data = {
     name: name,
-    count: 0,
-    style: style,
-    time: '刚刚'
-  });
+    description: desc,
+    style: style
+  };
 
-  // 添加到列表
-  const container = document.getElementById('collectionsList');
-  container.insertBefore(newCollection, container.firstChild);
-
-  // 更新统计
-  updateStats();
-
-  // 隐藏空状态
-  document.getElementById('emptyState').classList.add('hidden');
-  container.style.display = '';
-
-  // 关闭弹窗
-  closeCollectionModal();
-
-  alert('字集创建成功！');
+  try {
+    let result;
+    if (currentEditSetId) {
+      // 编辑现有字集
+      result = await apiRequest(`/character-sets/${currentEditSetId}`, 'PUT', data);
+    } else {
+      // 创建新字集
+      result = await apiRequest('/character-sets', 'POST', data);
+    }
+    
+    // 重新加载字集列表
+    await loadCharacterSets();
+    
+    // 关闭弹窗
+    closeCollectionModal();
+    
+    // 重置编辑状态
+    currentEditSetId = null;
+    
+    alert(currentEditSetId ? '字集更新成功！' : '字集创建成功！');
+  } catch (error) {
+    console.error('保存字集失败:', error);
+    alert('保存字集失败: ' + error.message);
+  }
 }
 
 /**
@@ -819,21 +1390,30 @@ function handleCollectionSubmit() {
 function createCollectionCard(data) {
   const article = document.createElement('article');
   article.className = 'collection-card';
+  article.dataset.setId = data.id;
 
-  const styleMap = {
-    'kai': '楷书',
-    'xing': '行书',
-    'cao': '草书',
-    'li': '隶书',
-    'zhuan': '篆书',
-    '': '不限'
-  };
+  // 格式化更新时间
+  const updateTime = new Date(data.updated_at);
+  const now = new Date();
+  const diffTime = Math.abs(now - updateTime);
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  
+  let timeText;
+  if (diffDays === 0) {
+    timeText = '今天';
+  } else if (diffDays === 1) {
+    timeText = '昨天';
+  } else if (diffDays < 7) {
+    timeText = `${diffDays}天前`;
+  } else {
+    timeText = updateTime.toLocaleDateString();
+  }
 
   article.innerHTML = `
     <div class="collection-header">
       <div class="collection-info">
         <h3 class="collection-name">${data.name}</h3>
-        <p class="collection-meta">${data.count}个字 · ${styleMap[data.style]} · 更新于 ${data.time}</p>
+        <p class="collection-meta">${data.characters_count}个字 · 更新于 ${timeText}</p>
       </div>
       <div class="collection-actions">
         <button type="button" class="action-btn" data-action="edit" aria-label="编辑字集">
@@ -849,8 +1429,8 @@ function createCollectionCard(data) {
       </div>
     </div>
     <div class="collection-footer">
-      <button type="button" class="btn btn-secondary btn-small" data-collection="${Date.now()}">查看详情</button>
-      <button type="button" class="btn btn-outline btn-small" data-collection="${Date.now()}">添加单字</button>
+      <button type="button" class="btn btn-secondary btn-small" data-collection="${data.id}">查看详情</button>
+      <button type="button" class="btn btn-outline btn-small" data-collection="${data.id}">添加单字</button>
     </div>
   `;
 
@@ -860,7 +1440,7 @@ function createCollectionCard(data) {
 /**
  * 打开字集详情弹窗
  */
-function openDetailModal(collectionId) {
+async function openDetailModal(collectionId) {
   let modal = document.getElementById('detailModal');
   try {
     // 如果已经在 DOM 中，直接显示
@@ -908,37 +1488,47 @@ function openDetailModal(collectionId) {
     console.error('openDetailModal error:', err);
   }
 
-  // 实际应用中应该加载对应字集的详细数据
-  console.log('加载字集详情:', collectionId);
-
-  // 尝试填充 detailCharGrid：从对应的 collection 卡片复制预览单字
   try {
+    // 从后端加载字集详情和单字列表
+    const result = await apiRequest(`/character-sets/${collectionId}/characters`);
+    const characters = result.characters;
+    
+    // 填充 detailCharGrid
     const grid = document.getElementById('detailCharGrid');
     if (grid) {
       grid.innerHTML = '';
-      // 查找同 collectionId 的卡片
-      const cardBtn = document.querySelector(`button[data-collection="${collectionId}"]`);
-      const card = cardBtn ? cardBtn.closest('.collection-card') : null;
-      if (card) {
-        const chars = Array.from(card.querySelectorAll('.char-display')).map(el => el.textContent.trim());
-        chars.forEach(ch => {
-          const item = document.createElement('div');
-          item.className = 'detail-char-item';
-          item.dataset.char = ch;
-          item.innerHTML = `
-            <div class="char-card">
-              <div class="char-image" aria-hidden="true"></div>
-              <div class="char-label">${ch}</div>
-              <div class="char-source">作者未知</div>
-              <button type="button" class="char-remove" aria-label="移除" title="从字集中移除">×</button>
-            </div>
-          `;
-          grid.appendChild(item);
-        });
-      }
+      
+      characters.forEach(charInSet => {
+        const character = charInSet.character;
+        const item = document.createElement('div');
+        item.className = 'detail-char-item';
+        item.dataset.char = character.recognition;
+        item.dataset.charId = character.id;
+        item.innerHTML = `
+          <div class="char-card">
+            <div class="char-image" aria-hidden="true" style="background-image: url('${character.work_image_url}'); background-position: -${character.x}px -${character.y}px; background-size: ${character.work_image_width || 'auto'} ${character.work_image_height || 'auto'}; width: ${character.width}px; height: ${character.height}px;"></div>
+            <div class="char-label">${character.recognition}</div>
+            <div class="char-source">${character.source}</div>
+            <button type="button" class="char-remove" aria-label="移除" title="从字集中移除">×</button>
+          </div>
+        `;
+        grid.appendChild(item);
+      });
+      
+      // 添加CSS样式，确保char-image元素的背景图片显示正确
+      const style = document.createElement('style');
+      style.textContent = `
+        .detail-char-item .char-image {
+          background-repeat: no-repeat;
+          background-color: white;
+          margin: 0 auto;
+        }
+      `;
+      document.head.appendChild(style);
     }
-  } catch (e) {
-    console.warn('填充 detailCharGrid 出错', e);
+  } catch (error) {
+    console.error('加载字集详情失败:', error);
+    alert('加载字集详情失败: ' + error.message);
   }
 }
 
@@ -999,31 +1589,6 @@ function initCollectionDetails() {
     if (e.target.classList.contains('char-remove') || e.target.closest('.char-remove')) return;
     if (item.classList.contains('selectable')) return;
     openCharModalFromItem(item);
-  });
-
-  // ========== 新增：单字点击跳转到读帖界面 ==========
-  document.addEventListener('click', function(e) {
-    const charItem = e.target.closest && e.target.closest('.detail-char-item');
-    // 确保点击的是单字卡片，而不是移除按钮
-    if (charItem && !e.target.closest('.char-remove')) {
-      const char = charItem.dataset.char;
-      const charLabel = charItem.querySelector('.char-label')?.textContent || char;
-      const charSource = charItem.querySelector('.char-source')?.textContent || '';
-      
-      // 存储单字信息到 localStorage，供读帖页面使用
-      try {
-        localStorage.setItem('selectedChar', JSON.stringify({
-          char: charLabel,
-          source: charSource,
-          timestamp: Date.now()
-        }));
-      } catch (err) {
-        console.warn('localStorage write failed', err);
-      }
-      
-      // 跳转到读帖页面
-      window.location.href = '/read-post';
-    }
   });
 }
 
@@ -1113,16 +1678,56 @@ function handleExport() {
 /**
  * 处理移除单字
  */
-function handleRemoveCharacter(charItem) {
+async function handleRemoveCharacter(charItem) {
   const char = charItem.dataset.char;
+  
+  // 获取当前字集ID（从详情弹窗的URL或其他方式获取）
+  // 这里简化处理，从当前显示的字集详情中获取
+  const detailModal = document.getElementById('detailModal');
+  if (!detailModal) return;
+  
+  // 查找当前字集的按钮，获取字集ID
+  const currentSetBtn = Array.from(document.querySelectorAll('button[data-collection]')).find(btn => {
+    const card = btn.closest('.collection-card');
+    if (!card) return false;
+    const name = card.querySelector('.collection-name').textContent;
+    const detailTitle = document.getElementById('detailTitle');
+    return detailTitle && detailTitle.textContent.includes(name);
+  });
+  
+  if (!currentSetBtn) {
+    alert('无法获取当前字集信息');
+    return;
+  }
+  
+  const collectionId = currentSetBtn.dataset.collection;
 
   if (confirm(`确定要从字集中移除"${char}"吗？`)) {
-    charItem.style.animation = 'fadeOut 0.3s ease';
+    try {
+      // 从后端获取该字集的单字列表，查找匹配的单字ID
+      const result = await apiRequest(`/character-sets/${collectionId}/characters`);
+      const characters = result.characters;
+      
+      // 查找要移除的单字
+      const charToRemove = characters.find(charInSet => charInSet.character.recognition === char);
+      if (!charToRemove) {
+        throw new Error('未找到该单字');
+      }
+      
+      // 调用API移除单字
+      await apiRequest(`/character-sets/${collectionId}/characters/${charToRemove.character.id}`, 'DELETE');
+      
+      // 添加删除动画
+      charItem.style.animation = 'fadeOut 0.3s ease';
 
-    setTimeout(() => {
-      charItem.remove();
-      alert('已移除');
-    }, 300);
+      setTimeout(() => {
+        charItem.remove();
+        alert('已移除');
+      }, 300);
+    } catch (error) {
+      console.error('移除单字失败:', error);
+      alert('移除单字失败: ' + error.message);
+    }
   }
 }
 
