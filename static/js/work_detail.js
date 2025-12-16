@@ -3,6 +3,9 @@
  * 包含图片缩放、拖拽、单字悬停、评论等功能
  */
 
+// API配置
+const API_BASE = 'http://10.234.242.47:5000';
+
 // 全局状态
 const viewerState = {
   canvas: null,
@@ -18,10 +21,98 @@ const viewerState = {
   charBoxes: [] // 示例单字框数据
 };
 
+// API请求函数
+async function fetchWorkData(workId) {
+  try {
+    const response = await fetch(`${API_BASE}/api/works/${workId}`);
+    if (!response.ok) {
+      throw new Error(`作品获取失败: ${response.status}`);
+    }
+    const data = await response.json();
+    return data.work;
+  } catch (error) {
+    console.error('API请求失败:', error);
+    throw error;
+  }
+}
+
+async function fetchWorksList() {
+  try {
+    const response = await fetch(`${API_BASE}/api/works/`);
+    if (!response.ok) {
+      throw new Error(`作品列表获取失败: ${response.status}`);
+    }
+    const data = await response.json();
+    return data.works;
+  } catch (error) {
+    console.error('API请求失败:', error);
+    throw error;
+  }
+}
+
+// 保存单字到后端
+async function saveCharacterToBackend(box) {
+  try {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      console.error('未登录，无法保存单字');
+      return;
+    }
+    
+    const workId = currentWork.id;
+    
+    const characterData = {
+      recognition: box.char,
+      style: box.style,
+      x: box.x,
+      y: box.y,
+      width: box.width,
+      height: box.height,
+      strokes: 0, // 默认值，后续可以通过AI识别获取
+      stroke_order: '', // 默认值，后续可以通过AI识别获取
+      keypoints: [] // 默认值，后续可以通过AI识别获取
+    };
+    
+    const response = await fetch(`${API_BASE}/api/works/${workId}/characters`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(characterData)
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`保存单字失败: ${response.status} ${errorData.error || ''}`);
+    }
+    
+    const result = await response.json();
+    // 更新本地单字的ID为后端返回的ID
+    const localBox = boxes.find(b => b.id === box.id);
+    if (localBox) {
+      localBox.id = result.character.id;
+    }
+    
+    console.log('单字保存成功:', result.character);
+  } catch (error) {
+    console.error('保存单字到后端失败:', error);
+    // 不影响用户体验，只在控制台打印错误
+  }
+}
+
 // DOM 加载完成后初始化
 document.addEventListener('DOMContentLoaded', () => {
-  const urlParams = new URLSearchParams(window.location.search);
-  let currentWorkId = urlParams.get('id') || DEFAULT_WORK_ID;
+  // 从URL路径中提取作品ID，支持 /work/2 格式
+  const pathParts = window.location.pathname.split('/');
+  let currentWorkId = pathParts[pathParts.length - 1];
+  
+  // 验证作品ID是否为数字
+  if (!currentWorkId || isNaN(currentWorkId)) {
+    // 从查询参数中获取，支持 /work?id=2 格式
+    const urlParams = new URLSearchParams(window.location.search);
+    currentWorkId = urlParams.get('id');
+  }
 
   let currentWork = null;
   let boxes = [];
@@ -88,53 +179,160 @@ document.addEventListener('DOMContentLoaded', () => {
   let drawStartY = 0;
   let drawTempBox = null;
 
-  function initialize() {
-    initWorkSelector();
-    loadWork(currentWorkId);
+  async function initialize() {
+    await initWorkSelector();
+    await loadWork(currentWorkId);
     bindGlobalEvents();
   }
 
-  function initWorkSelector() {
-    const works = getAllWorks();
-    workSelect.innerHTML = '';
-    works.forEach(work => {
-      const option = document.createElement('option');
-      option.value = work.id;
-      option.textContent = `${work.title} - ${work.author || work.author_name || ''}`;
-      if (work.id === currentWorkId) option.selected = true;
-      workSelect.appendChild(option);
-    });
-    workSelect.addEventListener('change', (e) => {
-      currentWorkId = e.target.value;
-      loadWork(currentWorkId);
-      const newUrl = new URL(window.location);
-      newUrl.searchParams.set('id', currentWorkId);
-      window.history.pushState({}, '', newUrl);
-    });
+  async function initWorkSelector() {
+    try {
+      // 从API获取作品列表
+      const works = await fetchWorksList();
+      workSelect.innerHTML = '';
+      works.forEach(work => {
+        const option = document.createElement('option');
+        option.value = work.id;
+        option.textContent = `${work.title} - ${work.author_name || work.author || ''}`;
+        if (String(work.id) === String(currentWorkId)) option.selected = true;
+        workSelect.appendChild(option);
+      });
+      workSelect.addEventListener('change', (e) => {
+        currentWorkId = e.target.value;
+        loadWork(currentWorkId);
+        // 更新URL为 /work/2 格式
+        window.history.pushState({}, '', `/work/${currentWorkId}`);
+      });
+    } catch (error) {
+      console.error('加载作品列表失败:', error);
+      // 显示错误信息
+      workSelect.innerHTML = '<option value="">作品列表加载失败</option>';
+    }
   }
 
-  function loadWork(workId) {
+  async function loadWork(workId) {
     showLoading(true);
-    currentWork = getWorkData(workId);
-    if (!currentWork) { alert('作品数据不存在'); showLoading(false); return; }
-    updateWorkInfo();
-    boxes = convertOcrToBoxes(currentWork.ocrData);
-    filteredBoxes = [...boxes];
-    const srcCandidate = currentWork.imagePath || currentWork.image || currentWork.imageUrl || currentWork.url || currentWork.imagePath;
-    loadImage(srcCandidate, (err, img) => {
-      if (err) { console.error('图片加载失败:', err); showLoading(false); return; }
-      fitToContainer();
-      renderBoxes();
-      renderCharCards();
-      render();
+    
+    try {
+      // 确保workId是数字
+      const workIdNum = parseInt(workId);
+      if (isNaN(workIdNum)) {
+        throw new Error('无效的作品ID');
+      }
+      
+      // 从API获取作品数据
+      currentWork = await fetchWorkData(workIdNum);
+      if (!currentWork) {
+        throw new Error('作品数据不存在');
+      }
+      
+      // 更新作品信息
+      updateWorkInfo();
+      
+      // 从API获取单字列表
+      const response = await fetch(`${API_BASE}/api/works/${workIdNum}/characters`);
+      const charactersData = await response.json();
+      
+      // 转换单字数据为单字框
+      boxes = [];
+      if (charactersData.characters && charactersData.characters.length > 0) {
+        // 创建一个Image对象来获取原图尺寸
+        const img = new Image();
+        const imgUrl = currentWork.image_url.startsWith('http') 
+          ? currentWork.image_url 
+          : `${API_BASE}/uploads/works/${currentWork.image_url}`;
+        img.src = imgUrl;
+        
+        // 等待图片加载完成后直接使用API返回的坐标，不再进行缩放
+        await new Promise((resolve) => {
+          img.onload = function() {
+            charactersData.characters.forEach((char, index) => {
+              // 直接使用API返回的坐标，不进行任何缩放
+              const x = char.x || 0;
+              const y = char.y || 0;
+              const width = char.width || 100;
+              const height = char.height || 100;
+              
+              boxes.push({
+                id: char.id || index,
+                x: x,
+                y: y,
+                width: width,
+                height: height,
+                char: char.recognition || '?',
+                style: char.style || 'kai'
+              });
+            });
+            resolve();
+          };
+          
+          // 如果图片加载失败，使用默认坐标
+          img.onerror = function() {
+            charactersData.characters.forEach((char, index) => {
+              boxes.push({
+                id: char.id || index,
+                x: char.x || 0,
+                y: char.y || 0,
+                width: char.width || 100,
+                height: char.height || 100,
+                char: char.recognition || '?',
+                style: char.style || 'kai'
+              });
+            });
+            resolve();
+          };
+        });
+      } else {
+        // 转换OCR数据为单字框（兼容旧数据）
+        boxes = convertOcrToBoxes(currentWork.ocrData || currentWork.tags || {});
+      }
+      
+      filteredBoxes = [...boxes];
+      
+      // 加载作品图片
+      const imageUrl = currentWork.image_url.startsWith('http') 
+        ? currentWork.image_url 
+        : `${API_BASE}/uploads/works/${currentWork.image_url}`;
+      
+      loadImage(imageUrl, (err, img) => {
+        if (err) {
+          console.error('图片加载失败:', err);
+          showLoading(false);
+          return;
+        }
+        
+        fitToContainer();
+        renderBoxes();
+        renderCharCards();
+        render();
+        showLoading(false);
+      });
+    } catch (error) {
+      console.error('加载作品失败:', error);
       showLoading(false);
-      loadFromLocalStorage();
-    });
+      
+      // 显示错误信息
+      const errorContainer = document.createElement('div');
+      errorContainer.className = 'error-container';
+      errorContainer.innerHTML = `
+        <h2>作品加载失败</h2>
+        <p>${error.message}</p>
+        <button class="btn btn-primary" onclick="location.reload()">刷新页面</button>
+        <button class="btn btn-outline" onclick="history.back()">返回上一页</button>
+      `;
+      
+      // 替换内容区域
+      const mainContainer = document.querySelector('.main-container');
+      if (mainContainer) {
+        mainContainer.innerHTML = '';
+        mainContainer.appendChild(errorContainer);
+      }
+    }
   }
 
   function updateWorkInfo() {
     workTitle.textContent = currentWork.title || '未命名作品';
-    workAuthor.textContent = currentWork.author || currentWork.author_name || '未知';
+    workAuthor.textContent = currentWork.author_name || '未知';
     workDynasty.textContent = currentWork.dynasty || '-';
     workStyle.textContent = currentWork.style || '-';
     headerCharCountEl.textContent = boxes.length;
@@ -146,6 +344,32 @@ document.addEventListener('DOMContentLoaded', () => {
   function loadImage(src, callback) {
     src = src || '';
     if (!src) { const err = new Error('图片路径为空'); if (typeof callback === 'function') callback(err); return; }
+    
+    // 如果是完整URL，直接尝试加载，不使用候选路径
+    if (src.startsWith('http')) {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        image = img;
+        try {
+          // 与上传时保持一致，canvas宽度固定为min(img.width, 800)，高度按比例缩放
+          viewerCanvas.width = Math.min(img.naturalWidth, 800);
+          viewerCanvas.height = (img.naturalHeight / img.naturalWidth) * viewerCanvas.width;
+          viewerCanvas.style.width = `${viewerCanvas.width}px`;
+          viewerCanvas.style.height = `${viewerCanvas.height}px`;
+        } catch (e) { console.warn('设置 canvas 尺寸失败：', e); }
+        if (typeof callback === 'function') callback(null, img);
+      };
+      img.onerror = () => {
+        showLoading(false); 
+        const err = new Error('Image not found: ' + src); 
+        if (typeof callback === 'function') callback(err); 
+      };
+      img.src = src;
+      return;
+    }
+    
+    // 处理相对路径的情况
     const basename = src.split('/').pop();
     const cleaned = src.replace(/^\/+/, '');
     const candidates = [
@@ -658,9 +882,26 @@ document.addEventListener('DOMContentLoaded', () => {
         if (width < 10 || height < 10) { alert('绘制的框太小了，请重新绘制'); drawTempBox.remove(); drawTempBox = null; return; }
         const char = prompt('请输入这个单字的内容：');
         if (char && char.trim()) {
-          const newBox = { id: Date.now(), x: Math.round(x), y: Math.round(y), width: Math.round(width), height: Math.round(height), char: char.trim() };
-          boxes.push(newBox); filteredBoxes = [...boxes];
-          renderBoxes(); renderCharCards(); updateWorkInfo(); saveToLocalStorage();
+          const newBox = { 
+            id: Date.now(), 
+            x: Math.round(x), 
+            y: Math.round(y), 
+            width: Math.round(width), 
+            height: Math.round(height), 
+            char: char.trim(),
+            style: currentWork.style || 'kai' // 使用作品的风格作为单字风格
+          };
+          
+          // 添加到页面
+          boxes.push(newBox); 
+          filteredBoxes = [...boxes];
+          renderBoxes(); 
+          renderCharCards(); 
+          updateWorkInfo();
+          
+          // 保存到后端
+          saveCharacterToBackend(newBox);
+          
           alert(`单字"${char}"已添加成功！`);
         }
         drawTempBox.remove(); drawTempBox = null; exitDrawMode();

@@ -18,7 +18,12 @@ const uploadState = {
     tags: ''
   },
   charBoxes: [],
-  isDraftSaved: false
+  isDraftSaved: false,
+  // 保存画布尺寸，用于后续坐标转换
+  canvasSize: {
+    width: 800,
+    height: 600
+  }
 };
 
 // DOM 加载完成后初始化
@@ -289,6 +294,9 @@ function initStep3() {
     img.onload = function() {
       canvas.width = Math.min(img.width, 800);
       canvas.height = (img.height / img.width) * canvas.width;
+      // 更新保存的画布尺寸，用于后续坐标转换
+      uploadState.canvasSize.width = canvas.width;
+      uploadState.canvasSize.height = canvas.height;
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       redrawBoxes();
     };
@@ -422,11 +430,53 @@ function initStep3() {
     }
   });
 
+  // 添加坐标显示元素
+  let coordDisplay = document.createElement('div');
+  coordDisplay.id = 'coordDisplay';
+  coordDisplay.style.cssText = `
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    z-index: 1000;
+    pointer-events: none;
+  `;
+  canvas.parentElement.appendChild(coordDisplay);
+
+  // 鼠标移动时显示坐标
+  canvas.addEventListener('mousemove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    // 计算实际显示尺寸与canvas.width/height的比例
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    // 转换为canvas.width/height坐标
+    const mouseX = (e.clientX - rect.left) * scaleX;
+    const mouseY = (e.clientY - rect.top) * scaleY;
+    
+    // 显示坐标
+    coordDisplay.textContent = `坐标: (${Math.round(mouseX)}, ${Math.round(mouseY)}) | Canvas尺寸: ${canvas.width}x${canvas.height} | 显示尺寸: ${Math.round(rect.width)}x${Math.round(rect.height)} | 缩放比例: ${scaleX.toFixed(2)}, ${scaleY.toFixed(2)}`;
+  });
+
+  // 鼠标离开时隐藏坐标
+  canvas.addEventListener('mouseleave', () => {
+    coordDisplay.textContent = '';
+  });
+
   // 鼠标绘制框
   canvas.addEventListener('mousedown', (e) => {
     const rect = canvas.getBoundingClientRect();
-    startX = e.clientX - rect.left;
-    startY = e.clientY - rect.top;
+    // 计算实际显示尺寸与canvas.width/height的比例
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    // 转换为canvas.width/height坐标
+    startX = (e.clientX - rect.left) * scaleX;
+    startY = (e.clientY - rect.top) * scaleY;
     isDrawing = true;
     currentBox = { x: startX, y: startY, width: 0, height: 0 };
   });
@@ -435,8 +485,13 @@ function initStep3() {
     if (!isDrawing) return;
 
     const rect = canvas.getBoundingClientRect();
-    const currentX = e.clientX - rect.left;
-    const currentY = e.clientY - rect.top;
+    // 计算实际显示尺寸与canvas.width/height的比例
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    // 转换为canvas.width/height坐标
+    const currentX = (e.clientX - rect.left) * scaleX;
+    const currentY = (e.clientY - rect.top) * scaleY;
 
     currentBox.width = currentX - startX;
     currentBox.height = currentY - startY;
@@ -467,6 +522,10 @@ function initStep3() {
       updateBoxCount();
       initCanvas();
       saveDraft();
+      
+      // 打印坐标信息，便于调试
+      console.log('添加字符框:', box);
+      console.log('当前字符框列表:', uploadState.charBoxes);
     }
 
     currentBox = null;
@@ -533,19 +592,20 @@ function initStep3() {
     img.onload = function() {
       // 将画布坐标映射回原图坐标
       // 已知：在 initCanvas 中 canvas 宽度为 min(img.width, 800)，高度按比例缩放
-      // 因此：scaleX = canvas.width / img.width
-      // 反推原图坐标：srcX = box.x / scaleX
-      const scaleX = canvas.width / img.width;
-      const scaleY = canvas.height / img.height;
+      // 因此：scaleX = img.width / canvas.width
+      // 反推原图坐标：srcX = box.x * scaleX
+      // 使用保存的画布尺寸，避免直接访问可能不存在的canvas元素
+      const scaleX = img.width / uploadState.canvasSize.width;
+      const scaleY = img.height / uploadState.canvasSize.height;
 
       // 避免 0 值
       const safeScaleX = scaleX || 1;
       const safeScaleY = scaleY || 1;
 
-      let srcX = box.x / safeScaleX;
-      let srcY = box.y / safeScaleY;
-      let srcW = box.width / safeScaleX;
-      let srcH = box.height / safeScaleY;
+      let srcX = box.x * safeScaleX;
+      let srcY = box.y * safeScaleY;
+      let srcW = box.width * safeScaleX;
+      let srcH = box.height * safeScaleY;
 
       // 边界裁剪
       srcX = Math.max(0, Math.min(srcX, img.width));
@@ -650,13 +710,26 @@ function initStep4() {
         formData.append('source_type', uploadState.workData.source);
         formData.append('tags', uploadState.workData.tags);
         
-        // 转换char_boxes为后端期望的characters格式
-        const characters = uploadState.charBoxes.map(box => ({
-          text: box.char,
-          style: uploadState.workData.style,
-          position: [box.x, box.y, box.x + box.width, box.y + box.height],
-          keypoints: []
-        }));
+        // 直接使用canvas坐标，不进行转换
+        // 标注时的坐标已经是正确的canvas坐标，不需要再转换
+        // 这样可以确保标注时的坐标与详情页显示的坐标一致
+        const characters = uploadState.charBoxes.map(box => {
+          // 直接使用canvas坐标，不进行转换
+          // 确保坐标为正数
+          const finalX = Math.max(0, Math.round(box.x));
+          const finalY = Math.max(0, Math.round(box.y));
+          const finalWidth = Math.max(1, Math.round(box.width));
+          const finalHeight = Math.max(1, Math.round(box.height));
+          
+          return {
+            text: box.char,
+            style: uploadState.workData.style,
+            position: [finalX, finalY, finalX + finalWidth, finalY + finalHeight],
+            keypoints: []
+          };
+        });
+        
+        // 将转换后的characters添加到formData
         formData.append('characters', JSON.stringify(characters));
         
         // 发送请求到后端

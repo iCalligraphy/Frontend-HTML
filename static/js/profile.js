@@ -1,6 +1,6 @@
 // ========== 个人中心页面 JavaScript (支持 Mock 模式) ========== 
 
-let API_BASE = 'http://localhost:5000';
+let API_BASE = 'http://10.234.242.47:5000';
 let USE_MOCK_DATA = false; // 默认使用真实 API，可通过页面调试面板切换
 
 let currentUser = null;
@@ -732,7 +732,7 @@ function renderWorksGrid(works) {
     <div class="works-grid">
       ${works.map(work => `
         <div class="grid-item" onclick="viewWork(${work.id})">
-          <img src="${work.image_url}" alt="${work.title}" class="grid-item-image" style="background: linear-gradient(135deg, #f8f6ee 0%, #f1ede0 50%, #ece6d6 100%);">
+          <img src="${work.image_url.startsWith('http') ? work.image_url : `${API_BASE}/uploads/works/${work.image_url}`}" alt="${work.title}" class="grid-item-image" style="background: linear-gradient(135deg, #f8f6ee 0%, #f1ede0 50%, #ece6d6 100%); object-fit: cover;">
           <div class="grid-item-info">
             <p class="grid-item-title">${work.title}</p>
             <p class="grid-item-meta">👁️ ${work.views} | ❤️ ${work.likes_count}</p>
@@ -793,12 +793,12 @@ function renderCollectionsGrid(works) {
     <div class="collections-grid">
       ${works.map(work => `
         <div class="grid-item" onclick="viewWork(${work.id})">
-          <img src="${work.image_url}" alt="${work.title}" class="grid-item-image" style="background: linear-gradient(135deg, #f8f6ee 0%, #f1ede0 50%, #ece6d6 100%);">
-          <div class="grid-item-info">
-            <p class="grid-item-title">${work.title}</p>
-            <p class="grid-item-meta">by ${work.author.username}</p>
-          </div>
+        <img src="${work.image_url.startsWith('http') ? work.image_url : `${API_BASE}/uploads/works/${work.image_url}`}" alt="${work.title}" class="grid-item-image" style="background: linear-gradient(135deg, #f8f6ee 0%, #f1ede0 50%, #ece6d6 100%); object-fit: cover;">
+        <div class="grid-item-info">
+          <p class="grid-item-title">${work.title}</p>
+          <p class="grid-item-meta">by ${work.author.username}</p>
         </div>
+      </div>
       `).join('')}
     </div>
   `;
