@@ -732,7 +732,7 @@ function renderWorksGrid(works) {
     <div class="works-grid">
       ${works.map(work => `
         <div class="grid-item" onclick="viewWork(${work.id})">
-          <img src="${work.image_url.startsWith('http') ? work.image_url : `${API_BASE}/uploads/works/${work.image_url}`}" alt="${work.title}" class="grid-item-image" style="background: linear-gradient(135deg, #f8f6ee 0%, #f1ede0 50%, #ece6d6 100%); object-fit: cover;">
+          <img src="${work.image_url.startsWith('http') || work.image_url.startsWith('/uploads/') ? work.image_url : `${API_BASE}/uploads/works/${work.image_url}`}" alt="${work.title}" class="grid-item-image" style="background: linear-gradient(135deg, #f8f6ee 0%, #f1ede0 50%, #ece6d6 100%); object-fit: cover;">
           <div class="grid-item-info">
             <p class="grid-item-title">${work.title}</p>
             <p class="grid-item-meta">👁️ ${work.views} | ❤️ ${work.likes_count}</p>
@@ -793,7 +793,7 @@ function renderCollectionsGrid(works) {
     <div class="collections-grid">
       ${works.map(work => `
         <div class="grid-item" onclick="viewWork(${work.id})">
-        <img src="${work.image_url.startsWith('http') ? work.image_url : `${API_BASE}/uploads/works/${work.image_url}`}" alt="${work.title}" class="grid-item-image" style="background: linear-gradient(135deg, #f8f6ee 0%, #f1ede0 50%, #ece6d6 100%); object-fit: cover;">
+        <img src="${work.image_url.startsWith('http') || work.image_url.startsWith('/uploads/') ? work.image_url : `${API_BASE}/uploads/works/${work.image_url}`}" alt="${work.title}" class="grid-item-image" style="background: linear-gradient(135deg, #f8f6ee 0%, #f1ede0 50%, #ece6d6 100%); object-fit: cover;">
         <div class="grid-item-info">
           <p class="grid-item-title">${work.title}</p>
           <p class="grid-item-meta">by ${work.author.username}</p>

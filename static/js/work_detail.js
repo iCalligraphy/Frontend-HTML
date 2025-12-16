@@ -302,7 +302,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (charactersData.characters && charactersData.characters.length > 0) {
         // 创建一个Image对象来获取原图尺寸
         const img = new Image();
-        const imgUrl = currentWork.image_url.startsWith('http') 
+        // 检查是否已经是完整的URL（包含http://、https://或/uploads/）
+        const imgUrl = currentWork.image_url.startsWith('http') || currentWork.image_url.startsWith('/uploads/') 
           ? currentWork.image_url 
           : `${API_BASE}/uploads/works/${currentWork.image_url}`;
         img.src = imgUrl;
@@ -354,7 +355,7 @@ document.addEventListener('DOMContentLoaded', () => {
       filteredBoxes = [...boxes];
       
       // 加载作品图片
-      const imageUrl = currentWork.image_url.startsWith('http') 
+      const imageUrl = currentWork.image_url.startsWith('http') || currentWork.image_url.startsWith('/uploads/') 
         ? currentWork.image_url 
         : `${API_BASE}/uploads/works/${currentWork.image_url}`;
       

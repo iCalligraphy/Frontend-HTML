@@ -208,6 +208,9 @@ class ReadPostApp {
     });
     
     // 返回true表示显示成功
+    if (this.annotations.length > 0) {
+      this.drawKeypoints();
+    }
     return true;
   }
 
@@ -360,7 +363,7 @@ class ReadPostApp {
     this.ctx.drawImage(this.currentImage, 0, 0, this.displayWidth, this.displayHeight);
     
     // 绘制所有关键点
-    this.annotations.forEach(anno => {
+    this.annotations.forEach((anno, index) => {
       const x = anno.x * this.displayWidth;
       const y = anno.y * this.displayHeight;
       
@@ -386,9 +389,9 @@ class ReadPostApp {
       this.ctx.arc(x, y - 20, 10, 0, Math.PI * 2);
       this.ctx.fill();
       
-      // 绘制编号文字
+      // 绘制编号文字，使用索引+1作为编号
       this.ctx.fillStyle = '#fff';
-      this.ctx.fillText(anno.id.toString(), x, y - 20);
+      this.ctx.fillText((index + 1).toString(), x, y - 20);
       
       this.ctx.restore();
     });
@@ -613,8 +616,11 @@ document.addEventListener('DOMContentLoaded', () => {
       .then(data => {
         if (data.character && data.character.keypoints) {
           app.annotations = data.character.keypoints;
+          app.nextAnnotationId = app.getNextAnnotationId();
           app.renderAnnotations();
+          app.drawKeypoints();
           console.log('从后端获取到原有keypoints:', data.character.keypoints);
+          console.log('更新后的nextAnnotationId:', app.nextAnnotationId);
         }
       })
       .catch(error => {
