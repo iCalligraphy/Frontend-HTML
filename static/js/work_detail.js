@@ -839,8 +839,11 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         const imageData = await captureCharImage(box);
         if (!imageData) throw new Error('图片截取失败');
-        // 存入 localStorage
+        // 存入 localStorage，包含单字ID
         localStorage.setItem('readPostImage', imageData);
+        localStorage.setItem('readPostCharId', box.id);
+        localStorage.setItem('readPostChar', box.char);
+        localStorage.setItem('readPostWorkId', currentWork?.id || currentWorkId);
         window.location.href = '/read-post';
       } catch (err) {
         alert('读帖失败：' + (err.message || '未知错误'));

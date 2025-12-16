@@ -36,6 +36,11 @@ class ReadPostApp {
     this.isDragging = false;
     this.draggedPoint = null;
     this.nextAnnotationId = 1;
+    
+    // 单字相关信息，从localStorage获取
+    this.charId = null;
+    this.char = '单字';
+    this.workId = null;
 
     console.log('ReadPostApp 初始化成功');
     this.init();
@@ -48,16 +53,8 @@ class ReadPostApp {
   }
 
   bindEvents() {
-    // 文件选择
-    this.selectFileBtn.addEventListener('click', () => this.fileInput.click());
-    this.fileInput.addEventListener('change', (e) => this.handleFileSelect(e));
-
-    // 拖拽上传
-    this.uploadPlaceholder.addEventListener('dragover', (e) => this.handleDragOver(e));
-    this.uploadPlaceholder.addEventListener('dragleave', (e) => this.handleDragLeave(e));
-    this.uploadPlaceholder.addEventListener('drop', (e) => this.handleDrop(e));
-
-    // 按钮点击
+    // 移除文件选择和拖拽上传事件绑定
+    // 只保留必要的按钮事件
     this.analyzeBtn.addEventListener('click', () => this.analyzeCharacter());
     this.saveBtn.addEventListener('click', () => this.saveAnnotations());
     this.addAnnotationBtn.addEventListener('click', () => this.addAnnotation());
@@ -115,13 +112,13 @@ class ReadPostApp {
         this.nextAnnotationId = 1;
         this.renderAnnotations();
 
-        // 先显示容器，再绘制图片
-        this.uploadPlaceholder.style.display = 'none';
+        // 直接显示图片区域
         this.imageDisplay.style.display = 'block';
         
         // 使用setTimeout确保DOM更新后再绘制
         setTimeout(() => {
-          this.displayImage();
+          // 尝试显示图片，如果失败则重试
+          this.displayImageWithRetry();
           this.analyzeBtn.disabled = false;
           this.updateActionButtons();
           this.showToast('图片上传成功', 'success');
@@ -140,15 +137,33 @@ class ReadPostApp {
     reader.readAsDataURL(file);
   }
 
+  // 带重试机制的显示图片方法
+  displayImageWithRetry(retryCount = 0, maxRetries = 10) {
+    const result = this.displayImage();
+    if (result === false && retryCount < maxRetries) {
+      // 如果显示失败且未达到最大重试次数，递归重试
+      setTimeout(() => {
+        this.displayImageWithRetry(retryCount + 1, maxRetries);
+      }, 100);
+    }
+  }
+
   // 显示图片（自动适配并占满容器）
   displayImage() {
     const container = this.imageWrapper;
-    const containerWidth = container.clientWidth;
-    const containerHeight = container.clientHeight;
+    let containerWidth = container.clientWidth;
+    let containerHeight = container.clientHeight;
     
+    // 如果容器尺寸为0，尝试获取offsetWidth和offsetHeight
     if (containerWidth === 0 || containerHeight === 0) {
-      console.error('容器尺寸为0，无法显示图片');
-      return;
+      containerWidth = container.offsetWidth;
+      containerHeight = container.offsetHeight;
+    }
+    
+    // 如果仍然为0，返回false表示显示失败
+    if (containerWidth === 0 || containerHeight === 0) {
+      console.error('容器尺寸为0，无法显示图片，将重试');
+      return false;
     }
     
     const imgWidth = this.currentImage.width;
@@ -191,6 +206,9 @@ class ReadPostApp {
       displayWidth,
       displayHeight
     });
+    
+    // 返回true表示显示成功
+    return true;
   }
 
   // 调用AI分析
@@ -310,9 +328,29 @@ class ReadPostApp {
 
   // 绘制关键点
   drawKeypoints() {
-    if (!this.currentImage || !this.displayWidth || !this.displayHeight) {
-      console.error('图片数据不完整，无法绘制');
-      return;
+    // 检查必要的数据是否完整
+    if (!this.currentImage || !this.imageDisplay || !this.displayWidth || !this.displayHeight) {
+      // 如果图片数据不完整，检查是否可以获取到displayWidth和displayHeight
+      if (this.imageWrapper && this.currentImage) {
+        // 尝试获取容器尺寸
+        const containerWidth = this.imageWrapper.clientWidth || this.imageWrapper.offsetWidth;
+        const containerHeight = this.imageWrapper.clientHeight || this.imageWrapper.offsetHeight;
+        
+        if (containerWidth > 0 && containerHeight > 0) {
+          // 计算显示尺寸
+          const scaleX = containerWidth / this.currentImage.width;
+          const scaleY = containerHeight / this.currentImage.height;
+          this.scale = Math.min(scaleX, scaleY);
+          this.displayWidth = this.currentImage.width * this.scale;
+          this.displayHeight = this.currentImage.height * this.scale;
+        } else {
+          console.error('图片数据不完整，无法绘制');
+          return;
+        }
+      } else {
+        console.error('图片数据不完整，无法绘制');
+        return;
+      }
     }
     
     // 清除canvas
@@ -467,12 +505,13 @@ class ReadPostApp {
   }
 
   updateActionButtons() {
-    if (this.saveBtn) {
-      this.saveBtn.disabled = this.annotations.length === 0;
-    }
-    if (this.addAnnotationBtn) {
-      this.addAnnotationBtn.disabled = !this.currentImage;
-    }
+    // 根据当前状态更新按钮状态
+    const hasImage = !!this.currentImage;
+    const hasAnnotations = this.annotations.length > 0;
+    
+    this.analyzeBtn.disabled = !hasImage;
+    this.saveBtn.disabled = !hasAnnotations;
+    this.addAnnotationBtn.disabled = !hasImage;
   }
 
   // 保存注释
@@ -485,12 +524,24 @@ class ReadPostApp {
     this.showLoading(true);
 
     try {
-      // 准备保存数据
+      // 准备保存数据，包含单字ID
       const saveData = {
-        character: '单字',
+        character: this.char,
         keypoints: this.annotations,
         timestamp: new Date().toISOString()
       };
+      
+      // 如果有单字ID，添加到保存数据中
+      if (this.charId) {
+        saveData.char_id = this.charId;
+        console.log('保存读贴结果，单字ID:', this.charId);
+      }
+      
+      // 如果有作品ID，添加到保存数据中
+      if (this.workId) {
+        saveData.work_id = this.workId;
+        console.log('保存读贴结果，作品ID:', this.workId);
+      }
 
       const response = await fetch('/api/calligraphy/save', {
         method: 'POST',
@@ -535,8 +586,42 @@ class ReadPostApp {
 document.addEventListener('DOMContentLoaded', () => {
   const app = new ReadPostApp();
 
-  // 优先从 localStorage 读取图片数据
+  // 优先从 localStorage 读取图片数据和单字信息
   const localImg = localStorage.getItem('readPostImage');
+  const charId = localStorage.getItem('readPostCharId');
+  const char = localStorage.getItem('readPostChar');
+  const workId = localStorage.getItem('readPostWorkId');
+  
+  // 保存单字信息到应用实例
+  if (charId) {
+    app.charId = charId;
+    console.log('从localStorage获取到单字ID:', charId);
+  }
+  if (char) {
+    app.char = char;
+    console.log('从localStorage获取到单字:', char);
+  }
+  if (workId) {
+    app.workId = workId;
+    console.log('从localStorage获取到作品ID:', workId);
+  }
+  
+  // 如果有单字ID，从后端获取原有keypoints
+  if (charId) {
+    fetch(`/api/works/characters/${charId}`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.character && data.character.keypoints) {
+          app.annotations = data.character.keypoints;
+          app.renderAnnotations();
+          console.log('从后端获取到原有keypoints:', data.character.keypoints);
+        }
+      })
+      .catch(error => {
+        console.error('获取原有keypoints失败:', error);
+      });
+  }
+  
   if (localImg) {
     // base64 -> File（带文件名和类型）
     const arr = localImg.split(',');
@@ -550,6 +635,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const file = new File([u8arr], 'image.png', { type: mime });
     app.loadImage(file);
     localStorage.removeItem('readPostImage');
+    // 清理其他localStorage数据
+    localStorage.removeItem('readPostCharId');
+    localStorage.removeItem('readPostChar');
+    localStorage.removeItem('readPostWorkId');
   } else {
     // 兼容原有 img 参数
     const params = new URLSearchParams(window.location.search);

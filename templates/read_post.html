@@ -9,7 +9,8 @@ extra_css %}
     <div class="read-post-layout">
       <!-- 左侧：图片上传和显示区域 -->
       <div class="left-panel">
-        <div class="upload-area" id="uploadArea">
+        <!-- 隐藏上传区域，只保留图片显示区域 -->
+        <div class="upload-area" id="uploadArea" style="display: none;">
           <div class="upload-placeholder" id="uploadPlaceholder">
             <svg
               class="upload-icon"
@@ -34,12 +35,12 @@ extra_css %}
               选择图片
             </button>
           </div>
+        </div>
 
-          <!-- 图片展示区域 -->
-          <div class="image-display" id="imageDisplay" style="display: none">
-            <div class="image-wrapper" id="imageWrapper">
-              <canvas id="imageCanvas"></canvas>
-            </div>
+        <!-- 直接显示图片区域，不再需要隐藏 -->
+        <div class="image-display" id="imageDisplay">
+          <div class="image-wrapper" id="imageWrapper">
+            <canvas id="imageCanvas"></canvas>
           </div>
         </div>
 
