@@ -1,8 +1,14 @@
-{% extends "base.html" %} {% block title %}话题分类 · 墨智帖{% endblock %} {%
-block extra_css %}
+{% extends "base.html" %}
+
+{% block title %}话题分类 · iCalligraphy{% endblock %}
+
+{% block extra_css %}
 <link rel="stylesheet" href="/static/css/community.css" />
 <link rel="stylesheet" href="/static/css/topics.css" />
-{% endblock %} {% block content %}
+<link rel="stylesheet" href="/static/css/follow.css" />
+{% endblock %}
+
+{% block content %}
 <main class="container community-main topics-page">
   <!-- 页面标题 -->
   <section class="community-header">
@@ -28,12 +34,7 @@ block extra_css %}
       <a href="/community/notifications" class="nav-tab">
         <span class="tab-icon">🔔</span>
         <span class="tab-text">消息通知</span>
-        <span
-          class="notification-badge"
-          id="navNotificationBadge"
-          style="display: none"
-          >0</span
-        >
+        <span class="notification-badge" id="navNotificationBadge" style="display: none;">0</span>
       </a>
       <a href="/community/feedback" class="nav-tab">
         <span class="tab-icon">💬</span>
@@ -45,20 +46,14 @@ block extra_css %}
   <!-- 话题页面专属导航 -->
   <div class="topics-tabs">
     <button class="topic-tab-btn active" data-tab="all">全部话题 (5)</button>
-    <button class="topic-tab-btn" data-tab="following">
-      关注话题 (<span id="followingCount">0</span>)
-    </button>
+    <button class="topic-tab-btn" data-tab="following">关注话题 (<span id="followingCount">0</span>)</button>
   </div>
 
   <!-- 搜索和筛选工具栏 -->
   <div class="topics-toolbar">
     <div class="topics-search-box">
       <span class="search-icon">🔍</span>
-      <input
-        type="search"
-        class="topics-search-input"
-        placeholder="搜索话题..."
-      />
+      <input type="search" class="topics-search-input" placeholder="搜索话题..." />
     </div>
     <div class="topics-filter-options">
       <button class="filter-btn active" data-filter="all">全部</button>
@@ -72,6 +67,8 @@ block extra_css %}
     <!-- 话题卡片列表将由 JavaScript 动态生成 -->
   </div>
 </main>
-{% endblock %} {% block extra_js %}
+{% endblock %}
+
+{% block extra_js %}
 <script src="/static/js/topics.js" defer></script>
 {% endblock %}

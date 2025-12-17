@@ -7,6 +7,7 @@
 const uploadState = {
   currentStep: 1,
   uploadedImage: null,
+  imageFile: null, // 保存实际的文件对象
   imageRotation: 0,
   workData: {
     title: '',
@@ -18,73 +19,17 @@ const uploadState = {
     tags: ''
   },
   charBoxes: [],
-  isDraftSaved: false,
-  // 保存画布尺寸，用于后续坐标转换
-  canvasSize: {
-    width: 800,
-    height: 600
-  }
+  isDraftSaved: false
 };
 
 // DOM 加载完成后初始化
-document.addEventListener('DOMContentLoaded', async function() {
-  // 获取预配置信息
-  await loadWorkConfig();
-  
+document.addEventListener('DOMContentLoaded', function() {
   initStep1(); // 图片上传
   initStep2(); // 作品信息
   initStep3(); // 单字分割
   initStep4(); // 提交审核
   loadDraft(); // 加载草稿
 });
-
-/**
- * 加载作品上传预配置信息
- */
-async function loadWorkConfig() {
-  try {
-    const response = await fetch('/api/works/config');
-    const config = await response.json();
-    
-    // 填充朝代下拉框
-    const dynastySelect = document.getElementById('workDynasty');
-    if (dynastySelect && config.dynasties) {
-      dynastySelect.innerHTML = '';
-      config.dynasties.forEach(dynasty => {
-        const option = document.createElement('option');
-        option.value = dynasty.value;
-        option.textContent = dynasty.label;
-        dynastySelect.appendChild(option);
-      });
-    }
-    
-    // 填充书法风格下拉框
-    const styleSelect = document.getElementById('workStyle');
-    if (styleSelect && config.styles) {
-      styleSelect.innerHTML = '';
-      config.styles.forEach(style => {
-        const option = document.createElement('option');
-        option.value = style.value;
-        option.textContent = style.label;
-        styleSelect.appendChild(option);
-      });
-    }
-    
-    // 填充来源类型下拉框
-    const sourceSelect = document.getElementById('workSource');
-    if (sourceSelect && config.source_types) {
-      sourceSelect.innerHTML = '';
-      config.source_types.forEach(source => {
-        const option = document.createElement('option');
-        option.value = source.value;
-        option.textContent = source.label;
-        sourceSelect.appendChild(option);
-      });
-    }
-  } catch (error) {
-    console.error('加载预配置信息失败:', error);
-  }
-}
 
 /**
  * 步骤1: 图片上传
@@ -104,7 +49,8 @@ function initStep1() {
   // 点击选择图片
   selectImageBtn.addEventListener('click', () => imageInput.click());
   uploadArea.addEventListener('click', (e) => {
-    if (e.target === uploadArea || e.target.closest('.upload-prompt')) {
+    if ((e.target === uploadArea || e.target.closest('.upload-prompt')) && 
+        !e.target.closest('#selectImageBtn')) {
       imageInput.click();
     }
   });
@@ -146,6 +92,7 @@ function initStep1() {
     const reader = new FileReader();
     reader.onload = (e) => {
       uploadState.uploadedImage = e.target.result;
+      uploadState.imageFile = file; // 保存实际文件对象
       previewImage.src = e.target.result;
       uploadPrompt.classList.add('hidden');
       imagePreview.classList.remove('hidden');
@@ -167,6 +114,7 @@ function initStep1() {
   // 重新上传
   removeImageBtn.addEventListener('click', () => {
     uploadState.uploadedImage = null;
+    uploadState.imageFile = null; // 清除文件对象
     uploadState.imageRotation = 0;
     imageInput.value = '';
     previewImage.src = '';
@@ -294,9 +242,6 @@ function initStep3() {
     img.onload = function() {
       canvas.width = Math.min(img.width, 800);
       canvas.height = (img.height / img.width) * canvas.width;
-      // 更新保存的画布尺寸，用于后续坐标转换
-      uploadState.canvasSize.width = canvas.width;
-      uploadState.canvasSize.height = canvas.height;
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       redrawBoxes();
     };
@@ -430,53 +375,11 @@ function initStep3() {
     }
   });
 
-  // 添加坐标显示元素
-  let coordDisplay = document.createElement('div');
-  coordDisplay.id = 'coordDisplay';
-  coordDisplay.style.cssText = `
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    background: rgba(0, 0, 0, 0.7);
-    color: white;
-    padding: 5px 10px;
-    border-radius: 4px;
-    font-size: 12px;
-    z-index: 1000;
-    pointer-events: none;
-  `;
-  canvas.parentElement.appendChild(coordDisplay);
-
-  // 鼠标移动时显示坐标
-  canvas.addEventListener('mousemove', (e) => {
-    const rect = canvas.getBoundingClientRect();
-    // 计算实际显示尺寸与canvas.width/height的比例
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    
-    // 转换为canvas.width/height坐标
-    const mouseX = (e.clientX - rect.left) * scaleX;
-    const mouseY = (e.clientY - rect.top) * scaleY;
-    
-    // 显示坐标
-    coordDisplay.textContent = `坐标: (${Math.round(mouseX)}, ${Math.round(mouseY)}) | Canvas尺寸: ${canvas.width}x${canvas.height} | 显示尺寸: ${Math.round(rect.width)}x${Math.round(rect.height)} | 缩放比例: ${scaleX.toFixed(2)}, ${scaleY.toFixed(2)}`;
-  });
-
-  // 鼠标离开时隐藏坐标
-  canvas.addEventListener('mouseleave', () => {
-    coordDisplay.textContent = '';
-  });
-
   // 鼠标绘制框
   canvas.addEventListener('mousedown', (e) => {
     const rect = canvas.getBoundingClientRect();
-    // 计算实际显示尺寸与canvas.width/height的比例
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    
-    // 转换为canvas.width/height坐标
-    startX = (e.clientX - rect.left) * scaleX;
-    startY = (e.clientY - rect.top) * scaleY;
+    startX = e.clientX - rect.left;
+    startY = e.clientY - rect.top;
     isDrawing = true;
     currentBox = { x: startX, y: startY, width: 0, height: 0 };
   });
@@ -485,13 +388,8 @@ function initStep3() {
     if (!isDrawing) return;
 
     const rect = canvas.getBoundingClientRect();
-    // 计算实际显示尺寸与canvas.width/height的比例
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    
-    // 转换为canvas.width/height坐标
-    const currentX = (e.clientX - rect.left) * scaleX;
-    const currentY = (e.clientY - rect.top) * scaleY;
+    const currentX = e.clientX - rect.left;
+    const currentY = e.clientY - rect.top;
 
     currentBox.width = currentX - startX;
     currentBox.height = currentY - startY;
@@ -522,10 +420,6 @@ function initStep3() {
       updateBoxCount();
       initCanvas();
       saveDraft();
-      
-      // 打印坐标信息，便于调试
-      console.log('添加字符框:', box);
-      console.log('当前字符框列表:', uploadState.charBoxes);
     }
 
     currentBox = null;
@@ -592,20 +486,19 @@ function initStep3() {
     img.onload = function() {
       // 将画布坐标映射回原图坐标
       // 已知：在 initCanvas 中 canvas 宽度为 min(img.width, 800)，高度按比例缩放
-      // 因此：scaleX = img.width / canvas.width
-      // 反推原图坐标：srcX = box.x * scaleX
-      // 使用保存的画布尺寸，避免直接访问可能不存在的canvas元素
-      const scaleX = img.width / uploadState.canvasSize.width;
-      const scaleY = img.height / uploadState.canvasSize.height;
+      // 因此：scaleX = canvas.width / img.width
+      // 反推原图坐标：srcX = box.x / scaleX
+      const scaleX = canvas.width / img.width;
+      const scaleY = canvas.height / img.height;
 
       // 避免 0 值
       const safeScaleX = scaleX || 1;
       const safeScaleY = scaleY || 1;
 
-      let srcX = box.x * safeScaleX;
-      let srcY = box.y * safeScaleY;
-      let srcW = box.width * safeScaleX;
-      let srcH = box.height * safeScaleY;
+      let srcX = box.x / safeScaleX;
+      let srcY = box.y / safeScaleY;
+      let srcW = box.width / safeScaleX;
+      let srcH = box.height / safeScaleY;
 
       // 边界裁剪
       srcX = Math.max(0, Math.min(srcX, img.width));
@@ -690,71 +583,60 @@ function initStep4() {
 
   // 提交
   submitBtn.addEventListener('click', async () => {
-    if (confirm('确定要提交作品吗？')) {
-      // 实际应用中应该发送到服务器
-      console.log('提交数据:', uploadState);
-      
+    if (confirm('确定要提交审核吗？')) {
       try {
-        // 转换图片为文件对象
-        const response = await fetch(uploadState.uploadedImage);
-        const blob = await response.blob();
-        const file = new File([blob], 'work.jpg', { type: 'image/jpeg' });
-        
-        // 准备表单数据
+        // 构建FormData对象，包含文件和表单数据
         const formData = new FormData();
-        formData.append('image', file);
+        
+        // 添加图片文件
+        if (uploadState.imageFile) {
+          formData.append('image', uploadState.imageFile);
+        } else {
+          alert('请先上传图片');
+          return;
+        }
+        
+        // 添加作品信息
         formData.append('title', uploadState.workData.title);
         formData.append('description', uploadState.workData.description);
         formData.append('style', uploadState.workData.style);
-        formData.append('author_name', uploadState.workData.dynasty ? `${uploadState.workData.dynasty}${uploadState.workData.author}` : uploadState.workData.author);
+        formData.append('author_name', uploadState.workData.author);
         formData.append('source_type', uploadState.workData.source);
         formData.append('tags', uploadState.workData.tags);
         
-        // 直接使用canvas坐标，不进行转换
-        // 标注时的坐标已经是正确的canvas坐标，不需要再转换
-        // 这样可以确保标注时的坐标与详情页显示的坐标一致
-        const characters = uploadState.charBoxes.map(box => {
-          // 直接使用canvas坐标，不进行转换
-          // 确保坐标为正数
-          const finalX = Math.max(0, Math.round(box.x));
-          const finalY = Math.max(0, Math.round(box.y));
-          const finalWidth = Math.max(1, Math.round(box.width));
-          const finalHeight = Math.max(1, Math.round(box.height));
-          
-          return {
+        // 添加单字分割结果
+        if (uploadState.charBoxes.length > 0) {
+          const characters = uploadState.charBoxes.map(box => ({
             text: box.char,
-            style: uploadState.workData.style,
-            position: [finalX, finalY, finalX + finalWidth, finalY + finalHeight],
-            keypoints: []
-          };
-        });
+            position: [box.x, box.y, box.x + box.width, box.y + box.height],
+            style: uploadState.workData.style
+          }));
+          formData.append('characters', JSON.stringify(characters));
+        }
         
-        // 将转换后的characters添加到formData
-        formData.append('characters', JSON.stringify(characters));
-        
-        // 发送请求到后端
-        const result = await fetch('/api/works', {
+        // 发送POST请求到服务器
+        const response = await fetch('/api/works/', {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-          },
+          credentials: 'include', // 包含cookie，用于JWT认证
           body: formData
         });
         
-        const data = await result.json();
-        
-        if (result.ok) {
-          alert('提交成功！作品已成功发布。');
-          // 清空草稿
-          localStorage.removeItem('uploadDraft');
-          // 跳转到首页
-          // window.location.href = 'index.html';
-        } else {
-          alert(`提交失败：${data.error || '未知错误'}`);
+        if (!response.ok) {
+          throw new Error('上传失败，服务器返回错误');
         }
+        
+        const result = await response.json();
+        console.log('提交成功:', result);
+        alert('提交成功！作品已进入审核队列。');
+        
+        // 清空草稿
+        localStorage.removeItem('uploadDraft');
+        
+        // 跳转到首页
+        // window.location.href = 'index.html';
       } catch (error) {
-        console.error('提交错误:', error);
-        alert('提交失败：网络错误或服务器问题');
+        console.error('上传失败:', error);
+        alert('上传失败，请稍后重试。错误信息：' + error.message);
       }
     }
   });

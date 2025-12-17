@@ -161,7 +161,9 @@
   gap: 4px;
 }
 
+
 /* 关注话题按钮状态 */
+/*
 .btn-view-all.following {
   background: var(--theme-brown);
   color: #fff;
@@ -170,6 +172,7 @@
 .btn-view-all.following:hover {
   background: #6d3710;
 }
+*/
 
 /* 话题网格布局 */
 .topics-grid {
@@ -296,16 +299,17 @@
   background: rgba(200, 75, 49, 0.1);
 }
 
-/* 查看全部按钮 */
+/* 话题页脚样式 */
 .topic-footer {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;  /* 改为居中显示 */
   align-items: center;
   margin-top: auto;
   padding-top: 16px;
   border-top: 1px solid var(--border);
 }
 
+/*
 .btn-view-all {
   display: inline-flex;
   align-items: center;
@@ -325,6 +329,7 @@
   background: var(--theme-brown);
   color: #fff;
 }
+*/
 
 /* 响应式设计 */
 @media (max-width: 1024px) {
@@ -384,4 +389,59 @@
     flex-direction: column;
     gap: 8px;
   }
+}
+
+/* 隐藏意见反馈按钮 */
+.nav-tab[href="/community/feedback"] {
+    display: none;
+}
+
+/* 以下是新增的关注按钮样式 - 添加到文件末尾 */
+
+/* 话题关注按钮样式 */
+.btn-follow-large {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: auto;
+}
+
+.btn-follow {
+  background: var(--theme-brown);
+  color: #fff;
+}
+
+.btn-follow:hover {
+  background: #6d3710;
+}
+
+.btn-following {
+  background: var(--bg-xuan);
+  color: var(--ink-black);
+  border: 1px solid var(--border);
+}
+
+.btn-following:hover {
+  background: #fff;
+  border-color: var(--theme-brown);
+}
+
+/* 话题页脚样式 */
+.topic-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+/* 隐藏原来的查看详情按钮 */
+.btn-view-all {
+  display: none;
 }
