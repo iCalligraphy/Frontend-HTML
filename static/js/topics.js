@@ -154,7 +154,6 @@ class TopicsManager {
           name: '技法交流',
           description: '分享书写技巧，讨论笔法、结构、章法等',
           postCount: 1250,
-          todayPosts: 23,
           color: '#8b4513',
           icon: '🖌️',
           isPopular: true,
@@ -166,7 +165,6 @@ class TopicsManager {
           name: '作品欣赏',
           description: '欣赏经典与原创书法作品，交流鉴赏心得',
           postCount: 890,
-          todayPosts: 15,
           color: '#4a7c59',
           icon: '👁️',
           isPopular: true,
@@ -178,7 +176,6 @@ class TopicsManager {
           name: '问答求助',
           description: '提出书法学习中的疑问，互相解答帮助',
           postCount: 670,
-          todayPosts: 18,
           color: '#2c5aa0',
           icon: '❓',
           isPopular: true,
@@ -190,7 +187,6 @@ class TopicsManager {
           name: '文房四宝',
           description: '讨论笔墨纸砚等书法工具的选择与使用',
           postCount: 450,
-          todayPosts: 8,
           color: '#a0522d',
           icon: '📦',
           isPopular: false,
@@ -202,7 +198,6 @@ class TopicsManager {
           name: '活动赛事',
           description: '书法比赛、展览、线下活动等信息分享',
           postCount: 320,
-          todayPosts: 5,
           color: '#c84b31',
           icon: '🎯',
           isPopular: false,
@@ -370,7 +365,6 @@ class TopicsManager {
         <p class="topic-desc">${topic.description}</p>
         <div class="topic-stats">
           <span>${topic.postCount.toLocaleString()} 帖子</span>
-          <span>今日更新 ${topic.todayPosts}</span>
         </div>
         <div class="topic-footer">
           <button class="btn-view-all ${topic.isFollowed ? 'following' : ''}"

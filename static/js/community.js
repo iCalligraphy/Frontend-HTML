@@ -58,6 +58,7 @@ class CommunityManager {
      */
     async init() {
         await this.loadUserData();
+        await this.loadTopics();  // 加载话题数据
         this.initCheckin();
         this.initPostComposer();
         this.initPostFilters();
@@ -111,6 +112,24 @@ class CommunityManager {
             }
         } else {
             this.notifications = [];
+        }
+    }
+
+    /**
+     * 加载话题数据
+     */
+    async loadTopics() {
+        try {
+            // 直接使用我们定义的五个话题分类，不从API获取
+            this.initCategorySystem();
+            console.log('使用预定义的话题分类:', this.topics);
+            
+            // 填充所有话题选择下拉框
+            this.initComposerTopicSelect();
+            this.initTopicSelector();
+        } catch (error) {
+            console.error('初始化话题分类失败:', error);
+            this.topics = [];
         }
     }
 
@@ -182,11 +201,18 @@ class CommunityManager {
             const posts = response.posts || [];
             const totalPages = response.total_pages || 1;
             
+            // 调试：查看帖子数据结构
+            console.log('API返回的帖子数据:', posts);
+            if (posts.length > 0) {
+                console.log('第一个帖子的详细信息:', posts[0]);
+                console.log('第一个帖子的话题信息:', posts[0].topic || posts[0].topics);
+            }
+            
             // 更新是否还有更多帖子
             this.hasMorePosts = this.currentPage < totalPages;
             
             // 渲染帖子
-            await this.renderPosts(posts, filter === 'all' && this.currentPage === 1);
+            await this.renderPosts(posts, filter === 'all' && this.currentPage === 1, filter);
         } catch (error) {
             console.error('加载帖子失败:', error);
             this.showToast('加载帖子失败，请稍后重试', 'error');
@@ -202,7 +228,7 @@ class CommunityManager {
     /**
      * 渲染帖子列表
      */
-    async renderPosts(posts, isInitialLoad = false) {
+    async renderPosts(posts, isInitialLoad = false, filter = 'all') {
         const postsList = document.getElementById('postsList');
         if (!postsList) return;
 
@@ -214,56 +240,69 @@ class CommunityManager {
             return;
         }
 
+        // 获取关注用户列表（如果需要）
+        let followedUserIds = [];
+        if (filter === 'following') {
+            const followedUsers = await this.getFollowedUsers();
+            followedUserIds = followedUsers.map(user => user.id);
+        }
+        
+        // 获取关注话题列表（如果需要）
+        let followedTopicIds = new Set();
+        if (filter === 'followed-topics') {
+            const followedTopics = await this.getFollowedTopics();
+            followedTopicIds = new Set(followedTopics.map(topic => topic.id.toString()));
+        }
+
         for (const post of posts) {
+            // 检查是否需要根据关注状态筛选
+            if (filter === 'following' && !followedUserIds.includes(post.author.id)) {
+                continue; // 跳过不是关注用户发布的帖子
+            }
+            
+            // 检查是否需要根据关注话题筛选
+            if (filter === 'followed-topics') {
+                let hasFollowedTopic = false;
+                
+                // 检查帖子的话题是否在关注话题列表中
+                if (post.topics && Array.isArray(post.topics)) {
+                    hasFollowedTopic = post.topics.some(topic => followedTopicIds.has(topic.id.toString()));
+                } else if (post.topic) {
+                    hasFollowedTopic = followedTopicIds.has(post.topic.id.toString());
+                }
+                
+                if (!hasFollowedTopic) {
+                    continue; // 跳过没有关注话题的帖子
+                }
+            }
+            
             // 获取关注状态
             const isFollowing = await this.isFollowing(post.author.id);
             
-            const postCard = document.createElement('article');
-            postCard.className = 'post-card';
-            postCard.innerHTML = `
-                <div class="post-header">
-                    <div class="post-author">
-                        <div class="author-avatar">${post.author.username.charAt(0)}</div>
-                        <div class="author-info">
-                            <h4 class="author-name">${post.author.username}</h4>
-                            <p class="post-time">${this.formatTime(post.created_at)}</p>
-                        </div>
-                    </div>
-                    <div class="post-actions-header">
-                        <button class="btn-follow ${isFollowing ? 'btn-following' : ''}" 
-                                data-user-id="${post.author.id}" 
-                                data-author-name="${post.author.username}">
-                            ${isFollowing ? '已关注' : '关注'}
-                        </button>
-                        <button class="post-menu-btn" aria-label="更多操作">⋯</button>
-                    </div>
-                </div>
-                <div class="post-body">
-                    ${post.title ? `<h3 class="post-title">${post.title}</h3>` : ''}
-                    <p class="post-content">${post.content}</p>
-                </div>
-                <div class="post-footer">
-                    <button class="post-action" data-action="like">
-                        <span class="action-icon">👍</span>
-                        <span class="action-count">${post.likes_count}</span>
-                    </button>
-                    <button class="post-action" data-action="comment">
-                        <span class="action-icon">💬</span>
-                        <span class="action-count">${post.comments_count}</span>
-                    </button>
-                    <button class="post-action" data-action="share">
-                        <span class="action-icon">↗</span>
-                        <span class="action-text">分享</span>
-                    </button>
-                </div>
-                <div class="comments-section hidden">
-                    <div class="comment-composer">
-                        <input type="text" class="comment-input" placeholder="写下你的评论..." />
-                        <button class="btn btn-small">发送</button>
-                    </div>
-                    <div class="comments-list"></div>
-                </div>
-            `;
+            // 准备帖子数据，包括话题信息
+            // 同时支持单个topic字段和topics数组
+            let postTopics = [];
+            if (post.topics && Array.isArray(post.topics)) {
+                postTopics = post.topics;
+            } else if (post.topic) {
+                postTopics = [post.topic];
+            }
+            
+            const postData = {
+                author: post.author.username,
+                avatar: post.author.username.charAt(0),
+                time: this.formatTime(post.created_at),
+                title: post.title,
+                content: post.content,
+                likes: post.likes_count,
+                comments: post.comments_count,
+                authorId: post.author.id,
+                isFollowing: isFollowing,
+                topics: postTopics // 确保帖子数据包含话题数组
+            };
+            
+            // 使用 createPostElement 方法创建帖子元素
+            const postCard = this.createPostElement(postData);
             postsList.appendChild(postCard);
         }
         
@@ -505,6 +544,19 @@ class CommunityManager {
                 return;
             }
 
+            // 获取选中的话题
+            const topicSelect = document.getElementById('composerTopicSelect');
+            if (!topicSelect) {
+                this.showToast('话题选择功能未加载完成，请刷新页面重试', 'error');
+                return;
+            }
+            
+            const topicId = topicSelect.value;
+            if (!topicId || topicId === '') {
+                this.showToast('请选择一个话题', 'error');
+                return;
+            }
+
             // 禁用发布按钮，防止重复提交
             publishBtn.disabled = true;
             publishBtn.innerHTML = '<span class="loading-spinner-small"></span> 发布中...';
@@ -526,6 +578,10 @@ class CommunityManager {
 
                 // 创建新帖子
                 console.log('创建新帖子，使用的作者名:', this.currentUser.username || '匿名用户');
+                console.log('新帖子数据:', newPostData.post);
+                
+                // 获取话题信息
+                const topicInfo = newPostData.post.topic || {};
                 
                 const newPost = this.createPostElement({
                     author: this.currentUser.username || '匿名用户',
@@ -537,7 +593,9 @@ class CommunityManager {
                     comments: 0,
                     shares: 0,
                     authorId: newPostData.post.author_id,
-                    isFollowing: false
+                    isFollowing: false,
+                    topic: topicInfo, // 添加话题信息
+                    topics: topicInfo.id ? [topicInfo] : [] // 同时支持单个topic和topics数组
                 });
 
                 // 插入到帖子列表顶部
@@ -604,6 +662,17 @@ class CommunityManager {
             <div class="post-body">
                 ${data.title ? `<h3 class="post-title">${data.title}</h3>` : ''}
                 <p class="post-content">${data.content}</p>
+                ${(data.topics && data.topics.length > 0) ? `<div class="post-topics">
+                    ${data.topics.map(topic => `
+                        <a href="/community/topics/${topic.id}" class="post-topic-tag">
+                            ${topic.icon || '🏷️'} #${topic.name}
+                        </a>
+                    `).join('')}
+                </div>` : (data.topic ? `<div class="post-topics">
+                    <a href="/community/topics/${data.topic.id}" class="post-topic-tag">
+                        ${data.topic.icon || '🏷️'} #${data.topic.name}
+                    </a>
+                </div>` : '')}
             </div>
             <div class="post-footer">
                 <button class="post-action" data-action="like">
@@ -744,10 +813,70 @@ class CommunityManager {
                 // 添加新帖子到DOM
                 const postsList = document.getElementById('postsList');
                 if (postsList) {
-                    newPosts.forEach(postData => {
+                    // 获取关注用户列表（如果需要）
+                    let followedUserIds = [];
+                    if (activeFilter === 'following') {
+                        const followedUsers = await this.getFollowedUsers();
+                        followedUserIds = followedUsers.map(user => user.id);
+                    }
+                    
+                    // 获取关注话题列表（如果需要）
+                    let followedTopicIds = new Set();
+                    if (activeFilter === 'followed-topics') {
+                        const followedTopics = await this.getFollowedTopics();
+                        followedTopicIds = new Set(followedTopics.map(topic => topic.id.toString()));
+                    }
+                    
+                    for (const post of newPosts) {
+                        // 检查是否需要根据关注状态筛选
+                        if (activeFilter === 'following' && !followedUserIds.includes(post.author.id)) {
+                            continue; // 跳过不是关注用户发布的帖子
+                        }
+                        
+                        // 检查是否需要根据关注话题筛选
+                        if (activeFilter === 'followed-topics') {
+                            let hasFollowedTopic = false;
+                            
+                            // 检查帖子的话题是否在关注话题列表中
+                            if (post.topics && Array.isArray(post.topics)) {
+                                hasFollowedTopic = post.topics.some(topic => followedTopicIds.has(topic.id.toString()));
+                            } else if (post.topic) {
+                                hasFollowedTopic = followedTopicIds.has(post.topic.id.toString());
+                            }
+                            
+                            if (!hasFollowedTopic) {
+                                continue; // 跳过没有关注话题的帖子
+                            }
+                        }
+                        
+                        // 获取关注状态
+                        const isFollowing = await this.isFollowing(post.author.id);
+                        
+                        // 准备帖子数据，包括话题信息
+                        // 同时支持单个topic字段和topics数组
+                        let postTopics = [];
+                        if (post.topics && Array.isArray(post.topics)) {
+                            postTopics = post.topics;
+                        } else if (post.topic) {
+                            postTopics = [post.topic];
+                        }
+                        
+                        const postData = {
+                            author: post.author.username,
+                            avatar: post.author.username.charAt(0),
+                            time: this.formatTime(post.created_at),
+                            title: post.title,
+                            content: post.content,
+                            likes: post.likes_count,
+                            comments: post.comments_count,
+                            authorId: post.author.id,
+                            isFollowing: isFollowing,
+                            topics: postTopics // 确保帖子数据包含话题数组
+                        };
+                        
                         const postElement = this.createPostElement(postData);
                         postsList.appendChild(postElement);
-                    });
+                    }
                 }
                 
                 // 检查是否还有更多帖子
@@ -793,16 +922,38 @@ class CommunityManager {
     }
 
     /**
-     * 按话题筛选帖子
+     * 按话题分类筛选帖子
      */
     filterPostsByTopic(topicId) {
         const posts = document.querySelectorAll('.post-card');
         
-        // 这里应该根据帖子的话题标签或分类进行筛选
-        // 由于当前帖子结构中可能没有话题信息，我们先模拟实现
+        if (!topicId || topicId === 'all') {
+            // 如果没有选择话题或选择"全部"，显示所有帖子
+            posts.forEach(post => {
+                post.style.display = '';
+            });
+            return;
+        }
+        
+        // 根据帖子的话题ID进行筛选
         posts.forEach(post => {
-            // 实际应用中，应该根据帖子的话题ID进行筛选
-            const shouldShow = Math.random() > 0.3; // 模拟70%的帖子匹配该话题
+            // 从帖子的话题标签中获取话题ID
+            const topicLinks = post.querySelectorAll('.post-topic-tag');
+            let shouldShow = false;
+            
+            if (topicLinks.length > 0) {
+                // 检查帖子的话题是否与选中的话题ID匹配
+                topicLinks.forEach(topicLink => {
+                    // 从链接中提取话题ID
+                    const href = topicLink.getAttribute('href');
+                    const postTopicId = href.split('/').pop();
+                    
+                    if (postTopicId === topicId) {
+                        shouldShow = true;
+                    }
+                });
+            }
+            
             post.style.display = shouldShow ? '' : 'none';
         });
     }
@@ -1010,100 +1161,43 @@ class CommunityManager {
      * 初始化分类系统
      */
     initCategorySystem() {
-        // 统一的话题数据结构
+        // 只显示五个话题分类
         this.topics = [
             {
-                id: '1',
-                name: '楷书入门',
-                category: '技法交流',
+                id: 'technique',
+                name: '技法交流',
+                category: '话题分类',
                 icon: '🖌️'
             },
             {
-                id: '2',
-                name: '行书技巧',
-                category: '技法交流',
-                icon: '🖌️'
-            },
-            {
-                id: '3',
-                name: '草书练习',
-                category: '技法交流',
-                icon: '🖌️'
-            },
-            {
-                id: '4',
-                name: '隶书赏析',
-                category: '作品欣赏',
+                id: 'appreciation',
+                name: '作品欣赏',
+                category: '话题分类',
                 icon: '👁️'
             },
             {
-                id: '5',
-                name: '篆书研究',
-                category: '作品欣赏',
-                icon: '👁️'
+                id: 'qna',
+                name: '问答求助',
+                category: '话题分类',
+                icon: '❓'
             },
             {
-                id: '6',
-                name: '王羲之作品',
-                category: '作品欣赏',
-                icon: '👁️'
-            },
-            {
-                id: '7',
-                name: '颜真卿书法',
-                category: '作品欣赏',
-                icon: '👁️'
-            },
-            {
-                id: '8',
-                name: '毛笔选择',
-                category: '文房四宝',
+                id: 'materials',
+                name: '文房四宝',
+                category: '话题分类',
                 icon: '📦'
             },
             {
-                id: '9',
-                name: '宣纸推荐',
-                category: '文房四宝',
-                icon: '📦'
-            },
-            {
-                id: '10',
-                name: '墨汁对比',
-                category: '文房四宝',
-                icon: '📦'
-            },
-            {
-                id: '11',
-                name: '书法比赛',
-                category: '活动赛事',
+                id: 'events',
+                name: '活动赛事',
+                category: '话题分类',
                 icon: '🎯'
-            },
-            {
-                id: '12',
-                name: '线上课程',
-                category: '活动赛事',
-                icon: '🎯'
-            },
-            {
-                id: '13',
-                name: '如何临帖',
-                category: '技法交流',
-                icon: '🖌️'
-            },
-            {
-                id: '14',
-                name: '笔法请教',
-                category: '技法交流',
-                icon: '🖌️'
             }
         ];
         
         // 按分类分组的话题数据
         this.topicsByCategory = {
-            '技法交流': this.topics.filter(topic => topic.category === '技法交流'),
-            '作品欣赏': this.topics.filter(topic => topic.category === '作品欣赏'),
-            '文房四宝': this.topics.filter(topic => topic.category === '文房四宝'),
-            '活动赛事': this.topics.filter(topic => topic.category === '活动赛事')
+            '话题分类': this.topics
         };
     }
 
@@ -1129,27 +1223,117 @@ class CommunityManager {
         const topicSelect = document.getElementById('topicSelect');
         
         if (topicSelect) {
+            // 填充话题选择下拉框
+            this.populateTopicSelect(topicSelect);
+            
             // 添加话题选择事件监听器
             topicSelect.addEventListener('change', (e) => {
                 const topicId = e.target.value;
                 console.log(`选择了话题 ID: ${topicId}`);
                 
-                // 重置分页
-                this.resetPagination();
-                
-                // 清空现有帖子并重新加载
-                const postsList = document.getElementById('postsList');
-                if (postsList) {
-                    postsList.innerHTML = '<div class="loading-posts"><div class="loading-spinner"></div><p>正在加载帖子...</p></div>';
-                }
-                
-                // 重新加载帖子，传递选中的话题ID
-                this.loadPosts(document.querySelector('.filter-tab.active')?.dataset.filter || 'all');
+                // 使用新的筛选方法
+                this.filterPostsByTopic(topicId);
             });
         }
         
         // 绑定侧边栏话题关注按钮事件
         this.bindTopicFollowEvents();
+    }
+
+    /**
+     * 填充话题选择下拉框
+     */
+    populateTopicSelect(selectElement) {
+        // 清空现有的选项，只保留"全部话题"选项
+        selectElement.innerHTML = '<option value="all">全部话题</option>';
+        
+        // 添加从API获取的话题选项
+        if (this.topics && this.topics.length > 0) {
+            // 按分类组织话题
+            const topicsByCategory = {};
+            this.topics.forEach(topic => {
+                const category = topic.category || '其他';
+                if (!topicsByCategory[category]) {
+                    topicsByCategory[category] = [];
+                }
+                topicsByCategory[category].push(topic);
+            });
+            
+            // 为每个分类创建optgroup
+            Object.entries(topicsByCategory).forEach(([category, topics]) => {
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = category;
+                
+                // 添加该分类下的所有话题
+                topics.forEach(topic => {
+                    const option = document.createElement('option');
+                    option.value = topic.id;
+                    option.textContent = `#${topic.name}`;
+                    optgroup.appendChild(option);
+                });
+                
+                selectElement.appendChild(optgroup);
+            });
+        } else {
+            // 如果没有话题数据，显示默认选项
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = '暂无可用话题';
+            option.disabled = true;
+            selectElement.appendChild(option);
+        }
+    }
+
+    /**
+     * 初始化发帖时的话题选择下拉框
+     */
+    initComposerTopicSelect() {
+        // 获取发帖时的话题选择下拉框
+        const topicSelect = document.getElementById('composerTopicSelect');
+        
+        if (!topicSelect) {
+            console.warn('发帖话题选择下拉框未找到');
+            return;
+        }
+        
+        // 清空现有的选项
+        topicSelect.innerHTML = '<option value="">请选择话题</option>';
+        
+        // 添加从API获取的话题选项
+        if (this.topics && this.topics.length > 0) {
+            // 按分类组织话题
+            const topicsByCategory = {};
+            this.topics.forEach(topic => {
+                const category = topic.category || '其他';
+                if (!topicsByCategory[category]) {
+                    topicsByCategory[category] = [];
+                }
+                topicsByCategory[category].push(topic);
+            });
+            
+            // 为每个分类创建optgroup
+            Object.entries(topicsByCategory).forEach(([category, topics]) => {
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = category;
+                
+                // 添加该分类下的所有话题
+                topics.forEach(topic => {
+                    const option = document.createElement('option');
+                    option.value = topic.id;
+                    option.textContent = topic.name;
+                    optgroup.appendChild(option);
+                });
+                
+                topicSelect.appendChild(optgroup);
+            });
+        } else {
+            // 如果没有话题数据，显示默认选项
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = '暂无可用话题';
+            option.disabled = true;
+            topicSelect.appendChild(option);
+        }
     }
 
     /**
@@ -1195,7 +1379,7 @@ class CommunityManager {
 
         try {
             // 调用API关注话题
-            await this.apiRequest('/topics/follow', 'POST', { topic_id: topicId });
+            await this.apiRequest(`/topics/${topicId}/follow`, { method: 'POST' });
             console.log(`成功关注话题 ${topicId}`);
             // 更新关注数
             this.updateTopicFollowers(topicId, 1);
@@ -1224,7 +1408,7 @@ class CommunityManager {
 
         try {
             // 调用API取消关注话题
-            await this.apiRequest('/topics/unfollow', 'POST', { topic_id: topicId });
+            await this.apiRequest(`/topics/${topicId}/follow`, { method: 'DELETE' });
             console.log(`成功取消关注话题 ${topicId}`);
             // 更新关注数
             this.updateTopicFollowers(topicId, -1);
@@ -1494,8 +1678,8 @@ class CommunityManager {
             if (!currentUserId) {
                 return [];
             }
-            const response = await this.apiRequest('/topics/followed');
-            return response.followed_topics || [];
+            const response = await this.apiRequest('/users/me/following/topics');
+            return response.topics || [];
         } catch (error) {
             console.error('获取关注话题列表失败:', error);
             return [];
@@ -1504,21 +1688,36 @@ class CommunityManager {
 
     /**
      * 获取帖子关联的话题ID
-     * 注意：这是模拟实现，实际应根据帖子结构调整
      */
     getPostTopicIds(post) {
-        // 模拟帖子关联的话题ID
-        // 实际应用中，帖子应该有标签或数据属性来存储关联的话题ID
-        const topicIds = [
-            ['1', '2', '3'],
-            ['4', '5', '6'],
-            ['7', '8', '9'],
-            ['10', '11', '12'],
-            ['13', '14']
-        ];
+        const topicIds = new Set();
         
-        // 随机返回一些话题ID作为模拟
-        return new Set(topicIds[Math.floor(Math.random() * topicIds.length)]);
+        // 处理帖子数据对象中的话题信息
+        if (post.topics && Array.isArray(post.topics)) {
+            // 处理topics数组
+            post.topics.forEach(topic => {
+                if (topic.id) {
+                    topicIds.add(topic.id.toString());
+                }
+            });
+        } else if (post.topic) {
+            // 处理单个topic对象
+            if (post.topic.id) {
+                topicIds.add(post.topic.id.toString());
+            }
+        } else if (typeof post === 'object' && post.querySelector) {
+            // 兼容DOM元素的情况
+            const topicLinks = post.querySelectorAll('.topic-tag');
+            topicLinks.forEach(link => {
+                const href = link.getAttribute('href');
+                if (href) {
+                    const topicId = href.split('/').pop();
+                    topicIds.add(topicId);
+                }
+            });
+        }
+        
+        return topicIds;
     }
 
     /**

@@ -586,8 +586,64 @@
 .post-content {
   line-height: 1.8;
   color: var(--ink-black);
-  margin: 0;
+  margin: 0 0 12px 0;
   font-size: 15px;
+}
+
+/* 帖子话题标签 */
+.post-topics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+}
+
+.post-topic-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: linear-gradient(135deg, rgba(184, 136, 90, 0.1) 0%, rgba(184, 136, 90, 0.05) 100%);
+  border: 1px solid var(--theme-brown);
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--theme-brown);
+  text-decoration: none;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.post-topic-tag:hover {
+  background: linear-gradient(135deg, var(--theme-brown) 0%, #a67c52 100%);
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(184, 136, 90, 0.2);
+}
+
+.post-topic-tag:active {
+  transform: translateY(0);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .post-topics {
+    gap: 6px;
+  }
+  
+  .post-topic-tag {
+    padding: 5px 12px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .post-topic-tag {
+    padding: 4px 10px;
+    font-size: 11px;
+  }
 }
 
 /* 帖子底部操作 */

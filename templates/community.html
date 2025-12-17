@@ -73,29 +73,7 @@
                 <div class="composer-topic-select">
                   <label for="composerTopicSelect" class="topic-select-label">选择话题</label>
                   <select id="composerTopicSelect" class="topic-select-input">
-                    <option value="">选择话题</option>
-                    <optgroup label="技法交流">
-                      <option value="1">#楷书入门</option>
-                      <option value="2">#行书技巧</option>
-                      <option value="3">#草书练习</option>
-                      <option value="13">#如何临帖</option>
-                      <option value="14">#笔法请教</option>
-                    </optgroup>
-                    <optgroup label="作品欣赏">
-                      <option value="4">#隶书赏析</option>
-                      <option value="5">#篆书研究</option>
-                      <option value="6">#王羲之作品</option>
-                      <option value="7">#颜真卿书法</option>
-                    </optgroup>
-                    <optgroup label="文房四宝">
-                      <option value="8">#毛笔选择</option>
-                      <option value="9">#宣纸推荐</option>
-                      <option value="10">#墨汁对比</option>
-                    </optgroup>
-                    <optgroup label="活动赛事">
-                      <option value="11">#书法比赛</option>
-                      <option value="12">#线上课程</option>
-                    </optgroup>
+                    <option value="">请选择话题</option>
                   </select>
                 </div>
                 <div class="composer-footer">
@@ -112,35 +90,11 @@
           <section class="post-filters">
             <div class="filter-tabs">
               <button class="filter-tab active" data-filter="all">全部</button>
-              <button class="filter-tab" data-filter="hot">热门</button>
-              <button class="filter-tab" data-filter="latest">最新</button>
-              <button class="filter-tab" data-filter="following">关注</button>
+              <button class="filter-tab" data-filter="following">关注的人</button>
               <!-- 话题选择框 -->
               <div class="topic-select-dropdown">
                 <select id="topicSelect" class="topic-select-input">
-                  <option value="">选择话题</option>
-                  <optgroup label="技法交流">
-                    <option value="1">#楷书入门</option>
-                    <option value="2">#行书技巧</option>
-                    <option value="3">#草书练习</option>
-                    <option value="13">#如何临帖</option>
-                    <option value="14">#笔法请教</option>
-                  </optgroup>
-                  <optgroup label="作品欣赏">
-                    <option value="4">#隶书赏析</option>
-                    <option value="5">#篆书研究</option>
-                    <option value="6">#王羲之作品</option>
-                    <option value="7">#颜真卿书法</option>
-                  </optgroup>
-                  <optgroup label="文房四宝">
-                    <option value="8">#毛笔选择</option>
-                    <option value="9">#宣纸推荐</option>
-                    <option value="10">#墨汁对比</option>
-                  </optgroup>
-                  <optgroup label="活动赛事">
-                    <option value="11">#书法比赛</option>
-                    <option value="12">#线上课程</option>
-                  </optgroup>
+                  <option value="all">全部话题</option>
                 </select>
               </div>
             </div>
@@ -230,22 +184,27 @@
               <div class="topic-item" data-topic="technique">
                 <span class="topic-icon">🖌️</span>
                 <span class="topic-name">技法交流</span>
+                <button class="btn-follow topic-follow-btn" data-topic-id="technique">关注</button>
               </div>
               <div class="topic-item" data-topic="appreciation">
                 <span class="topic-icon">👁️</span>
                 <span class="topic-name">作品欣赏</span>
+                <button class="btn-follow topic-follow-btn" data-topic-id="appreciation">关注</button>
               </div>
               <div class="topic-item" data-topic="qna">
                 <span class="topic-icon">❓</span>
                 <span class="topic-name">问答求助</span>
+                <button class="btn-follow topic-follow-btn" data-topic-id="qna">关注</button>
               </div>
               <div class="topic-item" data-topic="materials">
                 <span class="topic-icon">📦</span>
                 <span class="topic-name">文房四宝</span>
+                <button class="btn-follow topic-follow-btn" data-topic-id="materials">关注</button>
               </div>
               <div class="topic-item" data-topic="events">
                 <span class="topic-icon">🎯</span>
                 <span class="topic-name">活动赛事</span>
+                <button class="btn-follow topic-follow-btn" data-topic-id="events">关注</button>
               </div>
             </div>
           </div>
