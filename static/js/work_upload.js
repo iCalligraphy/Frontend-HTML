@@ -7,6 +7,7 @@
 const uploadState = {
   currentStep: 1,
   uploadedImage: null,
+  imageFile: null, // 保存实际的文件对象
   imageRotation: 0,
   workData: {
     title: '',
@@ -48,7 +49,8 @@ function initStep1() {
   // 点击选择图片
   selectImageBtn.addEventListener('click', () => imageInput.click());
   uploadArea.addEventListener('click', (e) => {
-    if (e.target === uploadArea || e.target.closest('.upload-prompt')) {
+    if ((e.target === uploadArea || e.target.closest('.upload-prompt')) && 
+        !e.target.closest('#selectImageBtn')) {
       imageInput.click();
     }
   });
@@ -90,6 +92,7 @@ function initStep1() {
     const reader = new FileReader();
     reader.onload = (e) => {
       uploadState.uploadedImage = e.target.result;
+      uploadState.imageFile = file; // 保存实际文件对象
       previewImage.src = e.target.result;
       uploadPrompt.classList.add('hidden');
       imagePreview.classList.remove('hidden');
@@ -111,6 +114,7 @@ function initStep1() {
   // 重新上传
   removeImageBtn.addEventListener('click', () => {
     uploadState.uploadedImage = null;
+    uploadState.imageFile = null; // 清除文件对象
     uploadState.imageRotation = 0;
     imageInput.value = '';
     previewImage.src = '';
@@ -578,15 +582,62 @@ function initStep4() {
   });
 
   // 提交
-  submitBtn.addEventListener('click', () => {
+  submitBtn.addEventListener('click', async () => {
     if (confirm('确定要提交审核吗？')) {
-      // 实际应用中应该发送到服务器
-      console.log('提交数据:', uploadState);
-      alert('提交成功！作品已进入审核队列。');
-      // 清空草稿
-      localStorage.removeItem('uploadDraft');
-      // 跳转到首页
-      // window.location.href = 'index.html';
+      try {
+        // 构建FormData对象，包含文件和表单数据
+        const formData = new FormData();
+        
+        // 添加图片文件
+        if (uploadState.imageFile) {
+          formData.append('image', uploadState.imageFile);
+        } else {
+          alert('请先上传图片');
+          return;
+        }
+        
+        // 添加作品信息
+        formData.append('title', uploadState.workData.title);
+        formData.append('description', uploadState.workData.description);
+        formData.append('style', uploadState.workData.style);
+        formData.append('author_name', uploadState.workData.author);
+        formData.append('source_type', uploadState.workData.source);
+        formData.append('tags', uploadState.workData.tags);
+        
+        // 添加单字分割结果
+        if (uploadState.charBoxes.length > 0) {
+          const characters = uploadState.charBoxes.map(box => ({
+            text: box.char,
+            position: [box.x, box.y, box.x + box.width, box.y + box.height],
+            style: uploadState.workData.style
+          }));
+          formData.append('characters', JSON.stringify(characters));
+        }
+        
+        // 发送POST请求到服务器
+        const response = await fetch('/api/works/', {
+          method: 'POST',
+          credentials: 'include', // 包含cookie，用于JWT认证
+          body: formData
+        });
+        
+        if (!response.ok) {
+          throw new Error('上传失败，服务器返回错误');
+        }
+        
+        const result = await response.json();
+        console.log('提交成功:', result);
+        alert('提交成功！作品已进入审核队列。');
+        
+        // 清空草稿
+        localStorage.removeItem('uploadDraft');
+        
+        // 跳转到首页
+        // window.location.href = 'index.html';
+      } catch (error) {
+        console.error('上传失败:', error);
+        alert('上传失败，请稍后重试。错误信息：' + error.message);
+      }
     }
   });
 
