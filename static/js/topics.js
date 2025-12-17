@@ -8,50 +8,18 @@ class TopicsManager {
     this.currentFilter = 'all';
     this.allTopics = [];
     this.followedTopics = new Set();
-    this.apiBase = 'http://localhost:5000'; // 后端API基础URL
     this.init();
   }
 
-  /**
-   * 发送API请求的方法
-   */
-  async apiRequest(url, options = {}) {
-    const token = localStorage.getItem('access_token');
-    const headers = {
-      'Content-Type': 'application/json',
-      ...options.headers
-    };
-
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    // 使用完整URL，将相对URL与API基础URL组合
-    const fullUrl = url.startsWith('http') ? url : `${this.apiBase}${url}`;
-
-    const response = await fetch(fullUrl, {
-      ...options,
-      headers
-    });
-
-    if (!response.ok) {
-      throw new Error(`API请求失败: ${response.status} ${response.statusText}`);
-    }
-
-    return response.json();
-  }
-
-  async init() {
+  init() {
     this.initCommunityNav();
     this.initTopicTabs();
     this.initSearch();
     this.initFilters();
-    
-    // 调用异步的loadTopicData方法，该方法会处理后续的逻辑
-    await this.loadTopicData();
-    
-    // 更新关注计数
+    this.loadTopicData();
+    this.loadFollowedTopics();
     this.updateFollowingCount();
+    this.updateContent();
   }
 
   /**
@@ -169,147 +137,97 @@ class TopicsManager {
   }
 
   /**
-   * 加载话题数据（从后端API）
+   * 加载话题数据
    */
-  async loadTopicData() {
-    try {
-      // 从后端API获取话题数据
-      const response = await this.apiRequest('/api/topics');
-      const topics = response.topics || [];
-      
-      // 处理话题数据
-      this.allTopics = topics.map(topic => ({
-        id: topic.id,
-        name: topic.name,
-        description: topic.description,
-        postCount: topic.postCount,
-        todayPosts: topic.todayPosts,
-        color: topic.color,
-        icon: topic.icon,
-        isPopular: topic.isPopular,
-        createdAt: topic.createdAt,
-        isFollowed: false // 初始设为未关注，后续会被loadFollowedTopics更新
-      }));
-      
-      // 加载完话题数据后，加载已关注的话题
-      await this.loadFollowedTopics();
-      
-      // 更新内容显示
-      this.updateContent();
-    } catch (error) {
-      console.error('加载话题数据失败:', error);
-      
-      // 如果API调用失败，使用模拟数据作为后备
-      this.allTopics = [
-        {
-          id: 'technique',
-          name: '技法交流',
-          description: '分享书写技巧，讨论笔法、结构、章法等',
-          postCount: 1250,
-          todayPosts: 23,
-          color: '#8b4513',
-          icon: '🖌️',
-          isPopular: true,
-          createdAt: '2022-03-15',
-          isFollowed: false
-        },
-        {
-          id: 'appreciation',
-          name: '作品欣赏',
-          description: '欣赏经典与原创书法作品，交流鉴赏心得',
-          postCount: 890,
-          todayPosts: 15,
-          color: '#4a7c59',
-          icon: '👁️',
-          isPopular: true,
-          createdAt: '2022-04-10',
-          isFollowed: false
-        },
-        {
-          id: 'qna',
-          name: '问答求助',
-          description: '提出书法学习中的疑问，互相解答帮助',
-          postCount: 670,
-          todayPosts: 18,
-          color: '#2c5aa0',
-          icon: '❓',
-          isPopular: true,
-          createdAt: '2022-05-20',
-          isFollowed: false
-        },
-        {
-          id: 'materials',
-          name: '文房四宝',
-          description: '讨论笔墨纸砚等书法工具的选择与使用',
-          postCount: 450,
-          todayPosts: 8,
-          color: '#a0522d',
-          icon: '📦',
-          isPopular: false,
-          createdAt: '2022-06-05',
-          isFollowed: false
-        },
-        {
-          id: 'events',
-          name: '活动赛事',
-          description: '书法比赛、展览、线下活动等信息分享',
-          postCount: 320,
-          todayPosts: 5,
-          color: '#c84b31',
-          icon: '🎯',
-          isPopular: false,
-          createdAt: '2022-07-12',
-          isFollowed: false
-        }
-      ];
-      
-      // 使用模拟数据后，从本地存储加载已关注话题
-      await this.loadFollowedTopics();
-      
-      // 更新内容显示
-      this.updateContent();
-    }
+  loadTopicData() {
+    this.allTopics = [
+      {
+        id: 'technique',
+        name: '技法交流',
+        description: '分享书写技巧，讨论笔法、结构、章法等',
+        postCount: 1250,
+        todayPosts: 23,
+        color: '#8b4513',
+        icon: '🖌️',
+        isPopular: true,
+        createdAt: '2022-03-15',
+        isFollowed: false
+      },
+      {
+        id: 'appreciation',
+        name: '作品欣赏',
+        description: '欣赏经典与原创书法作品，交流鉴赏心得',
+        postCount: 890,
+        todayPosts: 15,
+        color: '#4a7c59',
+        icon: '👁️',
+        isPopular: true,
+        createdAt: '2022-04-10',
+        isFollowed: false
+      },
+      {
+        id: 'qna',
+        name: '问答求助',
+        description: '提出书法学习中的疑问，互相解答帮助',
+        postCount: 670,
+        todayPosts: 18,
+        color: '#2c5aa0',
+        icon: '❓',
+        isPopular: true,
+        createdAt: '2022-05-20',
+        isFollowed: false
+      },
+      {
+        id: 'materials',
+        name: '文房四宝',
+        description: '讨论笔墨纸砚等书法工具的选择与使用',
+        postCount: 450,
+        todayPosts: 8,
+        color: '#a0522d',
+        icon: '📦',
+        isPopular: false,
+        createdAt: '2022-06-05',
+        isFollowed: false
+      },
+      {
+        id: 'events',
+        name: '活动赛事',
+        description: '书法比赛、展览、线下活动等信息分享',
+        postCount: 320,
+        todayPosts: 5,
+        color: '#c84b31',
+        icon: '🎯',
+        isPopular: false,
+        createdAt: '2022-07-12',
+        isFollowed: false
+      }
+    ];
   }
 
   /**
-   * 加载已关注的话题（从后端API）
+   * 加载已关注的话题
    */
-  async loadFollowedTopics() {
-    try {
-      // 从后端API获取已关注的话题
-      const response = await this.apiRequest('/api/users/me/following/topics');
-      const followedTopics = response.topics || [];
-      
-      // 提取话题名称
-      const followedTopicNames = new Set(followedTopics.map(topic => topic.name));
-      this.followedTopics = followedTopicNames;
-      
-      // 更新话题的已关注状态
-      this.allTopics.forEach(topic => {
-        topic.isFollowed = this.followedTopics.has(topic.name);
-      });
-      
-      // 保存到本地存储，作为缓存
-      this.saveFollowedTopics();
-      
-      // 更新关注计数
-      this.updateFollowingCount();
-    } catch (error) {
-      console.error('加载已关注话题失败:', error);
-      
-      // 如果API调用失败，从本地存储加载作为后备
-      const stored = localStorage.getItem('followedTopics');
-      if (stored) {
-        this.followedTopics = new Set(JSON.parse(stored));
-        
+  loadFollowedTopics() {
+    // 从本地存储加载已关注的话题
+    // 修改键名为 user_followed_topics 与 community.js 保持一致
+    const stored = localStorage.getItem('user_followed_topics');
+    if (stored) {
+      try {
+        const topics = JSON.parse(stored);
+        this.followedTopics = new Set(topics);
+
         // 更新话题的已关注状态
         this.allTopics.forEach(topic => {
-          topic.isFollowed = this.followedTopics.has(topic.name);
+          topic.isFollowed = this.followedTopics.has(topic.id);
         });
-        
-        // 更新关注计数
-        this.updateFollowingCount();
+
+        console.log('加载的关注话题:', Array.from(this.followedTopics));
+      } catch (error) {
+        console.error('解析关注话题失败:', error);
+        this.followedTopics = new Set();
       }
+    } else {
+      this.followedTopics = new Set();
     }
   }
 
@@ -317,7 +235,10 @@ class TopicsManager {
    * 保存已关注的话题
    */
   saveFollowedTopics() {
-    localStorage.setItem('followedTopics', JSON.stringify(Array.from(this.followedTopics)));
+    // 保存为数组格式
+    const topicsArray = Array.from(this.followedTopics);
+    localStorage.setItem('user_followed_topics', JSON.stringify(topicsArray));
+    console.log('保存的关注话题:', topicsArray);
   }
 
   /**
@@ -333,73 +254,53 @@ class TopicsManager {
   /**
    * 切换话题关注状态
    */
-  async toggleFollowTopic(topicName) {
-    // 查找话题ID
-    const topic = this.allTopics.find(t => t.name === topicName);
-    if (!topic) {
-      console.error('未找到指定话题:', topicName);
-      return;
-    }
-    
-    const topicId = topic.id;
-    const isFollowing = this.followedTopics.has(topicName);
+  toggleFollowTopic(topicId, topicName) {
+    const isFollowing = this.followedTopics.has(topicId);
 
-    // 禁用所有关注按钮，防止重复点击
-    const followButtons = document.querySelectorAll('.follow-btn');
-    followButtons.forEach(btn => btn.disabled = true);
-
-    try {
-      if (isFollowing) {
-        // 取消关注
-        await this.apiRequest(`/api/topics/${topicId}/follow`, {
-          method: 'DELETE'
-        });
-        
-        this.followedTopics.delete(topicName);
-        this.showToast(`已取消关注 ${topicName}`, 'info');
-      } else {
-        // 关注
-        await this.apiRequest(`/api/topics/${topicId}/follow`, {
-          method: 'POST'
-        });
-        
-        this.followedTopics.add(topicName);
-        this.showToast(`已关注 ${topicName}`, 'success');
-      }
+    if (isFollowing) {
+      // 取消关注
+      this.followedTopics.delete(topicId);
+      this.showToast(`已取消关注 ${topicName}`, 'info');
 
       // 更新话题状态
-      this.allTopics.forEach(t => {
-        if (t.name === topicName) {
-          t.isFollowed = this.followedTopics.has(topicName);
-        }
-      });
-
-      // 保存到本地存储
-      this.saveFollowedTopics();
-
-      // 更新关注计数
-      this.updateFollowingCount();
-
-      // 如果在"关注话题"标签页，需要刷新内容
-      if (this.currentTab === 'following') {
-        this.updateContent();
-      } else {
-        // 重新渲染所有话题卡片，更新关注状态
-        this.updateContent();
+      const topic = this.allTopics.find(t => t.id === topicId);
+      if (topic) {
+        topic.isFollowed = false;
       }
-    } catch (error) {
-      console.error('切换话题关注状态失败:', error);
-      this.showToast(`操作失败: ${error.message}`, 'error');
-      
-      // 恢复原状态
-      if (isFollowing) {
-        this.followedTopics.add(topicName);
-      } else {
-        this.followedTopics.delete(topicName);
+    } else {
+      // 关注
+      this.followedTopics.add(topicId);
+      this.showToast(`已成功关注 ${topicName}`, 'success');
+
+      // 更新话题状态
+      const topic = this.allTopics.find(t => t.id === topicId);
+      if (topic) {
+        topic.isFollowed = true;
       }
-    } finally {
-      // 恢复关注按钮可点击状态
-      followButtons.forEach(btn => btn.disabled = false);
+    }
+
+    // 保存到本地存储
+    this.saveFollowedTopics();
+
+    // 更新关注计数
+    this.updateFollowingCount();
+
+    // 如果在"关注话题"标签页，需要刷新内容
+    if (this.currentTab === 'following') {
+      this.updateContent();
+    }
+
+    // 更新社区页面的关注话题列表（如果社区页面已打开）
+    this.updateCommunityPageFollowedTopics();
+  }
+
+  /**
+   * 更新社区页面的关注话题列表
+   */
+  updateCommunityPageFollowedTopics() {
+    // 通知社区页面更新关注话题列表
+    if (window.communityManager) {
+      window.communityManager.userFollowedTopics = Array.from(this.followedTopics);
     }
   }
 
@@ -436,60 +337,6 @@ class TopicsManager {
   }
 
   /**
-   * 创建话题卡片
-   */
-  createTopicCard(topic, index) {
-    const isLarge = topic.id === 'technique' && this.currentTab === 'all';
-    const isFollowing = topic.isFollowed;
-
-    return `
-      <div class="topic-card ${isLarge ? 'large' : ''}"
-           data-category="${topic.id}"
-           data-index="${index}">
-        ${isFollowing ? '<div class="topic-followed-badge">✓ 已关注</div>' : ''}
-        <div class="topic-header">
-          <span class="topic-icon" style="color: ${topic.color}; background: ${this.hexToRgba(topic.color, 0.1)};">${topic.icon}</span>
-          <div class="topic-info">
-            <h3 class="topic-name">${topic.name}</h3>
-            <p class="topic-description">${topic.description}</p>
-          </div>
-        </div>
-        <div class="topic-stats">
-          <div class="topic-stat">
-            <span class="stat-value">${topic.postCount}</span>
-            <span class="stat-label">帖子</span>
-          </div>
-          <div class="topic-stat">
-            <span class="stat-value">${topic.todayPosts}</span>
-            <span class="stat-label">今日</span>
-          </div>
-        </div>
-        <button class="btn-follow-large ${isFollowing ? 'btn-following' : 'btn-follow'}" 
-                data-topic-id="${topic.id}" 
-                data-topic-name="${topic.name}">
-          ${isFollowing ? '已关注' : '关注话题'}
-        </button>
-      </div>
-    `;
-  }
-
-  /**
-   * 绑定话题卡片事件
-   */
-  bindTopicCardEvents() {
-    // 关注按钮点击事件
-    const followButtons = document.querySelectorAll('.btn-follow-large');
-    followButtons.forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const topicId = btn.dataset.topicId;
-        const topicName = btn.dataset.topicName;
-        this.toggleFollowTopic(topicName);
-      });
-    });
-  }
-
-  /**
    * 应用筛选器
    */
   applyFilter(topics, filter) {
@@ -505,9 +352,73 @@ class TopicsManager {
   }
 
   /**
- * 创建话题卡片
- */
+   * 创建话题卡片
+   */
+  createTopicCard(topic, index) {
+    const isLarge = topic.id === 'technique' && this.currentTab === 'all';
+    const isFollowing = this.followedTopics.has(topic.id);
 
+    return `
+    <div class="topic-card ${isLarge ? 'large' : ''}"
+         data-category="${topic.id}"
+         data-index="${index}">
+      ${topic.isFollowed ? '<div class="topic-followed-badge">✓ 已关注</div>' : ''}
+      <div class="topic-header">
+        <span class="topic-icon" style="color: ${topic.color}; background: ${this.hexToRgba(topic.color, 0.1)};">
+          ${topic.icon}
+        </span>
+        <h2>${topic.name}</h2>
+      </div>
+      <p class="topic-desc">${topic.description}</p>
+      <div class="topic-stats">
+        <span>${topic.postCount.toLocaleString()} 帖子</span>
+        <span>今日更新 ${topic.todayPosts}</span>
+      </div>
+      <div class="topic-footer">
+        <button class="btn-follow-large ${isFollowing ? 'btn-following' : 'btn-follow'}"
+                data-topic-id="${topic.id}"
+                data-topic-name="${topic.name}">
+          ${isFollowing ? '已关注' : '关注话题'}
+        </button>
+      </div>
+    </div>
+  `;
+  }
+
+  /**
+   * 绑定话题卡片事件
+   */
+  bindTopicCardEvents() {
+    // 关注按钮点击事件
+    const followButtons = document.querySelectorAll('.btn-follow-large');
+    followButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+
+        const topicId = btn.dataset.topicId;
+        const topicName = btn.dataset.topicName;
+        const isFollowing = btn.textContent === '已关注';
+
+        console.log('点击关注按钮:', topicId, topicName, isFollowing);
+
+        // 调用切换关注状态方法，传递 topicId 和 topicName
+        this.toggleFollowTopic(topicId, topicName);
+
+        // 更新按钮状态
+        if (isFollowing) {
+          btn.textContent = '关注话题';
+          btn.classList.remove('btn-following');
+          btn.classList.add('btn-follow');
+          btn.dataset.action = 'follow';
+        } else {
+          btn.textContent = '已关注';
+          btn.classList.remove('btn-follow');
+          btn.classList.add('btn-following');
+          btn.dataset.action = 'unfollow';
+        }
+      });
+    });
+  }
 
   /**
    * 显示空状态
@@ -709,7 +620,6 @@ style.textContent = `
 document.head.appendChild(style);
 
 // 初始化话题管理器
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
   window.topicsManager = new TopicsManager();
-  await window.topicsManager.init();
 });

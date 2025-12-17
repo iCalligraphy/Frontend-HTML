@@ -259,6 +259,7 @@
 .btn-follow-large {
   width: 100%;
   padding: 12px;
+  border: none;
   border-radius: 8px;
   font-size: 16px;
   font-weight: 600;
@@ -266,23 +267,22 @@
   transition: all 0.3s ease;
 }
 
-.btn-follow-large.btn-follow {
-  border: none;
+.btn-follow {
   background: var(--theme-brown);
   color: #fff;
 }
 
-.btn-follow-large.btn-follow:hover {
+.btn-follow:hover {
   background: #6d3710;
 }
 
-.btn-follow-large.btn-following {
+.btn-following {
   background: var(--bg-xuan);
   color: var(--ink-black);
   border: 1px solid var(--border);
 }
 
-.btn-follow-large.btn-following:hover {
+.btn-following:hover {
   background: #fff;
   border-color: var(--theme-brown);
 }

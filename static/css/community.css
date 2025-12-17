@@ -412,7 +412,7 @@
   color: var(--ink-black);
 }
 
-/* 帖子筛选 */
+/* 帖子筛选样式更新 */
 .post-filters {
   display: flex;
   align-items: center;
@@ -428,8 +428,81 @@
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  align-items: center;
 }
 
+/* 关注筛选组 */
+.follow-filter-group {
+  display: flex;
+  gap: 8px;
+  margin: 0 10px;
+  position: relative;
+}
+
+.follow-filter-group::before {
+  content: '';
+  position: absolute;
+  left: -10px;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 20px;
+  width: 1px;
+  background: var(--border);
+}
+
+.follow-filter-group::after {
+  content: '';
+  position: absolute;
+  right: -10px;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 20px;
+  width: 1px;
+  background: var(--border);
+}
+
+/* 话题筛选下拉菜单 */
+.topic-filter-dropdown {
+  position: relative;
+  margin-left: 10px;
+}
+
+.filter-select {
+  padding: 10px 36px 10px 16px;
+  border: 2px solid var(--border);
+  border-radius: 24px;
+  font-size: 14px;
+  font-family: inherit;
+  background: var(--bg-xuan);
+  color: var(--ink-black);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23887' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  background-size: 16px;
+  min-width: 140px;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: var(--theme-brown);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(184, 136, 90, 0.1);
+}
+
+.filter-select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.filter-select option {
+  padding: 8px;
+  background: #fff;
+}
+
+/* 筛选标签激活状态 */
 .filter-tab {
   padding: 10px 20px;
   border: 2px solid var(--border);
@@ -440,6 +513,7 @@
   font-weight: 500;
   transition: all 0.3s ease;
   color: var(--ink-black);
+  white-space: nowrap;
 }
 
 .filter-tab:hover {
@@ -455,6 +529,7 @@
   box-shadow: 0 4px 12px rgba(184, 136, 90, 0.2);
 }
 
+/* 搜索框 */
 .filter-search input {
   padding: 10px 18px;
   border: 2px solid var(--border);
@@ -471,6 +546,97 @@
   border-color: var(--theme-brown);
   background: #fff;
   box-shadow: 0 0 0 3px rgba(184, 136, 90, 0.1);
+}
+
+/* 话题标签徽章样式（在帖子中显示） */
+.topic-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: linear-gradient(135deg, rgba(184, 136, 90, 0.1) 0%, rgba(184, 136, 90, 0.05) 100%);
+  border: 1px solid rgba(184, 136, 90, 0.3);
+  border-radius: 16px;
+  font-size: 12px;
+  color: var(--theme-brown);
+  font-weight: 600;
+  margin-bottom: 8px;
+  transition: all 0.2s ease;
+}
+
+.topic-badge:hover {
+  background: linear-gradient(135deg, rgba(184, 136, 90, 0.15) 0%, rgba(184, 136, 90, 0.1) 100%);
+  transform: translateY(-1px);
+}
+
+.topic-badge .badge-icon {
+  font-size: 14px;
+}
+
+/* 响应式调整 */
+@media (max-width: 1024px) {
+  .post-filters {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .filter-tabs {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .follow-filter-group {
+    margin: 5px 0;
+  }
+
+  .follow-filter-group::before,
+  .follow-filter-group::after {
+    display: none;
+  }
+
+  .filter-search input {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .filter-tab {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+
+  .filter-select {
+    min-width: 120px;
+    padding: 8px 32px 8px 12px;
+    font-size: 13px;
+  }
+
+  .topic-filter-dropdown {
+    margin-left: 0;
+    margin-top: 5px;
+    width: 100%;
+  }
+
+  .filter-select {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .filter-tabs {
+    flex-direction: column;
+  }
+
+  .follow-filter-group {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .filter-tab {
+    width: 100%;
+    text-align: center;
+  }
 }
 
 /* 帖子列表 */
@@ -1020,9 +1186,12 @@
   text-overflow: ellipsis;
 }
 
-.btn-follow, .btn-following {
+.btn-follow {
   padding: 6px 12px;
+  border: 2px solid var(--theme-brown);
   border-radius: 20px;
+  background: transparent;
+  color: var(--theme-brown);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -1030,28 +1199,9 @@
   flex-shrink: 0;
 }
 
-.btn-follow {
-  border: 2px solid var(--theme-brown);
-  background: transparent;
-  color: var(--theme-brown);
-}
-
 .btn-follow:hover {
   background: var(--theme-brown);
   color: #fff;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(184, 136, 90, 0.2);
-}
-
-.btn-following {
-  border: 2px solid var(--border);
-  background: var(--bg-xuan);
-  color: var(--ink-black);
-}
-
-.btn-following:hover {
-  background: #fff;
-  border-color: var(--theme-brown);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(184, 136, 90, 0.2);
 }
@@ -1315,9 +1465,10 @@
   color: #c84b31;
 }
 
+/*
 .post-menu-item.report {
   color: #ff9800;
-}
+} */
 
 .post-menu-item .menu-icon {
   font-size: 16px;
