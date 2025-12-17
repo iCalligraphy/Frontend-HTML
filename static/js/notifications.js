@@ -7,6 +7,8 @@ class NotificationsManager {
     this.notifications = [];
     this.selectedNotifications = new Set();
     this.currentFilter = 'all';
+    this.socket = null;
+    this.isConnected = false;
     this.init();
   }
 
@@ -23,6 +25,9 @@ class NotificationsManager {
     this.initBatchActions();
     this.initMarkAllRead();
     this.initClearAll();
+    
+    // 初始化WebSocket连接
+    this.initWebSocket();
   }
 
   /**
@@ -149,7 +154,7 @@ class NotificationsManager {
   /**
    * 清空所有通知 - 顶部按钮的工作方法
    */
-  clearAllNotifications() {
+  async clearAllNotifications() {
     if (this.notifications.length === 0) {
       this.showToast('没有通知可以清空', 'info');
       return;
@@ -159,24 +164,84 @@ class NotificationsManager {
       return;
     }
 
-    this.notifications = [];
-    this.saveNotifications();
-    this.renderNotifications();
-    this.updateStats();
-    this.showToast('所有通知已清空', 'success');
+    try {
+      // 获取token
+      const token = localStorage.getItem('access_token');
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+      
+      // 添加Authorization头
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch('/api/notifications', {
+        method: 'DELETE',
+        headers: headers,
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        this.notifications = [];
+        this.saveNotifications();
+        this.renderNotifications();
+        this.updateStats();
+        this.showToast('所有通知已清空', 'success');
+      } else {
+        const errorText = await response.text();
+        console.error('清空通知失败:', response.status, errorText);
+        throw new Error('清空失败');
+      }
+    } catch (error) {
+      console.error('清空通知失败:', error);
+      this.showToast('清空失败，请稍后重试', 'error');
+    }
   }
 
   /**
    * 加载通知数据
    */
-  loadNotifications() {
-    // 从本地存储加载通知
-    const storedNotifications = localStorage.getItem('userNotifications');
-    if (storedNotifications) {
-      this.notifications = JSON.parse(storedNotifications);
-    } else {
-      // 生成示例数据
-      this.notifications = this.generateMockNotifications();
+  async loadNotifications() {
+    try {
+      // 获取token
+      const token = localStorage.getItem('access_token');
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+      
+      // 添加Authorization头
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch('/api/notifications', {
+        headers: headers,
+        credentials: 'include'
+      });
+      
+      console.log('加载通知API状态:', response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('加载通知API返回数据:', data);
+        
+        // 将后端返回的通知数据转换为前端需要的格式
+        this.notifications = (data.notifications || []).map(notification => {
+          return this.formatNotification(notification);
+        });
+      } else {
+        const errorText = await response.text();
+        console.error('加载通知失败:', response.status, errorText);
+        // 加载失败时不使用模拟数据，显示真实错误
+        this.notifications = [];
+        this.showToast('加载通知失败，请检查登录状态', 'error');
+      }
+    } catch (error) {
+      console.error('加载通知出错:', error);
+      // 网络错误时不使用模拟数据，显示真实错误
+      this.notifications = [];
+      this.showToast('网络错误，请稍后重试', 'error');
     }
 
     this.renderNotifications();
@@ -397,7 +462,7 @@ class NotificationsManager {
   /**
    * 单条消息标记为已读 - 简单直接的方法
    */
-  markSingleAsRead(id) {
+  async markSingleAsRead(id) {
     const notification = this.notifications.find(n => n.id === id);
     if (!notification) return;
 
@@ -406,52 +471,108 @@ class NotificationsManager {
       return;
     }
 
-    notification.read = true;
-    this.saveNotifications();
+    try {
+      // 获取token
+      const token = localStorage.getItem('access_token');
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+      
+      // 添加Authorization头
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch(`/api/notifications/${id}/read`, {
+        method: 'PUT',
+        headers: headers,
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        notification.read = true;
+        this.saveNotifications();
 
-    // 直接更新UI - 与顶部按钮相同的逻辑
-    const notificationItem = document.querySelector(`.notification-item[data-id="${id}"]`);
-    if (notificationItem) {
-      notificationItem.classList.remove('unread');
-      notificationItem.classList.add('read');
-      
-      // 移除未读点
-      const unreadDot = notificationItem.querySelector('.unread-dot');
-      if (unreadDot) unreadDot.remove();
-      
-      // 移除"标记已读"按钮
-      const markReadBtn = notificationItem.querySelector('.mark-read-btn');
-      if (markReadBtn) markReadBtn.remove();
+        // 直接更新UI - 与顶部按钮相同的逻辑
+        const notificationItem = document.querySelector(`.notification-item[data-id="${id}"]`);
+        if (notificationItem) {
+          notificationItem.classList.remove('unread');
+          notificationItem.classList.add('read');
+          
+          // 移除未读点
+          const unreadDot = notificationItem.querySelector('.unread-dot');
+          if (unreadDot) unreadDot.remove();
+          
+          // 移除"标记已读"按钮
+          const markReadBtn = notificationItem.querySelector('.mark-read-btn');
+          if (markReadBtn) markReadBtn.remove();
+        }
+
+        this.updateStats();
+        this.updateNotificationBadge();
+        this.showToast('已标记为已读', 'success');
+      } else {
+        const errorText = await response.text();
+        console.error('标记通知为已读失败:', response.status, errorText);
+        throw new Error('标记失败');
+      }
+    } catch (error) {
+      console.error('标记通知为已读失败:', error);
+      this.showToast('标记失败，请稍后重试', 'error');
     }
-
-    this.updateStats();
-    this.updateNotificationBadge();
-    this.showToast('已标记为已读', 'success');
   }
 
   /**
    * 单条消息删除 - 简单直接的方法
    */
-  deleteSingleNotification(id) {
+  async deleteSingleNotification(id) {
     if (!confirm('确定要删除这条通知吗？')) {
       return;
     }
 
-    // 找到并删除通知
-    const index = this.notifications.findIndex(n => n.id === id);
-    if (index === -1) return;
+    try {
+      // 获取token
+      const token = localStorage.getItem('access_token');
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+      
+      // 添加Authorization头
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch(`/api/notifications/${id}`, {
+        method: 'DELETE',
+        headers: headers,
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        // 找到并删除通知
+        const index = this.notifications.findIndex(n => n.id === id);
+        if (index === -1) return;
 
-    // 从数组中删除
-    this.notifications.splice(index, 1);
-    this.saveNotifications();
+        // 从数组中删除
+        this.notifications.splice(index, 1);
+        this.saveNotifications();
 
-    // 从选择集中删除（如果被选中）
-    this.selectedNotifications.delete(id);
+        // 从选择集中删除（如果被选中）
+        this.selectedNotifications.delete(id);
 
-    // 重新渲染列表
-    this.renderNotifications();
-    this.updateStats();
-    this.showToast('通知已删除', 'success');
+        // 重新渲染列表
+        this.renderNotifications();
+        this.updateStats();
+        this.showToast('通知已删除', 'success');
+      } else {
+        const errorText = await response.text();
+        console.error('删除通知失败:', response.status, errorText);
+        throw new Error('删除失败');
+      }
+    } catch (error) {
+      console.error('删除通知失败:', error);
+      this.showToast('删除失败，请稍后重试', 'error');
+    }
   }
 
   /**
@@ -585,17 +706,45 @@ class NotificationsManager {
   /**
    * 标记全部为已读 - 顶部按钮的方法
    */
-  markAllAsRead() {
-    this.notifications.forEach(notification => {
-      notification.read = true;
-    });
-    
-    this.saveNotifications();
-    this.renderNotifications();
-    this.updateStats();
-    this.showToast('所有通知已标记为已读', 'success');
-    
-    this.updateNotificationBadge();
+  async markAllAsRead() {
+    try {
+      // 获取token
+      const token = localStorage.getItem('access_token');
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+      
+      // 添加Authorization头
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch('/api/notifications/read-all', {
+        method: 'PUT',
+        headers: headers,
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        this.notifications.forEach(notification => {
+          notification.read = true;
+        });
+        
+        this.saveNotifications();
+        this.renderNotifications();
+        this.updateStats();
+        this.showToast('所有通知已标记为已读', 'success');
+        
+        this.updateNotificationBadge();
+      } else {
+        const errorText = await response.text();
+        console.error('标记所有通知为已读失败:', response.status, errorText);
+        throw new Error('标记失败');
+      }
+    } catch (error) {
+      console.error('标记所有通知为已读失败:', error);
+      this.showToast('标记失败，请稍后重试', 'error');
+    }
   }
 
   /**
@@ -695,6 +844,188 @@ class NotificationsManager {
   }
 
   /**
+   * 初始化WebSocket连接
+   */
+  initWebSocket() {
+    try {
+      // 获取当前用户ID（假设从localStorage或其他方式获取）
+      const userId = localStorage.getItem('userId');
+      if (!userId) return;
+      
+      // 创建WebSocket连接
+      this.socket = io.connect('http://localhost:5000', {
+        transports: ['websocket'],
+        credentials: true
+      });
+      
+      // 连接成功事件
+      this.socket.on('connect', () => {
+        console.log('WebSocket连接成功');
+        this.isConnected = true;
+        
+        // 加入用户房间
+        this.socket.emit('join_room', { user_id: userId });
+      });
+      
+      // 连接断开事件
+      this.socket.on('disconnect', () => {
+        console.log('WebSocket连接断开');
+        this.isConnected = false;
+      });
+      
+      // 连接错误事件
+      this.socket.on('connect_error', (error) => {
+        console.error('WebSocket连接错误:', error);
+        this.isConnected = false;
+      });
+      
+      // 新通知事件
+      this.socket.on('new_notification', (notification) => {
+        console.log('收到新通知:', notification);
+        this.handleNewNotification(notification);
+      });
+      
+      // 通知已读事件
+      this.socket.on('notification_read', (data) => {
+        console.log('通知已读:', data);
+        this.handleNotificationRead(data.notification_id);
+      });
+      
+      // 通知删除事件
+      this.socket.on('notification_deleted', (data) => {
+        console.log('通知已删除:', data);
+        this.handleNotificationDeleted(data.notification_id);
+      });
+    } catch (error) {
+      console.error('初始化WebSocket失败:', error);
+    }
+  }
+  
+  /**
+   * 处理新通知
+   */
+  handleNewNotification(notification) {
+    // 将通知转换为前端需要的格式
+    const formattedNotification = this.formatNotification(notification);
+    
+    // 添加到通知列表
+    this.notifications.unshift(formattedNotification);
+    this.saveNotifications();
+    
+    // 更新UI
+    if (window.location.pathname.includes('/notifications')) {
+      this.renderNotifications();
+      this.updateStats();
+    }
+    
+    // 更新通知徽章
+    this.updateNotificationBadge();
+    
+    // 显示通知提示
+    this.showToast(`收到新通知: ${formattedNotification.title}`, 'success');
+  }
+  
+  /**
+   * 格式化通知数据
+   */
+  formatNotification(notification) {
+    // 从content中提取from信息（简单处理，实际项目中应该从后端获取完整信息）
+    let from = '未知用户';
+    let fromAvatar = '未';
+    let message = notification.content;
+    let extra = '';
+    
+    // 简单处理通知内容，提取关键信息
+    if (notification.content.includes('点赞了你的帖子')) {
+      const parts = notification.content.split(' ');
+      from = parts[0];
+      message = notification.content;
+    } else if (notification.content.includes('评论了你的帖子')) {
+      const parts = notification.content.split(' ');
+      from = parts[0];
+      message = notification.content;
+    } else if (notification.content.includes('关注了你')) {
+      const parts = notification.content.split(' ');
+      from = parts[0];
+      message = notification.content;
+    } else if (notification.content.includes('在帖子中提到了你')) {
+      const parts = notification.content.split(' ');
+      from = parts[0];
+      message = notification.content;
+    } else if (notification.content.includes('系统通知')) {
+      from = '系统通知';
+      message = notification.content.replace('系统通知', '').trim();
+    }
+    
+    fromAvatar = from.charAt(0);
+    
+    return {
+      id: notification.id.toString(),
+      type: notification.type,
+      from: from,
+      fromAvatar: fromAvatar,
+      title: this.getNotificationTitle(notification.type),
+      message: message,
+      extra: extra,
+      timestamp: new Date(notification.created_at),
+      read: notification.is_read
+    };
+  }
+  
+  /**
+   * 处理通知已读事件
+   */
+  handleNotificationRead(notificationId) {
+    const notification = this.notifications.find(n => n.id === notificationId.toString());
+    if (notification && !notification.read) {
+      notification.read = true;
+      this.saveNotifications();
+      
+      // 更新UI
+      if (window.location.pathname.includes('/notifications')) {
+        this.renderNotifications();
+        this.updateStats();
+      }
+      
+      this.updateNotificationBadge();
+    }
+  }
+  
+  /**
+   * 处理通知删除事件
+   */
+  handleNotificationDeleted(notificationId) {
+    const index = this.notifications.findIndex(n => n.id === notificationId.toString());
+    if (index !== -1) {
+      this.notifications.splice(index, 1);
+      this.saveNotifications();
+      
+      // 更新UI
+      if (window.location.pathname.includes('/notifications')) {
+        this.renderNotifications();
+        this.updateStats();
+      }
+      
+      // 从选择集中删除
+      this.selectedNotifications.delete(notificationId.toString());
+    }
+  }
+  
+  /**
+   * 获取通知标题
+   */
+  getNotificationTitle(type) {
+    const titles = {
+      'like': '点赞通知',
+      'comment': '评论通知',
+      'follow': '关注通知',
+      'mention': '@提到通知',
+      'system': '系统通知'
+    };
+    return titles[type] || '通知';
+  }
+  
+  /**
    * 更新通知徽章
    */
   updateNotificationBadge() {
@@ -717,7 +1048,21 @@ class NotificationsManager {
    */
   formatTime(timestamp) {
     const now = new Date();
-    const time = new Date(timestamp);
+    
+    // 处理UTC时间，确保正确转换为东八区时间
+    let time;
+    if (typeof timestamp === 'string') {
+      // 如果是字符串，添加'Z'后缀表示UTC时间，然后解析
+      if (timestamp.endsWith('Z')) {
+        time = new Date(timestamp);
+      } else {
+        // 假设后端返回的是UTC时间，添加'Z'后缀
+        time = new Date(timestamp + 'Z');
+      }
+    } else {
+      time = new Date(timestamp);
+    }
+    
     const diff = now - time;
 
     const minutes = Math.floor(diff / 60000);

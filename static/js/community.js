@@ -76,26 +76,38 @@ class CommunityManager {
     /**
      * 加载用户数据
      */
-    loadUserData() {
+    async loadUserData() {
         // 从本地存储或API加载用户数据
         console.log('开始加载用户数据...');
         const userData = localStorage.getItem('user');
+        const token = localStorage.getItem('access_token');
         console.log('localStorage中的用户数据:', userData);
+        console.log('localStorage中的access_token:', token ? '存在' : '不存在');
         
         if (userData) {
             try {
                 this.currentUser = JSON.parse(userData);
                 console.log('用户数据解析成功:', this.currentUser);
                 console.log('用户名:', this.currentUser.username);
+                
+                // 检查是否有access_token，如果没有则尝试重新获取
+                if (!token) {
+                    console.log('没有access_token，尝试重新获取');
+                    await this.refreshToken();
+                }
             } catch (error) {
                 console.error('解析用户数据失败:', error);
                 console.error('失败的数据:', userData);
                 this.currentUser = null;
                 localStorage.removeItem('user'); // 清除损坏的用户数据
+                localStorage.removeItem('access_token'); // 清除可能存在的损坏token
+                localStorage.removeItem('refresh_token'); // 清除可能存在的损坏refresh token
                 console.log('已清除损坏的用户数据');
             }
         } else {
             this.currentUser = null;
+            localStorage.removeItem('access_token'); // 清除无效token
+            localStorage.removeItem('refresh_token'); // 清除无效refresh token
             console.log('未找到用户数据');
         }
 
@@ -112,6 +124,67 @@ class CommunityManager {
             }
         } else {
             this.notifications = [];
+        }
+    }
+    
+    /**
+     * 尝试刷新或重新获取token
+     */
+    async refreshToken() {
+        try {
+            // 检查是否有refresh token
+            const refreshToken = localStorage.getItem('refresh_token');
+            if (refreshToken) {
+                // 使用refresh token刷新access token
+                const response = await fetch('/api/auth/refresh', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${refreshToken}`
+                    },
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.access_token) {
+                        localStorage.setItem('access_token', data.access_token);
+                        console.log('使用refresh token成功刷新access token');
+                        return true;
+                    }
+                }
+            }
+            
+            // 如果refresh token不存在或刷新失败，尝试使用用户信息重新登录
+            console.log('尝试使用用户名重新获取token');
+            
+            // 注意：这里只是一个临时解决方案，实际项目中应该有更安全的方式
+            // 这里假设用户已经登录，直接调用/api/auth/me获取用户信息并刷新token
+            const response = await fetch('/api/auth/me', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include'
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data.user) {
+                    // 更新用户数据
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    this.currentUser = data.user;
+                    console.log('已更新用户数据');
+                    
+                    // 这里无法直接获取token，需要提示用户重新登录
+                    this.showToast('请重新登录以继续使用全部功能', 'warning');
+                    return false;
+                }
+            }
+        } catch (error) {
+            console.error('刷新token失败:', error);
+            this.showToast('登录状态已过期，请重新登录', 'error');
+            return false;
         }
     }
 
@@ -157,6 +230,12 @@ class CommunityManager {
             });
 
             if (!response.ok) {
+                // 对于401状态码，处理认证失败
+                if (response.status === 401) {
+                    console.error(`API请求失败 (${response.status}): ${fullUrl}，认证失败`);
+                    this.handleAuthError();
+                    throw new Error(`认证失败，请重新登录`);
+                }
                 // 对于404和405状态码，返回默认值而不是抛出错误
                 if (response.status === 404 || response.status === 405) {
                     console.warn(`API请求失败 (${response.status}): ${fullUrl}`, response.statusText);
@@ -170,6 +249,22 @@ class CommunityManager {
         } catch (error) {
             console.error(`API请求失败: ${fullUrl}`, error);
             throw error;
+        }
+    }
+    
+    /**
+     * 处理认证错误
+     */
+    handleAuthError() {
+        // 检查是否已经显示过提示
+        if (!this.authErrorShown) {
+            this.showToast('登录状态已过期，请重新登录', 'error');
+            this.authErrorShown = true;
+            
+            // 3秒后重置状态，允许再次显示提示
+            setTimeout(() => {
+                this.authErrorShown = false;
+            }, 3000);
         }
     }
 
