@@ -235,7 +235,8 @@ class ReadPostApp {
       const data = await response.json();
       
       if (response.ok) {
-        this.annotations = data.keypoints || [];
+        console.log('分析成功，返回数据:', data);
+        this.annotations = data.analysis.keypoints || [];
         this.nextAnnotationId = this.getNextAnnotationId();
         this.renderAnnotations();
         this.drawKeypoints();
