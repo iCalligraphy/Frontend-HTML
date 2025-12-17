@@ -7,7 +7,6 @@ class FollowManager {
     this.currentTab = 'following';
     this.followingUsers = [];
     this.followerUsers = [];
-    this.apiBase = 'http://localhost:5000'; // 后端API基础URL
     this.init();
   }
 
@@ -174,82 +173,40 @@ class FollowManager {
   /**
    * 切换关注状态
    */
-  async toggleFollow(button) {
-    const userId = parseInt(button.dataset.userId);
+  toggleFollow(button) {
+    const userId = button.dataset.userId;
     const userCard = button.closest('.user-card-large');
     const userName = userCard.querySelector('.user-name-large').textContent;
-    
-    // 从本地数据获取最新的关注状态
-    let user = this.followingUsers.find(u => u.id === userId) || 
-               this.followerUsers.find(u => u.id === userId);
-    const isFollowing = user ? user.isFollowing : button.textContent.trim() === '已关注';
+    const isFollowing = button.textContent === '已关注';
 
-    // 禁用按钮，防止重复点击
-    button.disabled = true;
-    button.innerHTML = '<span class="loading-spinner-small"></span>';
+    if (isFollowing) {
+      button.textContent = '关注';
+      button.classList.remove('btn-following');
+      button.classList.add('btn-follow');
+      this.showToast(`已取消关注 ${userName}`, 'info');
 
-    try {
-      if (isFollowing) {
-        // 取消关注
-        await this.apiRequest(`/api/users/${userId}/follow`, {
-          method: 'DELETE'
-        });
-        
-        this.showToast(`已取消关注 ${userName}`, 'info');
-        
-        // 直接更新按钮状态
-        button.textContent = '关注';
-        button.classList.remove('btn-following');
-        button.classList.add('btn-follow');
-
-        // 更新本地数据并重新加载，确保状态同步
-        await this.loadUserData();
-      } else {
-        // 关注
-        await this.apiRequest(`/api/users/${userId}/follow`, {
-          method: 'POST'
-        });
-        
-        this.showToast(`已成功关注 ${userName}`, 'success');
-        
-        // 直接更新按钮状态
-        button.textContent = '已关注';
-        button.classList.remove('btn-follow');
-        button.classList.add('btn-following');
-
-        // 更新本地数据并重新加载，确保状态同步
-        await this.loadUserData();
+      // 从关注列表中移除
+      if (this.currentTab === 'following') {
+        this.followingUsers = this.followingUsers.filter(user => user.id !== userId);
+        this.updateContent();
       }
+    } else {
+      button.textContent = '已关注';
+      button.classList.remove('btn-follow');
+      button.classList.add('btn-following');
+      this.showToast(`已成功关注 ${userName}`, 'success');
 
-      // 更新统计
-      this.updateFollowStats();
-    } catch (error) {
-      // 处理409 CONFLICT响应（重复关注）- 这是正常情况，不是错误
-      if (error.message.includes('409 CONFLICT')) {
-        console.info('用户已关注该作者，无需重复关注');
-        this.showToast('已关注该用户', 'info');
-        
-        // 直接更新按钮状态
-        button.textContent = '已关注';
-        button.classList.remove('btn-follow');
-        button.classList.add('btn-following');
-        
-        // 更新本地数据并重新加载，确保状态同步
-        await this.loadUserData();
-      } else {
-        // 其他错误才需要显示错误信息
-        console.error('切换关注状态失败:', error);
-        this.showToast(`操作失败: ${error.message}`, 'error');
-        
-        // 恢复按钮状态
-        button.textContent = isFollowing ? '已关注' : '关注';
-        button.classList.remove('btn-follow', 'btn-following');
-        button.classList.add(isFollowing ? 'btn-following' : 'btn-follow');
+      // 添加到关注列表
+      if (this.currentTab === 'followers') {
+        const user = this.followerUsers.find(u => u.id === userId);
+        if (user) {
+          user.isFollowing = true;
+        }
       }
-    } finally {
-      // 恢复按钮可点击状态
-      button.disabled = false;
     }
+
+    // 更新统计
+    this.updateFollowStats();
   }
 
   /**
@@ -319,121 +276,119 @@ class FollowManager {
   }
 
   /**
-   * 发送API请求的方法
-   */
-  async apiRequest(url, options = {}) {
-    const token = localStorage.getItem('access_token');
-    const headers = {
-      'Content-Type': 'application/json',
-      ...options.headers
-    };
-
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    // 使用完整URL，将相对URL与API基础URL组合
-    const fullUrl = url.startsWith('http') ? url : `${this.apiBase}${url}`;
-
-    const response = await fetch(fullUrl, {
-      ...options,
-      headers
-    });
-
-    if (!response.ok) {
-      throw new Error(`API请求失败: ${response.status} ${response.statusText}`);
-    }
-
-    return response.json();
-  }
-
-  /**
-   * 从JWT获取当前用户ID
-   */
-  getCurrentUserId() {
-    const token = localStorage.getItem('access_token');
-    if (!token) return null;
-    
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      // JWT的payload中，用户ID存储在sub字段中
-      return payload.sub;
-    } catch (error) {
-      console.error('解析JWT失败:', error);
-      return null;
-    }
-  }
-
-  /**
    * 加载用户数据
    */
-  async loadUserData() {
-    // 显示加载状态
-    const usersGrid = document.querySelector('.users-grid');
-    if (usersGrid) {
-      usersGrid.innerHTML = `
-        <div class="loading-state">
-          <div class="loading-spinner"></div>
-          <p>加载中...</p>
-        </div>
-      `;
-    }
-
-    try {
-      // 从JWT获取当前用户的ID
-      const currentUserId = this.getCurrentUserId();
-      if (!currentUserId) {
-        throw new Error('未登录或登录已过期');
+  loadUserData() {
+    // 模拟关注列表数据
+    this.followingUsers = [
+      {
+        id: '1',
+        name: '王墨客',
+        title: '楷书专家',
+        bio: '专注欧体楷书研究，分享传统笔法技巧',
+        avatar: '王',
+        followers: 1250,
+        following: 340,
+        isFollowing: true
+      },
+      {
+        id: '2',
+        name: '李墨香',
+        title: '行书爱好者',
+        bio: '热爱王羲之行书，每日练习《兰亭序》',
+        avatar: '李',
+        followers: 890,
+        following: 210,
+        isFollowing: true
+      },
+      {
+        id: '3',
+        name: '张书生',
+        title: '草书传承者',
+        bio: '致力于草书艺术的传承与创新',
+        avatar: '张',
+        followers: 670,
+        following: 180,
+        isFollowing: true
+      },
+      {
+        id: '4',
+        name: '孙笔墨',
+        title: '书法教师',
+        bio: '多年书法教学经验，擅长隶书教学',
+        avatar: '孙',
+        followers: 560,
+        following: 210,
+        isFollowing: true
+      },
+      {
+        id: '5',
+        name: '赵字痴',
+        title: '篆书研究者',
+        bio: '专注于秦汉篆书的研究与创作',
+        avatar: '赵',
+        followers: 430,
+        following: 95,
+        isFollowing: true
+      },
+      {
+        id: '6',
+        name: '周砚台',
+        title: '文房收藏家',
+        bio: '收藏各种文房四宝，分享选购心得',
+        avatar: '周',
+        followers: 890,
+        following: 320,
+        isFollowing: true
       }
-      
-      // 并行加载关注和粉丝列表
-      const [followingData, followersData] = await Promise.all([
-        this.apiRequest(`/api/users/${currentUserId}/following`),
-        this.apiRequest(`/api/users/${currentUserId}/followers`)
-      ]);
+    ];
 
-      // 转换关注列表数据格式
-      this.followingUsers = followingData.following.map(user => ({
-        id: user.id,
-        name: user.username,
-        title: '', // API中没有title字段，实际项目中可以从用户资料获取
-        bio: user.bio || '',
-        avatar: user.avatar || user.username.charAt(0),
-        followers: user.followers_count,
-        following: user.following_count,
-        isFollowing: user.is_following
-      }));
-
-      // 转换粉丝列表数据格式
-      this.followerUsers = followersData.followers.map(user => ({
-        id: user.id,
-        name: user.username,
-        title: '',
-        bio: user.bio || '',
-        avatar: user.avatar || user.username.charAt(0),
-        followers: user.followers_count,
-        following: user.following_count,
-        isFollowing: user.is_following
-      }));
-
-      this.updateContent();
-      this.updateFollowStats();
-    } catch (error) {
-      console.error('加载用户数据失败:', error);
-      const usersGrid = document.querySelector('.users-grid');
-      if (usersGrid) {
-        usersGrid.innerHTML = `
-          <div class="error-state">
-            <div class="error-icon">⚠️</div>
-            <h3>加载失败</h3>
-            <p>无法加载用户数据，请稍后重试</p>
-            <button class="btn btn-primary" onclick="window.followManager.loadUserData()">
-              重新加载
-            </button>
-          </div>
-        `;
+    // 模拟粉丝列表数据
+    this.followerUsers = [
+      {
+        id: '7',
+        name: '书法初学者',
+        title: '新手入门',
+        bio: '刚开始学习书法，请多多指教',
+        avatar: '初',
+        followers: 45,
+        following: 120,
+        isFollowing: false
+      },
+      {
+        id: '8',
+        name: '墨韵传承',
+        title: '传统文化爱好者',
+        bio: '传承中华传统文化，弘扬书法艺术',
+        avatar: '墨',
+        followers: 320,
+        following: 95,
+        isFollowing: false
+      },
+      {
+        id: '9',
+        name: '笔尖舞者',
+        title: '行楷爱好者',
+        bio: '喜欢行书的流畅与楷书的端庄',
+        avatar: '笔',
+        followers: 210,
+        following: 85,
+        isFollowing: false
+      },
+      {
+        id: '10',
+        name: '纸墨春秋',
+        title: '书法博主',
+        bio: '分享书法学习心得和创作过程',
+        avatar: '纸',
+        followers: 1250,
+        following: 450,
+        isFollowing: false
       }
-    }
+    ];
+
+    this.updateContent();
+    this.updateFollowStats();
   }
 
   /**
@@ -476,7 +431,9 @@ class FollowManager {
           </div>
         </div>
         <button class="btn-follow-large ${user.isFollowing ? 'btn-following' : 'btn-follow'}"
-                data-user-id="${user.id}">${user.isFollowing ? '已关注' : '关注'}</button>
+                data-user-id="${user.id}">
+          ${user.isFollowing ? '已关注' : '关注'}
+        </button>
       </div>
     `).join('');
 

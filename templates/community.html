@@ -100,9 +100,23 @@
           <section class="post-filters">
             <div class="filter-tabs">
               <button class="filter-tab active" data-filter="all">全部</button>
-              <button class="filter-tab" data-filter="hot">热门</button>
               <button class="filter-tab" data-filter="latest">最新</button>
-              <button class="filter-tab" data-filter="following">关注</button>
+              <!-- 关注相关筛选 -->
+              <div class="follow-filter-group">
+                <button class="filter-tab" data-filter="follow-users">关注的人</button>
+                <button class="filter-tab" data-filter="follow-topics">关注的话题</button>
+              </div>
+              <!-- 话题筛选下拉菜单 -->
+              <div class="topic-filter-dropdown">
+                <select id="topicFilter" class="filter-select">
+                  <option value="">按话题筛选</option>
+                  <option value="technique">技法交流</option>
+                  <option value="appreciation">作品欣赏</option>
+                  <option value="qna">问答求助</option>
+                  <option value="materials">文房四宝</option>
+                  <option value="events">活动赛事</option>
+                </select>
+              </div>
             </div>
             <div class="filter-search">
               <input type="search" id="postSearch" placeholder="搜索帖子..." />
@@ -287,23 +301,23 @@
           <div class="sidebar-card topics-card">
             <h3>话题分类</h3>
             <div class="topics-list">
-              <a href="/community/topics/technique" class="topic-item">
+              <a href="/community/topics" class="topic-item">
                 <span class="topic-icon">🖌️</span>
                 <span class="topic-name">技法交流</span>
               </a>
-              <a href="/community/topics/appreciation" class="topic-item">
+              <a href="/community/topics" class="topic-item">
                 <span class="topic-icon">👁️</span>
                 <span class="topic-name">作品欣赏</span>
               </a>
-              <a href="/community/topics/qna" class="topic-item">
+              <a href="/community/topics" class="topic-item">
                 <span class="topic-icon">❓</span>
                 <span class="topic-name">问答求助</span>
               </a>
-              <a href="/community/topics/materials" class="topic-item">
+              <a href="/community/topics" class="topic-item">
                 <span class="topic-icon">📦</span>
                 <span class="topic-name">文房四宝</span>
               </a>
-              <a href="/community/topics/events" class="topic-item">
+              <a href="/community/topics" class="topic-item">
                 <span class="topic-icon">🎯</span>
                 <span class="topic-name">活动赛事</span>
               </a>
