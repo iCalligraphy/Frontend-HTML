@@ -4,7 +4,7 @@
  */
 
 // API配置
-const API_BASE = 'http://10.234.242.47:5000';
+const API_BASE = '/api';
 
 // 全局状态
 const viewerState = {
@@ -24,7 +24,7 @@ const viewerState = {
 // API请求函数
 async function fetchWorkData(workId) {
   try {
-    const response = await fetch(`${API_BASE}/api/works/${workId}`);
+    const response = await fetch(`${API_BASE}/works/${workId}`);
     if (!response.ok) {
       throw new Error(`作品获取失败: ${response.status}`);
     }
@@ -38,7 +38,7 @@ async function fetchWorkData(workId) {
 
 async function fetchWorksList() {
   try {
-    const response = await fetch(`${API_BASE}/api/works/`);
+    const response = await fetch(`${API_BASE}/works/`);
     if (!response.ok) {
       throw new Error(`作品列表获取失败: ${response.status}`);
     }
@@ -92,7 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
         keypoints: [] // 默认值，后续可以通过AI识别获取
       };
       
-      const response = await fetch(`${API_BASE}/api/works/${workId}/characters`, {
+      const response = await fetch(`${API_BASE}/works/${workId}/characters`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -129,7 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
         throw new Error('未登录，无法删除单字');
       }
       
-      const response = await fetch(`${API_BASE}/api/works/characters/${characterId}`, {
+      const response = await fetch(`${API_BASE}/works/characters/${characterId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -158,7 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
         throw new Error('未登录，无法修改单字');
       }
       
-      const response = await fetch(`${API_BASE}/api/works/characters/${characterId}`, {
+      const response = await fetch(`${API_BASE}/works/characters/${characterId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -294,7 +294,7 @@ document.addEventListener('DOMContentLoaded', () => {
       updateWorkInfo();
       
       // 从API获取单字列表
-      const response = await fetch(`${API_BASE}/api/works/${workIdNum}/characters`);
+      const response = await fetch(`${API_BASE}/works/${workIdNum}/characters`);
       const charactersData = await response.json();
       
       // 转换单字数据为单字框
@@ -305,7 +305,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // 检查是否已经是完整的URL（包含http://、https://或/uploads/）
         const imgUrl = currentWork.image_url.startsWith('http') || currentWork.image_url.startsWith('/uploads/') 
           ? currentWork.image_url 
-          : `${API_BASE}/uploads/works/${currentWork.image_url}`;
+          : `/uploads/works/${currentWork.image_url}`;
         img.src = imgUrl;
         
         // 等待图片加载完成后直接使用API返回的坐标，不再进行缩放
@@ -357,7 +357,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // 加载作品图片
       const imageUrl = currentWork.image_url.startsWith('http') || currentWork.image_url.startsWith('/uploads/') 
         ? currentWork.image_url 
-        : `${API_BASE}/uploads/works/${currentWork.image_url}`;
+        : `/uploads/works/${currentWork.image_url}`;
       
       loadImage(imageUrl, (err, img) => {
         if (err) {
