@@ -104,7 +104,8 @@ function initStep1() {
   // 点击选择图片
   selectImageBtn.addEventListener('click', () => imageInput.click());
   uploadArea.addEventListener('click', (e) => {
-    if (e.target === uploadArea || e.target.closest('.upload-prompt')) {
+    if ((e.target === uploadArea || e.target.closest('.upload-prompt')) && 
+        !e.target.closest('#selectImageBtn')) {
       imageInput.click();
     }
   });
