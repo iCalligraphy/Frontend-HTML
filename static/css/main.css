@@ -140,6 +140,40 @@ a { color: var(--ink-black); text-decoration: none; }
 .footer-inner { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 20px; color: var(--gray); }
 .note { font-size: 12px; }
 
+/* 加载状态 */
+.loading-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+  gap: 12px;
+  color: var(--gray);
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(139, 69, 19, 0.1);
+  border-top-color: var(--theme-brown);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.no-results {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+  color: var(--gray);
+  font-size: 16px;
+  text-align: center;
+}
+
 /* 响应式 */
 @media (max-width: 960px) {
   .hero-inner { grid-template-columns: 1fr; }
