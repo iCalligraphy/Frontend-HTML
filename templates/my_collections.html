@@ -21,17 +21,18 @@
       <!-- 字集统计 -->
       <section class="collections-stats">
         <div class="stat-card">
-          <div class="stat-value" id="totalCollections">3</div>
+          <div class="stat-value" id="totalCollections">0</div>
           <div class="stat-label">字集总数</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value" id="totalCharacters">128</div>
+          <div class="stat-value" id="totalCharacters">0</div>
           <div class="stat-label">单字总数</div>
         </div>
-        <div class="stat-card">
-          <div class="stat-value" id="recentUpdates">2</div>
+        <!-- 今日更新功能已注释 -->
+        <!-- <div class="stat-card">
+          <div class="stat-value" id="recentUpdates">0</div>
           <div class="stat-label">今日更新</div>
-        </div>
+        </div> -->
       </section>
 
       <!-- 筛选与搜索 -->
@@ -65,141 +66,7 @@
 
       <!-- 字集列表 -->
       <section class="collections-list" id="collectionsList">
-        <!-- 字集卡片 1 -->
-        <article class="collection-card">
-          <div class="collection-header">
-            <div class="collection-info">
-              <h3 class="collection-name">常用楷书字</h3>
-              <p class="collection-meta">72个字 · 楷书 · 更新于 2小时前</p>
-            </div>
-            <div class="collection-actions">
-              <button type="button" class="action-btn" data-action="edit" aria-label="编辑字集">
-                <span class="action-icon">✏️</span>
-              </button>
-              <button type="button" class="action-btn" data-action="delete" aria-label="删除字集">
-                <span class="action-icon">🗑️</span>
-              </button>
-            </div>
-          </div>
-          <div class="collection-preview">
-            <!-- 单字预览网格 -->
-            <div class="char-grid">
-              <div class="char-item" data-char="永">
-                <span class="char-display">永</span>
-              </div>
-              <div class="char-item" data-char="字">
-                <span class="char-display">字</span>
-              </div>
-              <div class="char-item" data-char="书">
-                <span class="char-display">书</span>
-              </div>
-              <div class="char-item" data-char="法">
-                <span class="char-display">法</span>
-              </div>
-              <div class="char-item" data-char="艺">
-                <span class="char-display">艺</span>
-              </div>
-              <div class="char-item" data-char="术">
-                <span class="char-display">术</span>
-              </div>
-              <div class="char-more">+66</div>
-            </div>
-          </div>
-          <div class="collection-footer">
-            <button type="button" class="btn btn-secondary btn-small" data-collection="1">查看详情</button>
-            <button type="button" class="btn btn-outline btn-small" data-collection="1">添加单字</button>
-          </div>
-        </article>
-
-        <!-- 字集卡片 2 -->
-        <article class="collection-card">
-          <div class="collection-header">
-            <div class="collection-info">
-              <h3 class="collection-name">行书精选</h3>
-              <p class="collection-meta">43个字 · 行书 · 更新于 1天前</p>
-            </div>
-            <div class="collection-actions">
-              <button type="button" class="action-btn" data-action="edit" aria-label="编辑字集">
-                <span class="action-icon">✏️</span>
-              </button>
-              <button type="button" class="action-btn" data-action="delete" aria-label="删除字集">
-                <span class="action-icon">🗑️</span>
-              </button>
-            </div>
-          </div>
-          <div class="collection-preview">
-            <div class="char-grid">
-              <div class="char-item" data-char="兰">
-                <span class="char-display">兰</span>
-              </div>
-              <div class="char-item" data-char="亭">
-                <span class="char-display">亭</span>
-              </div>
-              <div class="char-item" data-char="序">
-                <span class="char-display">序</span>
-              </div>
-              <div class="char-item" data-char="集">
-                <span class="char-display">集</span>
-              </div>
-              <div class="char-item" data-char="王">
-                <span class="char-display">王</span>
-              </div>
-              <div class="char-item" data-char="羲">
-                <span class="char-display">羲</span>
-              </div>
-              <div class="char-more">+37</div>
-            </div>
-          </div>
-          <div class="collection-footer">
-            <button type="button" class="btn btn-secondary btn-small" data-collection="2">查看详情</button>
-            <button type="button" class="btn btn-outline btn-small" data-collection="2">添加单字</button>
-          </div>
-        </article>
-
-        <!-- 字集卡片 3 -->
-        <article class="collection-card">
-          <div class="collection-header">
-            <div class="collection-info">
-              <h3 class="collection-name">草书练习</h3>
-              <p class="collection-meta">13个字 · 草书 · 更新于 3天前</p>
-            </div>
-            <div class="collection-actions">
-              <button type="button" class="action-btn" data-action="edit" aria-label="编辑字集">
-                <span class="action-icon">✏️</span>
-              </button>
-              <button type="button" class="action-btn" data-action="delete" aria-label="删除字集">
-                <span class="action-icon">🗑️</span>
-              </button>
-            </div>
-          </div>
-          <div class="collection-preview">
-            <div class="char-grid">
-              <div class="char-item" data-char="草">
-                <span class="char-display">草</span>
-              </div>
-              <div class="char-item" data-char="书">
-                <span class="char-display">书</span>
-              </div>
-              <div class="char-item" data-char="神">
-                <span class="char-display">神</span>
-              </div>
-              <div class="char-item" data-char="韵">
-                <span class="char-display">韵</span>
-              </div>
-              <div class="char-item" data-char="飞">
-                <span class="char-display">飞</span>
-              </div>
-              <div class="char-item" data-char="舞">
-                <span class="char-display">舞</span>
-              </div>
-              <div class="char-more">+7</div>
-            </div>
-          </div>
-          <div class="collection-footer">
-            <button type="button" class="btn btn-secondary btn-small" data-collection="3">查看详情</button>
-            <button type="button" class="btn btn-outline btn-small" data-collection="3">添加单字</button>
-          </div>
-        </article>
+        <!-- 动态生成字集卡片 -->
       </section>
 
       <!-- 空状态（当没有字集时显示） -->

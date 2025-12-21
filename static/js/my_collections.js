@@ -165,6 +165,19 @@ function initCollectionActions() {
 }
 
 /**
+ * 从后端获取字集统计数据
+ */
+async function getCharacterSetStats() {
+  try {
+    const result = await apiRequest('/character-sets/stats');
+    return result;
+  } catch (error) {
+    console.error('获取字集统计数据失败:', error);
+    return { today_updates: 0 };
+  }
+}
+
+/**
  * 从后端加载字集列表
  */
 async function loadCharacterSets() {
@@ -189,7 +202,14 @@ async function loadCharacterSets() {
     checkEmptyState();
   } catch (error) {
     console.error('加载字集列表失败:', error);
-    alert('加载字集列表失败: ' + error.message);
+    
+    // 处理未登录错误，显示友好提示
+    const errorMessage = error.message;
+    if (errorMessage.includes('Token') || errorMessage.includes('Authorization') || errorMessage.includes('Missing')) {
+      alert('请先登录后查看您的字集列表');
+    } else {
+      alert('加载字集列表失败，请稍后重试');
+    }
   }
 }
 
@@ -216,7 +236,14 @@ async function handleEditCollection(collectionCard) {
     openCollectionModal('edit');
   } catch (error) {
     console.error('获取字集详情失败:', error);
-    alert('获取字集详情失败: ' + error.message);
+    
+    // 处理未登录错误，显示友好提示
+    const errorMessage = error.message;
+    if (errorMessage.includes('Token') || errorMessage.includes('Authorization') || errorMessage.includes('Missing')) {
+      alert('请先登录后操作');
+    } else {
+      alert('获取字集详情失败，请稍后重试');
+    }
   }
 }
 
@@ -248,7 +275,14 @@ async function handleDeleteCollection(collectionCard) {
       }, 300);
     } catch (error) {
       console.error('删除字集失败:', error);
-      alert('删除字集失败: ' + error.message);
+      
+      // 处理未登录错误，显示友好提示
+      const errorMessage = error.message;
+      if (errorMessage.includes('Token') || errorMessage.includes('Authorization') || errorMessage.includes('Missing')) {
+        alert('请先登录后操作');
+      } else {
+        alert('删除字集失败，请稍后重试');
+      }
     }
   }
 }
@@ -390,7 +424,15 @@ async function addCharToCollection(char) {
     await loadCharacterSets();
   } catch (error) {
     console.error('添加单字失败:', error);
-    alert('添加单字失败: ' + error.message);
+    
+    // 处理未登录错误，显示友好提示
+    const errorMessage = error.message;
+    if (errorMessage.includes('Token') || errorMessage.includes('Authorization') || errorMessage.includes('Missing')) {
+      alert('请先登录后操作');
+      closeAddCharModal();
+    } else {
+      alert('添加单字失败，请稍后重试');
+    }
   }
 }
 
@@ -1380,7 +1422,14 @@ async function handleCollectionSubmit() {
     alert(currentEditSetId ? '字集更新成功！' : '字集创建成功！');
   } catch (error) {
     console.error('保存字集失败:', error);
-    alert('保存字集失败: ' + error.message);
+    
+    // 处理未登录错误，显示友好提示
+    const errorMessage = error.message;
+    if (errorMessage.includes('Token') || errorMessage.includes('Authorization') || errorMessage.includes('Missing')) {
+      alert('请先登录后操作');
+    } else {
+      alert('保存字集失败，请稍后重试');
+    }
   }
 }
 
@@ -1528,7 +1577,16 @@ async function openDetailModal(collectionId) {
     }
   } catch (error) {
     console.error('加载字集详情失败:', error);
-    alert('加载字集详情失败: ' + error.message);
+    
+    // 处理未登录错误，显示友好提示
+    const errorMessage = error.message;
+    if (errorMessage.includes('Token') || errorMessage.includes('Authorization') || errorMessage.includes('Missing')) {
+      alert('请先登录后查看字集详情');
+      closeDetailModal();
+    } else {
+      alert('加载字集详情失败，请稍后重试');
+      closeDetailModal();
+    }
   }
 }
 
@@ -1726,7 +1784,14 @@ async function handleRemoveCharacter(charItem) {
       }, 300);
     } catch (error) {
       console.error('移除单字失败:', error);
-      alert('移除单字失败: ' + error.message);
+      
+      // 处理未登录错误，显示友好提示
+      const errorMessage = error.message;
+      if (errorMessage.includes('Token') || errorMessage.includes('Authorization') || errorMessage.includes('Missing')) {
+        alert('请先登录后操作');
+      } else {
+        alert('移除单字失败，请稍后重试');
+      }
     }
   }
 }
