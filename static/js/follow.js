@@ -461,7 +461,7 @@ class FollowManager {
 
     usersGrid.innerHTML = users.map(user => `
       <div class="user-card-large">
-        <div class="user-avatar-xl">${user.avatar}</div>
+        <div class="user-avatar-xl">${typeof user.avatar === 'string' && user.avatar !== 'default_avatar.png' ? `<img src="/uploads/avatars/${user.avatar}" alt="${user.name}" class="avatar-img" />` : user.avatar}</div>
         <h3 class="user-name-large">${user.name}</h3>
         <p class="user-title">${user.title}</p>
         <p class="user-bio">${user.bio}</p>
