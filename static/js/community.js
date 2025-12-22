@@ -207,6 +207,76 @@ class CommunityManager {
     }
 
     /**
+     * 显示加载状态
+     */
+    showLoading(message = '加载中...') {
+        // 创建或获取加载指示器
+        let loader = document.getElementById('communityLoader');
+        if (!loader) {
+            loader = document.createElement('div');
+            loader.id = 'communityLoader';
+            loader.className = 'loading-overlay';
+            loader.innerHTML = `
+                <div class="loading-content">
+                    <div class="loading-spinner"></div>
+                    <p class="loading-text">${message}</p>
+                </div>
+            `;
+            document.body.appendChild(loader);
+        } else {
+            // 更新加载消息
+            loader.querySelector('.loading-text').textContent = message;
+        }
+        
+        loader.style.display = 'flex';
+    }
+    
+    /**
+     * 隐藏加载状态
+     */
+    hideLoading() {
+        const loader = document.getElementById('communityLoader');
+        if (loader) {
+            loader.style.display = 'none';
+        }
+    }
+    
+    /**
+     * 显示提示消息
+     */
+    showToast(message, type = 'info') {
+        // 创建或获取toast容器
+        let toastContainer = document.getElementById('toastContainer');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.id = 'toastContainer';
+            toastContainer.className = 'toast-container';
+            document.body.appendChild(toastContainer);
+        }
+        
+        // 创建toast元素
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.textContent = message;
+        
+        // 添加到容器
+        toastContainer.appendChild(toast);
+        
+        // 显示toast
+        setTimeout(() => {
+            toast.classList.add('show');
+        }, 100);
+        
+        // 3秒后隐藏并移除
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        }, 3000);
+    }
+    
+    /**
      * 发送API请求的方法
      */
     async apiRequest(url, options = {}) {
@@ -242,7 +312,8 @@ class CommunityManager {
                     return { data: null };
                 }
                 // 其他状态码仍然抛出错误
-                throw new Error(`HTTP error! status: ${response.status}`);
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
             }
 
             return response.json();
@@ -384,6 +455,7 @@ class CommunityManager {
             }
             
             const postData = {
+                id: post.id, // 确保帖子数据包含ID
                 author: post.author.username,
                 avatar: post.author.username.charAt(0),
                 time: this.formatTime(post.created_at),
@@ -393,7 +465,8 @@ class CommunityManager {
                 comments: post.comments_count,
                 authorId: post.author.id,
                 isFollowing: isFollowing,
-                topics: postTopics // 确保帖子数据包含话题数组
+                topics: postTopics, // 确保帖子数据包含话题数组
+                is_liked: post.is_liked || false
             };
             
             // 使用 createPostElement 方法创建帖子元素
@@ -727,6 +800,8 @@ class CommunityManager {
     createPostElement(data) {
         const article = document.createElement('article');
         article.className = 'post-card';
+        // 添加帖子ID属性，用于点赞和评论功能
+        article.dataset.postId = data.id || 0;
         
         // 检查是否已关注作者（默认false，实际会通过API获取）
         const isFollowing = data.isFollowing || false;
@@ -770,7 +845,7 @@ class CommunityManager {
                 </div>` : '')}
             </div>
             <div class="post-footer">
-                <button class="post-action" data-action="like">
+                <button class="post-action" data-action="like" ${data.is_liked ? 'liked' : ''}>
                     <span class="action-icon">👍</span>
                     <span class="action-count">${data.likes}</span>
                 </button>
@@ -957,6 +1032,7 @@ class CommunityManager {
                         }
                         
                         const postData = {
+                            id: post.id, // 确保帖子数据包含ID
                             author: post.author.username,
                             avatar: post.author.username.charAt(0),
                             time: this.formatTime(post.created_at),
@@ -966,7 +1042,8 @@ class CommunityManager {
                             comments: post.comments_count,
                             authorId: post.author.id,
                             isFollowing: isFollowing,
-                            topics: postTopics // 确保帖子数据包含话题数组
+                            topics: postTopics, // 确保帖子数据包含话题数组
+                            is_liked: post.is_liked || false
                         };
                         
                         const postElement = this.createPostElement(postData);
@@ -1106,34 +1183,76 @@ class CommunityManager {
         const countEl = likeBtn.querySelector('.action-count');
         let count = parseInt(countEl.textContent);
         
-        // 切换点赞状态
-        likeBtn.classList.toggle('liked');
-        count = likeBtn.classList.contains('liked') ? count + 1 : count - 1;
-        countEl.textContent = count;
-        
-        // 调用API处理点赞
+        // 获取帖子ID
         const postId = post.dataset.postId;
-        if (postId) {
-            try {
-                await this.apiRequest(`/posts/${postId}/like`, 'POST');
-            } catch (error) {
-                console.error('点赞失败:', error);
-                // 恢复点赞状态
-                likeBtn.classList.toggle('liked');
-                count = likeBtn.classList.contains('liked') ? count + 1 : count - 1;
-                countEl.textContent = count;
-                this.showToast('点赞失败，请稍后重试', 'error');
-            }
+        // 检查帖子ID是否有效
+        if (!postId || postId === '0' || isNaN(postId)) {
+            this.showToast('获取帖子ID失败，请稍后重试', 'error');
+            return;
+        }
+        
+        try {
+            // 调用API处理点赞
+            const response = await this.apiRequest(`/posts/${postId}/like`, {
+                method: 'POST'
+            });
+            
+            // 更新点赞状态和数量
+            likeBtn.classList.toggle('liked');
+            count = response.likes_count;
+            countEl.textContent = count;
+            
+            // 显示成功提示
+            this.showToast(likeBtn.classList.contains('liked') ? '点赞成功' : '取消点赞成功', 'success');
+        } catch (error) {
+            console.error('点赞失败:', error);
+            this.showToast('点赞失败，请稍后重试', 'error');
         }
     }
 
     /**
+     * 加载帖子评论
+     */
+    async loadComments(post, postId) {
+        try {
+            // 调用API获取评论
+            const response = await this.apiRequest(`/posts/${postId}`, {
+                method: 'GET'
+            });
+            
+            const comments = response.comments || [];
+            const commentsList = post.querySelector('.comments-list');
+            
+            if (commentsList) {
+                // 清空现有评论
+                commentsList.innerHTML = '';
+                
+                // 添加所有评论到DOM
+                for (const comment of comments) {
+                    this.addCommentToDOM(post, comment.content, comment.author);
+                }
+            }
+        } catch (error) {
+            console.error('加载评论失败:', error);
+        }
+    }
+    
+    /**
      * 切换评论显示
      */
-    toggleComments(post) {
+    async toggleComments(post) {
         const commentsSection = post.querySelector('.comments-section');
-        if (commentsSection) {
-            commentsSection.classList.toggle('hidden');
+        if (!commentsSection) return;
+        
+        // 切换评论显示状态
+        commentsSection.classList.toggle('hidden');
+        
+        // 如果显示评论，加载评论数据
+        if (!commentsSection.classList.contains('hidden')) {
+            const postId = post.dataset.postId;
+            if (postId && postId !== '0' && !isNaN(postId)) {
+                await this.loadComments(post, postId);
+            }
         }
     }
 
@@ -1189,24 +1308,31 @@ class CommunityManager {
      */
     async handleCommentSubmit(submitBtn, commentInput, commentText) {
         const post = submitBtn.closest('.post-card');
-        if (!post) return;
+        if (!post) {
+            this.showToast('获取帖子信息失败，请稍后重试', 'error');
+            return;
+        }
+        
+        // 获取帖子ID
+        const postId = post.dataset.postId;
+        if (!postId) {
+            this.showToast('获取帖子ID失败，请稍后重试', 'error');
+            return;
+        }
         
         // 禁用提交按钮
         submitBtn.disabled = true;
         submitBtn.textContent = '发送中...';
         
         try {
-            const postId = post.dataset.postId;
-            if (postId) {
-                // 调用API提交评论
-                await this.apiRequest(`/posts/${postId}/comments`, {
-                    method: 'POST',
-                    body: JSON.stringify({ content: commentText })
-                });
-            }
+            // 调用API提交评论
+            const response = await this.apiRequest(`/posts/${postId}/comments`, {
+                method: 'POST',
+                body: JSON.stringify({ content: commentText })
+            });
             
             // 添加评论到DOM
-            this.addCommentToDOM(post, commentText);
+            this.addCommentToDOM(post, response.comment.content, response.comment.author);
             
             // 清空输入框
             commentInput.value = '';
@@ -1217,6 +1343,9 @@ class CommunityManager {
                 const count = parseInt(commentBtn.textContent);
                 commentBtn.textContent = count + 1;
             }
+            
+            // 显示成功提示
+            this.showToast('评论成功', 'success');
         } catch (error) {
             console.error('提交评论失败:', error);
             this.showToast('提交评论失败，请稍后重试', 'error');
@@ -1229,17 +1358,23 @@ class CommunityManager {
     /**
      * 添加评论到DOM
      */
-    addCommentToDOM(post, commentText) {
+    addCommentToDOM(post, commentText, author = null) {
         const commentsList = post.querySelector('.comments-list');
         if (!commentsList) return;
+        
+        // 使用当前用户或评论作者信息
+        const commentAuthor = author || {
+            username: this.currentUser?.username || '匿名用户',
+            avatar: this.currentUser?.avatar || this.currentUser?.username?.charAt(0) || '匿'
+        };
         
         const commentEl = document.createElement('div');
         commentEl.className = 'comment-item';
         commentEl.innerHTML = `
-            <div class="comment-avatar">${this.currentUser?.username.charAt(0) || '匿'}</div>
+            <div class="comment-avatar">${commentAuthor.avatar || commentAuthor.username.charAt(0)}</div>
             <div class="comment-body">
                 <div class="comment-header">
-                    <span class="comment-author">${this.currentUser?.username || '匿名用户'}</span>
+                    <span class="comment-author">${commentAuthor.username}</span>
                     <span class="comment-time">刚刚</span>
                 </div>
                 <p class="comment-text">${commentText}</p>
@@ -1250,6 +1385,9 @@ class CommunityManager {
             </div>
         `;
         commentsList.appendChild(commentEl);
+        
+        // 滚动到最新评论
+        commentsList.scrollTop = commentsList.scrollHeight;
     }
 
     /**
@@ -1307,7 +1445,138 @@ class CommunityManager {
      * 初始化通知系统
      */
     initNotifications() {
-        // 通知功能可以根据需要扩展
+        // 加载通知数量
+        this.loadNotificationCount();
+        
+        // 初始化WebSocket连接
+        this.initWebSocket();
+        
+        // 定时更新通知数量（每30秒）
+        this.notificationInterval = setInterval(() => {
+            this.loadNotificationCount();
+        }, 30000);
+    }
+    
+    /**
+     * 加载通知数量
+     */
+    async loadNotificationCount() {
+        try {
+            const response = await this.apiRequest('/notifications/count', {
+                method: 'GET'
+            });
+            
+            // 更新通知数量
+            this.updateNavNotificationBadge(response.unread_count);
+        } catch (error) {
+            console.error('获取通知数量失败:', error);
+            // 发生错误时，将通知数量设置为0
+            this.updateNavNotificationBadge(0);
+        }
+    }
+    
+    /**
+     * 更新导航栏通知徽章
+     */
+    updateNavNotificationBadge(unreadCount = 0) {
+        const badge = document.getElementById('navNotificationBadge');
+        if (!badge) return;
+
+        if (unreadCount > 0) {
+            badge.textContent = unreadCount;
+            badge.style.display = 'flex';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+    
+    /**
+     * 初始化WebSocket连接
+     */
+    initWebSocket() {
+        try {
+            // 检查是否已加载socket.io
+            if (typeof io === 'undefined') {
+                // 如果没有加载socket.io，动态加载
+                const script = document.createElement('script');
+                script.src = 'https://cdn.socket.io/4.7.2/socket.io.min.js';
+                script.onload = () => {
+                    this.setupWebSocket();
+                };
+                script.onerror = (error) => {
+                    console.error('加载socket.io失败:', error);
+                };
+                document.head.appendChild(script);
+            } else {
+                // 如果已经加载socket.io，直接设置WebSocket
+                this.setupWebSocket();
+            }
+        } catch (error) {
+            console.error('初始化WebSocket失败:', error);
+        }
+    }
+    
+    /**
+     * 设置WebSocket连接
+     */
+    setupWebSocket() {
+        try {
+            // 获取当前用户ID
+            const currentUser = JSON.parse(localStorage.getItem('user'));
+            if (!currentUser || !currentUser.id) {
+                return;
+            }
+            
+            const userId = currentUser.id;
+            
+            // 创建WebSocket连接
+            this.socket = io.connect('http://localhost:5000', {
+                transports: ['websocket'],
+                credentials: true
+            });
+            
+            // 连接成功事件
+            this.socket.on('connect', () => {
+                console.log('WebSocket连接成功');
+                this.isSocketConnected = true;
+                
+                // 加入用户房间
+                this.socket.emit('join_room', { user_id: userId });
+            });
+            
+            // 连接断开事件
+            this.socket.on('disconnect', () => {
+                console.log('WebSocket连接断开');
+                this.isSocketConnected = false;
+            });
+            
+            // 连接错误事件
+            this.socket.on('connect_error', (error) => {
+                console.error('WebSocket连接错误:', error);
+                this.isSocketConnected = false;
+            });
+            
+            // 新通知事件
+            this.socket.on('new_notification', (notification) => {
+                console.log('收到新通知:', notification);
+                this.handleNewNotification(notification);
+            });
+        } catch (error) {
+            console.error('设置WebSocket失败:', error);
+        }
+    }
+    
+    /**
+     * 处理新通知
+     */
+    handleNewNotification(notification) {
+        // 更新通知数量
+        this.loadNotificationCount();
+        
+        // 显示通知提示
+        this.showToast(`收到新通知: ${notification.content}`, 'success');
+        
+        // 如果当前在通知页面，通知页面会自动更新
     }
 
     /**
