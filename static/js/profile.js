@@ -556,6 +556,9 @@ async function loadUserInfo() {
     currentUser = responseData.user;
     console.log('[loadUserInfo] 加载成功，用户信息:', currentUser);
     
+    // 将用户信息保存到localStorage，确保其他页面能获取到最新信息
+    localStorage.setItem('user', JSON.stringify(currentUser));
+    
     renderUserInfo();
     loadWorks(); // 默认加载作品
     
@@ -605,8 +608,9 @@ function renderUserInfo() {
   // 头像
   const avatarImg = document.getElementById('userAvatar');
   if (avatarImg) {
-    if (currentUser.avatar) {
-      avatarImg.src = `${API_BASE}/uploads/${currentUser.avatar}`;
+    if (currentUser.avatar && currentUser.avatar !== 'default_avatar.png') {
+      // 正确构建头像URL，包含avatars子路径
+      avatarImg.src = `/uploads/avatars/${currentUser.avatar}`;
       // 重置样式，确保图片显示
       avatarImg.style.background = '';
       avatarImg.style.display = '';
@@ -615,8 +619,8 @@ function renderUserInfo() {
       avatarImg.style.color = '';
       avatarImg.style.fontSize = '';
       avatarImg.textContent = '';
-    } else if (USE_MOCK_DATA) {
-      // Mock 模式下使用默认头像或生成一个颜色背景
+    } else {
+      // 使用默认头像或生成一个颜色背景
       avatarImg.style.background = 'linear-gradient(135deg, #8b4513, #6d380e)';
       avatarImg.style.display = 'flex';
       avatarImg.style.alignItems = 'center';
@@ -624,6 +628,8 @@ function renderUserInfo() {
       avatarImg.style.color = 'white';
       avatarImg.style.fontSize = '48px';
       avatarImg.textContent = currentUser.username.charAt(0).toUpperCase();
+      // 清空src，避免404错误
+      avatarImg.src = '';
     }
   }
 

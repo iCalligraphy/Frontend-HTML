@@ -457,7 +457,7 @@ class CommunityManager {
             const postData = {
                 id: post.id, // 确保帖子数据包含ID
                 author: post.author.username,
-                avatar: post.author.username.charAt(0),
+                avatar: post.author.avatar || post.author.username.charAt(0),
                 time: this.formatTime(post.created_at),
                 title: post.title,
                 content: post.content,
@@ -812,11 +812,11 @@ class CommunityManager {
         article.innerHTML = `
             <div class="post-header">
                 <div class="post-author">
-                    <div class="author-avatar">${data.avatar}</div>
-                    <div class="author-info">
-                        <h4 class="author-name">${data.author}</h4>
-                        <p class="post-time">${data.time}</p>
-                    </div>
+                <div class="author-avatar">${typeof data.avatar === 'string' && data.avatar !== 'default_avatar.png' ? `<img src="/uploads/avatars/${data.avatar}" alt="${data.author}" class="avatar-img" />` : data.avatar}</div>
+                <div class="author-info">
+                    <h4 class="author-name">${data.author}</h4>
+                    <p class="post-time">${data.time}</p>
+                </div>
                     ${authorId > 0 ? `
                         <div class="author-actions">
                             <button class="btn-follow ${isFollowing ? 'btn-following' : ''}" 
@@ -1034,7 +1034,7 @@ class CommunityManager {
                         const postData = {
                             id: post.id, // 确保帖子数据包含ID
                             author: post.author.username,
-                            avatar: post.author.username.charAt(0),
+                            avatar: post.author.avatar || post.author.username.charAt(0),
                             time: this.formatTime(post.created_at),
                             title: post.title,
                             content: post.content,
@@ -1371,7 +1371,7 @@ class CommunityManager {
         const commentEl = document.createElement('div');
         commentEl.className = 'comment-item';
         commentEl.innerHTML = `
-            <div class="comment-avatar">${commentAuthor.avatar || commentAuthor.username.charAt(0)}</div>
+            <div class="comment-avatar">${typeof commentAuthor.avatar === 'string' && commentAuthor.avatar !== 'default_avatar.png' ? `<img src="/uploads/avatars/${commentAuthor.avatar}" alt="${commentAuthor.username}" class="avatar-img" />` : commentAuthor.avatar || commentAuthor.username.charAt(0)}</div>
             <div class="comment-body">
                 <div class="comment-header">
                     <span class="comment-author">${commentAuthor.username}</span>
