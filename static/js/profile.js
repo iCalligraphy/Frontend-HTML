@@ -1,6 +1,6 @@
 // ========== 个人中心页面 JavaScript (支持 Mock 模式) ========== 
 
-let API_BASE = 'http://10.234.242.47:5000';
+let API_BASE = 'http://127.0.0.1:5000';
 let USE_MOCK_DATA = false; // 默认使用真实 API，可通过页面调试面板切换
 
 let currentUser = null;
@@ -884,6 +884,7 @@ async function updateProfile() {
   console.log('[updateProfile] 开始更新资料:', { email, bio });
 
   // 表单验证
+
   if (!email) {
     showToast('邮箱地址不能为空', 'error');
     return;

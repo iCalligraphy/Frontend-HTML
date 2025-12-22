@@ -1,6 +1,7 @@
 {% extends "base.html" %} {% block title %}个人中心 · 墨智帖{% endblock %} {%
 block extra_css %}
 <link rel="stylesheet" href="/static/css/profile.css" />
+<link rel="stylesheet" href="/static/css/my_collections.css" />
 {% endblock %} {% block content %}
 <main class="container">
   <!-- 用户头部信息区 -->
@@ -45,7 +46,7 @@ block extra_css %}
         </div>
         <div class="stat-card" id="collectionsStatCard">
           <div class="stat-number" id="collectionsCount">0</div>
-          <div class="stat-label">收藏</div>
+          <div class="stat-label">字集</div>
         </div>
         <!-- 已移除：帖子 统计卡 -->
         <div class="stat-card" id="followersStatCard">
@@ -64,8 +65,8 @@ block extra_css %}
         <span>我上传的作品</span>
       </button>
       <button class="tab-button" data-tab="collections">
-        <span class="tab-icon">❤️</span>
-        <span>我的收藏</span>
+        <span class="tab-icon">🗂️</span>
+        <span>我的字集</span>
       </button>
       <!-- 已移除：我的帖子 标签 -->
       <button class="tab-button" data-tab="settings">
@@ -87,13 +88,98 @@ block extra_css %}
       </div>
     </div>
 
-    <!-- 我的收藏标签页 -->
+    <!-- 我的字集标签页 -->
     <div id="collections" class="tab-content">
-      <div id="collectionsContainer" class="content-container">
-        <div class="loading-spinner">
-          <div class="spinner"></div>
-          <p>加载中...</p>
-        </div>
+      <div class="collections-main">
+        <!-- 页面标题与操作栏 -->
+        <section class="collections-header">
+          <div class="header-content">
+            <h1>我的字集</h1>
+            <p class="subtitle">
+              管理你的专属字集，从作品中精选单字，构建个人字库
+            </p>
+          </div>
+          <button
+            type="button"
+            id="createCollectionBtn"
+            class="btn btn-primary"
+          >
+            <span class="btn-icon">+</span>
+            <span class="btn-text">创建字集</span>
+          </button>
+        </section>
+
+        <!-- 字集统计 -->
+        <section class="collections-stats">
+          <div class="stat-card">
+            <div class="stat-value" id="totalCollections">0</div>
+            <div class="stat-label">字集总数</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="totalCharacters">0</div>
+            <div class="stat-label">单字总数</div>
+          </div>
+          <!-- 今日更新功能已注释 -->
+          <!-- <div class="stat-card">
+            <div class="stat-value" id="recentUpdates">0</div>
+            <div class="stat-label">今日更新</div>
+          </div> -->
+        </section>
+
+        <!-- 筛选与搜索 -->
+        <section class="collections-toolbar">
+          <div class="toolbar-filters">
+            <div class="filter-group">
+              <label for="sortSelect" class="label">排序：</label>
+              <select id="sortSelect" class="select-field">
+                <option value="recent">最近更新</option>
+                <option value="name">按名称</option>
+                <option value="count">按字数</option>
+                <option value="created">创建时间</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label for="styleFilter" class="label">风格：</label>
+              <select id="styleFilter" class="select-field">
+                <option value="all">全部风格</option>
+                <option value="kai">楷书</option>
+                <option value="xing">行书</option>
+                <option value="cao">草书</option>
+                <option value="li">隶书</option>
+                <option value="zhuan">篆书</option>
+              </select>
+            </div>
+          </div>
+          <div class="toolbar-search">
+            <input
+              type="search"
+              id="collectionSearch"
+              class="search-input"
+              placeholder="搜索字集名称或单字..."
+            />
+          </div>
+        </section>
+
+        <!-- 字集列表 -->
+        <section class="collections-list" id="collectionsList">
+          <!-- 动态生成字集卡片 -->
+        </section>
+
+        <!-- 空状态（当没有字集时显示） -->
+        <section class="empty-state hidden" id="emptyState">
+          <div class="empty-content">
+            <div class="empty-icon">📚</div>
+            <h2>还没有字集</h2>
+            <p>创建你的第一个字集，开始收藏喜欢的单字吧</p>
+            <button
+              type="button"
+              class="btn btn-primary btn-large"
+              id="createFirstBtn"
+            >
+              创建字集
+            </button>
+          </div>
+        </section>
       </div>
     </div>
 
@@ -225,7 +311,7 @@ block extra_css %}
 <div id="toast" class="toast"></div>
 
 <!-- 用户列表模态框（粉丝/关注） -->
-<div id="userListModal" class="modal">
+<div id="userListModal" class="modal hidden">
   <div class="modal-content">
     <div class="modal-header">
       <h3 id="modalTitle">列表</h3>
@@ -238,7 +324,7 @@ block extra_css %}
 </div>
 
 <!-- Mock 数据查看模态框 -->
-<div id="mockDataModal" class="modal">
+<div id="mockDataModal" class="modal hidden">
   <div class="modal-content" style="max-width: 600px; max-height: 80vh">
     <div class="modal-header">
       <h3>Mock 数据预览</h3>
@@ -249,6 +335,282 @@ block extra_css %}
     </div>
   </div>
 </div>
+
+<!-- 创建/编辑字集弹窗 -->
+<div
+  class="modal hidden"
+  id="collectionModal"
+  role="dialog"
+  aria-labelledby="modalTitle"
+  aria-modal="true"
+>
+  <div class="modal-overlay" id="modalOverlay"></div>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 id="modalTitle">创建字集</h2>
+      <button
+        type="button"
+        class="modal-close"
+        id="modalClose"
+        aria-label="关闭"
+      >
+        ×
+      </button>
+    </div>
+    <div class="modal-body">
+      <form id="collectionForm" class="form">
+        <div class="form-group">
+          <label for="collectionName" class="form-label"
+            >字集名称 <span class="required">*</span></label
+          >
+          <input
+            type="text"
+            id="collectionName"
+            class="form-input"
+            placeholder="如：常用楷书字"
+            maxlength="50"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <label for="collectionDesc" class="form-label">描述（选填）</label>
+          <textarea
+            id="collectionDesc"
+            class="form-textarea"
+            placeholder="简单描述这个字集的用途..."
+            rows="3"
+            maxlength="200"
+          ></textarea>
+        </div>
+        <div class="form-group">
+          <label for="collectionStyle" class="form-label">主要风格</label>
+          <select id="collectionStyle" class="form-select">
+            <option value="">不限</option>
+            <option value="kai">楷书</option>
+            <option value="xing">行书</option>
+            <option value="cao">草书</option>
+            <option value="li">隶书</option>
+            <option value="zhuan">篆书</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">可见性</label>
+          <div class="radio-group">
+            <label class="radio-label">
+              <input type="radio" name="visibility" value="private" checked />
+              <span>私密（仅自己可见）</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="visibility" value="public" />
+              <span>公开（所有人可见）</span>
+            </label>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" id="modalCancel">
+        取消
+      </button>
+      <button type="button" class="btn btn-primary" id="modalConfirm">
+        确定
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- 字集详情弹窗 -->
+<div
+  class="modal hidden"
+  id="detailModal"
+  role="dialog"
+  aria-labelledby="detailTitle"
+  aria-modal="true"
+>
+  <div class="modal-overlay" id="detailOverlay"></div>
+  <div class="modal-content modal-large">
+    <div class="modal-header">
+      <h2 id="detailTitle">常用楷书字</h2>
+      <button
+        type="button"
+        class="modal-close"
+        id="detailClose"
+        aria-label="关闭"
+      >
+        ×
+      </button>
+    </div>
+    <div class="modal-body">
+      <!-- 单字筛选工具栏 -->
+      <div class="detail-toolbar">
+        <div class="detail-search">
+          <input
+            type="search"
+            id="charSearch"
+            class="search-input"
+            placeholder="搜索单字..."
+          />
+        </div>
+        <div class="detail-actions">
+          <button
+            type="button"
+            class="btn btn-outline btn-small"
+            id="selectModeBtn"
+          >
+            批量选择
+          </button>
+          <button
+            type="button"
+            class="btn btn-outline btn-small"
+            id="exportBtn"
+          >
+            导出
+          </button>
+        </div>
+      </div>
+
+      <!-- 单字详情弹窗（从 test 移植，供详情内单字查看） -->
+      <div
+        class="modal hidden"
+        id="charModal"
+        role="dialog"
+        aria-labelledby="modalCharText"
+        aria-modal="true"
+      >
+        <div class="modal-overlay" id="charModalOverlay"></div>
+        <div class="modal-content">
+          <button
+            type="button"
+            class="modal-close"
+            id="charModalClose"
+            aria-label="关闭"
+          >
+            ×
+          </button>
+
+          <div class="modal-header">
+            <h2 class="modal-title" id="modalCharText">永</h2>
+            <div class="modal-meta">
+              <span class="meta-badge" id="modalStyle">行书</span>
+              <span class="meta-item" id="modalWork">兰亭序</span>
+            </div>
+          </div>
+
+          <div class="modal-body">
+            <div class="char-preview-large" id="modalPreview"></div>
+
+            <div class="char-info">
+              <div class="info-row">
+                <span class="info-label">笔画数：</span>
+                <span class="info-value" id="modalStrokeCount">-</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">笔顺：</span>
+                <span class="info-value" id="modalStrokeOrder">-</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">识别度：</span>
+                <span class="info-value" id="modalConfidence">-</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">读帖数：</span>
+                <span class="info-value" id="modalAnnotations">-</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">收藏时间：</span>
+                <span class="info-value" id="modalCollectedAt">-</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn btn-outline" id="downloadCharBtn">
+              ⬇️ 下载
+            </button>
+            <button type="button" class="btn btn-outline" id="readPostCharBtn">
+              📖 读帖
+            </button>
+            <button
+              type="button"
+              class="btn btn-outline"
+              id="viewAnnotationsBtn"
+            >
+              📝 查看读帖
+            </button>
+            <button type="button" class="btn btn-danger" id="removeCharBtn">
+              🗑️ 移除
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 单字网格（详细视图） -->
+      <div class="detail-char-grid" id="detailCharGrid">
+        <div class="detail-char-item" data-char="永">
+          <div class="char-card">
+            <div class="char-image" aria-hidden="true"></div>
+            <div class="char-label">永</div>
+            <div class="char-source">王羲之 · 兰亭序</div>
+            <button
+              type="button"
+              class="char-remove"
+              aria-label="移除"
+              title="从字集中移除"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+        <div class="detail-char-item" data-char="字">
+          <div class="char-card">
+            <div class="char-image" aria-hidden="true"></div>
+            <div class="char-label">字</div>
+            <div class="char-source">颜真卿 · 多宝塔碑</div>
+            <button
+              type="button"
+              class="char-remove"
+              aria-label="移除"
+              title="从字集中移除"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+        <div class="detail-char-item" data-char="书">
+          <div class="char-card">
+            <div class="char-image" aria-hidden="true"></div>
+            <div class="char-label">书</div>
+            <div class="char-source">欧阳询 · 九成宫</div>
+            <button
+              type="button"
+              class="char-remove"
+              aria-label="移除"
+              title="从字集中移除"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+        <div class="detail-char-item" data-char="法">
+          <div class="char-card">
+            <div class="char-image" aria-hidden="true"></div>
+            <div class="char-label">法</div>
+            <div class="char-source">柳公权 · 玄秘塔碑</div>
+            <button
+              type="button"
+              class="char-remove"
+              aria-label="移除"
+              title="从字集中移除"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %} {% block extra_js %}
 <script src="/static/js/profile.js" defer></script>
+<script src="/static/js/my_collections.js" defer></script>
 {% endblock %}
