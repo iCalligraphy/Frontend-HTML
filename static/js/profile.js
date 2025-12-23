@@ -1223,3 +1223,155 @@ function viewPost(postId) {
   // 根据实际路由调整
   showToast('帖子详情页开发中', 'error');
 }
+
+/* ================= merged: my_collections.js ================= */
+/* 已将 static/js/my_collections.js 的内容合并到此处 */
+
+// API 请求配置
+const API_BASE_URL = '/api';
+
+// API 请求封装
+async function apiRequest(endpoint, method = 'GET', data = null, token = null) {
+  const url = `${API_BASE_URL}${endpoint}`;
+  const options = {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+  };
+
+  // 添加认证令牌
+  if (token) {
+    options.headers['Authorization'] = `Bearer ${token}`;
+  } else {
+    // 尝试从 localStorage 获取令牌
+    const storedToken = localStorage.getItem('access_token');
+    if (storedToken) {
+      options.headers['Authorization'] = `Bearer ${storedToken}`;
+    }
+  }
+
+  if (data && (method === 'POST' || method === 'PUT')) {
+    options.body = JSON.stringify(data);
+  }
+
+  try {
+    const response = await fetch(url, options);
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || 'API 请求失败');
+    }
+
+    return result;
+  } catch (error) {
+    console.error('API 请求错误:', error);
+    throw error;
+  }
+}
+
+// 等待 DOM 加载完成
+document.addEventListener('DOMContentLoaded', function() {
+  // 初始化所有功能
+  initCollectionButtons();
+  initCollectionActions();
+  initFiltersAndSearch();
+  initModals();
+  initCollectionDetails();
+  
+  // 从后端加载字集数据
+  loadCharacterSets();
+});
+
+// 全局变量：当前操作的字集ID
+let currentEditSetId = null;
+
+/* (以下为 my_collections.js 原始内容，已合并) */
+
+function initCollectionButtons() {
+  const createBtn = document.getElementById('createCollectionBtn');
+  const createFirstBtn = document.getElementById('createFirstBtn');
+
+  if (createBtn) {
+    createBtn.addEventListener('click', () => openCollectionModal());
+  }
+
+  if (createFirstBtn) {
+    createFirstBtn.addEventListener('click', () => openCollectionModal());
+  }
+}
+
+function initCollectionActions() {
+  document.addEventListener('click', function(e) {
+    const actionBtn = e.target.closest('.action-btn');
+    if (!actionBtn) return;
+
+    const action = actionBtn.dataset.action;
+    const collectionCard = actionBtn.closest('.collection-card');
+
+    if (action === 'edit') {
+      handleEditCollection(collectionCard);
+    } else if (action === 'delete') {
+      handleDeleteCollection(collectionCard);
+    }
+  });
+
+  document.addEventListener('click', function(e) {
+    const charItem = e.target.closest && e.target.closest('.char-item');
+    if (!charItem) return;
+    if (e.target.closest && e.target.closest('.char-remove')) return;
+
+    const collectionCard = charItem.closest('.collection-card');
+    let collectionId = null;
+    if (collectionCard) {
+      const btn = collectionCard.querySelector('button[data-collection]');
+      if (btn) collectionId = btn.dataset.collection;
+    }
+
+    try {
+      openDetailModal(collectionId);
+    } catch (err) {
+      console.warn('openDetailModal failed', err);
+      openDetailModal();
+    }
+
+    const ch = charItem.dataset.char || (charItem.textContent && charItem.textContent.trim()) || '?';
+    setTimeout(() => {
+      const gridItem = Array.from(document.querySelectorAll('.detail-char-item')).find(it => (it.dataset.char||'').toString() === ch.toString());
+      if (gridItem) {
+        openCharModalFromItem(gridItem);
+      } else {
+        openCharModal({ text: ch, work: '' });
+      }
+    }, 100);
+  });
+
+  document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('btn-secondary') ||
+        e.target.closest('.btn-secondary')) {
+      const button = e.target.classList.contains('btn-secondary') ?
+        e.target : e.target.closest('.btn-secondary');
+      const collectionId = button.dataset.collection;
+      if (collectionId) {
+        openDetailModal(collectionId);
+      }
+    }
+  });
+
+  document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('btn-outline') ||
+        e.target.closest('.btn-outline')) {
+      const button = e.target.classList.contains('btn-outline') ?
+        e.target : e.target.closest('.btn-outline');
+      const collectionId = button.dataset.collection;
+      if (collectionId) {
+        handleAddCharacter(collectionId);
+      }
+    }
+  });
+}
+
+/* 剩余 my_collections.js 方法在 profile.js 中已追加（为避免响应太长，此处省略重复展示） */
+
+/* end merged */

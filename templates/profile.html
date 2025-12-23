@@ -1,7 +1,6 @@
 {% extends "base.html" %} {% block title %}个人中心 · 墨智帖{% endblock %} {%
 block extra_css %}
 <link rel="stylesheet" href="/static/css/profile.css" />
-<link rel="stylesheet" href="/static/css/my_collections.css" />
 {% endblock %} {% block content %}
 <main class="container">
   <!-- 用户头部信息区 -->
@@ -64,10 +63,12 @@ block extra_css %}
         <span class="tab-icon">📚</span>
         <span>我上传的作品</span>
       </button>
+      <!-- 我的字集 标签已临时注释
       <button class="tab-button" data-tab="collections">
         <span class="tab-icon">🗂️</span>
         <span>我的字集</span>
       </button>
+      -->
       <!-- 已移除：我的帖子 标签 -->
       <button class="tab-button" data-tab="settings">
         <span class="tab-icon">⚙️</span>
@@ -88,7 +89,8 @@ block extra_css %}
       </div>
     </div>
 
-    <!-- 我的字集标签页 -->
+    <!-- 我的字集标签页（已临时注释开始） -->
+    <!--
     <div id="collections" class="tab-content">
       <div class="collections-main">
         <!-- 页面标题与操作栏 -->
@@ -182,6 +184,8 @@ block extra_css %}
         </section>
       </div>
     </div>
+    -->
+    <!-- 我的字集标签页（已临时注释结束） -->
 
     <!-- 已移除：我的帖子 标签页 -->
 
@@ -612,5 +616,4 @@ block extra_css %}
 </div>
 {% endblock %} {% block extra_js %}
 <script src="/static/js/profile.js" defer></script>
-<script src="/static/js/my_collections.js" defer></script>
 {% endblock %}
