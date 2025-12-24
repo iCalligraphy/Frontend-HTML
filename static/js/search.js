@@ -6,6 +6,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const charsResults = document.getElementById('charsResults');
 
   // Modal elements
+  const hotKeywordsSection = document.getElementById('hotKeywordsSection');
+  const hotKeywordsList = document.getElementById('hotKeywordsList');
+
   const charModal = document.getElementById('charModal');
   const modalOverlay = document.getElementById('searchModalOverlay');
   const modalClose = document.getElementById('searchModalClose');
@@ -29,6 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 全局搜索API地址
   const SEARCH_API = '/api/calligraphy/search';
+  const HOT_KEYWORDS_API = '/api/calligraphy/hot-keywords';
   
   function getDataSource() {
     // 返回一个调用后端API的数据源对象
@@ -623,6 +627,65 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
   
+  // 获取并渲染热门搜索词
+  async function loadHotKeywords() {
+    if (!hotKeywordsSection || !hotKeywordsList) return;
+    
+    try {
+      const response = await fetch(`${HOT_KEYWORDS_API}?limit=8&days=7`);
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      const data = await response.json();
+      
+      if (data.code === 200 && data.data && data.data.keywords && data.data.keywords.length > 0) {
+        // 清空现有内容
+        hotKeywordsList.innerHTML = '';
+        
+        // 渲染热门搜索词标签
+        data.data.keywords.forEach(item => {
+          const tag = document.createElement('span');
+          tag.className = 'hot-keyword-tag';
+          tag.textContent = item.keyword;
+          tag.style.cssText = 'display: inline-block; padding: 4px 12px; background: #f5f0e8; color: #8B4513; border-radius: 16px; font-size: 13px; cursor: pointer; transition: all 0.2s;';
+          
+          // 鼠标悬停效果
+          tag.addEventListener('mouseenter', () => {
+            tag.style.background = '#8B4513';
+            tag.style.color = '#fff';
+          });
+          tag.addEventListener('mouseleave', () => {
+            tag.style.background = '#f5f0e8';
+            tag.style.color = '#8B4513';
+          });
+          
+          // 点击事件：填入搜索框并搜索
+          tag.addEventListener('click', () => {
+            if (input) {
+              input.value = item.keyword;
+              doSearch();
+            }
+          });
+          
+          hotKeywordsList.appendChild(tag);
+        });
+        
+        // 显示热门搜索区域
+        hotKeywordsSection.style.display = 'block';
+      } else {
+        // 没有热门搜索词，隐藏区域
+        hotKeywordsSection.style.display = 'none';
+      }
+    } catch (error) {
+      console.error('Load hot keywords error:', error);
+      // 加载失败，隐藏区域
+      hotKeywordsSection.style.display = 'none';
+    }
+  }
+  
   // 执行初始渲染
   initialRender();
+  
+  // 加载热门搜索词
+  loadHotKeywords();
 });
