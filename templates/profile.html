@@ -1,6 +1,7 @@
 {% extends "base.html" %} {% block title %}个人中心 · 墨智帖{% endblock %} {%
 block extra_css %}
 <link rel="stylesheet" href="/static/css/profile.css" />
+<link rel="stylesheet" href="/static/css/follow.css" />
 {% endblock %} {% block content %}
 <main class="container">
   <!-- 用户头部信息区 -->
@@ -66,6 +67,10 @@ block extra_css %}
       </button>
       -->
       <!-- 已移除：我的帖子 标签 -->
+      <button class="tab-button" data-tab="follow">
+        <span class="tab-icon">👥</span>
+        <span>关注/粉丝</span>
+      </button>
       <button class="tab-button" data-tab="settings">
         <span class="tab-icon">⚙️</span>
         <span>账户设置</span>
@@ -86,6 +91,36 @@ block extra_css %}
     </div>
 
     <!-- 已移除：我的帖子 标签页 -->
+
+    <!-- 关注/粉丝 标签页（来自 community/follow.html） -->
+    <div id="follow" class="tab-content">
+      <div class="content-container">
+        <div class="follow-tabs">
+          <button class="tab-btn active" data-tab="following">我关注的</button>
+          <button class="tab-btn" data-tab="followers">关注我的</button>
+        </div>
+
+        <div class="follow-toolbar">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input
+              type="search"
+              class="search-input"
+              placeholder="搜索用户..."
+            />
+          </div>
+          <div class="filter-options">
+            <button class="filter-btn active" data-filter="all">全部</button>
+            <button class="filter-btn" data-filter="recent">最近活跃</button>
+            <button class="filter-btn" data-filter="popular">最受欢迎</button>
+          </div>
+        </div>
+
+        <div class="users-grid">
+          <!-- 用户卡片列表将由 JavaScript 动态生成 -->
+        </div>
+      </div>
+    </div>
 
     <!-- 账户设置标签页 -->
     <div id="settings" class="tab-content">
@@ -240,4 +275,5 @@ block extra_css %}
 
 {% endblock %} {% block extra_js %}
 <script src="/static/js/profile.js" defer></script>
+<script src="/static/js/follow.js" defer></script>
 {% endblock %}

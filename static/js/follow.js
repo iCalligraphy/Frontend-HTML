@@ -527,7 +527,6 @@ style.textContent = `
 
   .toast {
     position: fixed;
-    top: 100px;
     right: 20px;
     background: var(--ink-black);
     color: #fff;
