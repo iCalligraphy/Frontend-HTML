@@ -223,6 +223,8 @@ document.addEventListener('DOMContentLoaded', () => {
       card.dataset.id = c.id;
       
       const work = works.find(w => String(w.id) === String(c.work_id));
+      // 优先使用字符自带的work_image_url，否则从work对象获取
+      const workImageUrl = c.work_image_url || (work && work.image_url) || '';
       
       // 初始化预览元素
       let preview;
@@ -244,11 +246,11 @@ document.addEventListener('DOMContentLoaded', () => {
       // 设置初始预览为占位符
       preview = placeholderCanvas;
       
-      // 如果有作品信息，尝试从作品图片中截取单字
-      if (work && work.image_url && c.x !== undefined && c.y !== undefined && c.width && c.height) {
+      // 如果有作品图片URL和坐标信息，尝试从作品图片中截取单字
+      if (workImageUrl && c.x !== undefined && c.y !== undefined && c.width && c.height) {
         try {
           // 加载作品图片
-          const workImg = await loadWorkImage(work.id, work.image_url);
+          const workImg = await loadWorkImage(c.work_id, workImageUrl);
           
           if (workImg) {
             // 创建预览canvas
@@ -288,7 +290,7 @@ document.addEventListener('DOMContentLoaded', () => {
             charText: c.text || c.char,
             workId: c.work_id,
             workTitle: work ? work.title : 'Unknown work',
-            workImageUrl: work ? work.image_url : 'No image URL',
+            workImageUrl: workImageUrl || 'No image URL',
             charPosition: { x: c.x, y: c.y, width: c.width, height: c.height },
             errorMessage: error.message,
             errorStack: error.stack
@@ -361,7 +363,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         try {
           // 加载作品图片
-          const workImg = await loadWorkImage(c.work_id, work.image_url);
+          const workImg = await loadWorkImage(c.work_id, workImageUrl);
           
           if (workImg) {
             // 创建一个大尺寸的canvas，用于读帖
@@ -542,8 +544,8 @@ document.addEventListener('DOMContentLoaded', () => {
           collected_at: c.collected_at,
           // 添加作品信息
           work: work,
-          // 添加作品图片URL，用于生成单字图片
-          work_image_url: work ? work.image_url : '',
+          // 添加作品图片URL，用于生成单字图片（优先使用后端返回的work_image_url）
+          work_image_url: c.work_image_url || (work ? work.image_url : ''),
           // 添加单字在作品中的坐标信息
           x: c.x,
           y: c.y,
@@ -598,7 +600,7 @@ document.addEventListener('DOMContentLoaded', () => {
           stroke_order: c.stroke_order,
           collected_at: c.collected_at,
           work: work,
-          work_image_url: work ? work.image_url : '',
+          work_image_url: c.work_image_url || (work ? work.image_url : ''),
           x: c.x,
           y: c.y,
           width: c.width,

@@ -76,16 +76,25 @@
 
 - 新增作品介绍(description)字段显示
 - 修复风格显示拼音问题，添加STYLE_MAP映射转换为中文(楷书/行书/草书等)
-- 添加作品介绍CSS样式
+- 添加作品介绍 CSS样式
 
-点击单字按读贴，一直显示处理中 —— 我测试没问题
+点击单字按读帖，一直显示处理中 —— 我测试没问题
 
 检索功能：
-单字图片显示有问题
-修复-检索页面单字图片显示问题
+单字图片显示有问题 —— 完成
+修复-检索页面不搜索时页面单字图片显示问题
 - 修复initialRender函数缺失单字坐标字段(x, y, width, height)导致无法裁剪作品图片
 - 添加work_image_url字段用于获取作品图片URL
 - 与doSearch函数保持数据结构一致，确保renderChars正确显示实际单字图片
+修复-检索页面搜索后单字图片显示问题
+- 修复renderChars函数优先使用字符自带的work_image_url而非依赖works数组
+- 修复doSearch函数中work_image_url被空值覆盖的问题
+- 确保搜索结果中works为空时仍能正确从后端返回的work_image_url裁剪单字图片
+问题原因：
+- 单字图片通过从作品原图中裁剪指定坐标区域生成，需要work_image_url和坐标(x,y,width,height)
+- 后端搜索API分别查询works和characters，搜索单字时works数组可能为空（作品标题/作者不匹配搜索词）
+- 前端原代码用 `work ? work.image_url : ''` 覆盖了后端返回的 `c.work_image_url`，导致URL为空
+- renderChars条件判断 `work && work.image_url` 失败，回退显示楷书字体文本而非实际单字图片
 
 点搜索出现常见搜索（有余力就添加）
 
