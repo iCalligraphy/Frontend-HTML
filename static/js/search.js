@@ -586,6 +586,7 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // 转换字符数据，使其与前端期望的格式一致
       chars = chars.map(c => {
+        const work = works.find(w => String(w.id) === String(c.work_id));
         return {
           id: c.id,
           text: c.recognition,
@@ -596,7 +597,12 @@ document.addEventListener('DOMContentLoaded', () => {
           stroke_count: c.strokes,
           stroke_order: c.stroke_order,
           collected_at: c.collected_at,
-          work: works.find(w => String(w.id) === String(c.work_id))
+          work: work,
+          work_image_url: work ? work.image_url : '',
+          x: c.x,
+          y: c.y,
+          width: c.width,
+          height: c.height
         };
       });
       
