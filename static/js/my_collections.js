@@ -413,61 +413,68 @@ async function loadMockCharacters() {
     document.head.appendChild(style);
 
     // 批量处理单字数据
-    for (const character of characters) {
-      // 创建单字元素
-      const charItem = document.createElement('div');
-      charItem.className = 'add-char-item';
-      charItem.dataset.char = character.recognition;
-      charItem.dataset.style = character.style;
-      charItem.dataset.charId = character.id;
-      
-      const charCard = document.createElement('div');
-      charCard.className = 'char-card';
-      
-      // 创建图片容器
-      const charImage = document.createElement('img');
-      charImage.className = 'char-image';
-      charImage.ariaHidden = 'true';
-      
-      // 创建文字标签
-      const charLabel = document.createElement('div');
-      charLabel.className = 'char-label';
-      charLabel.textContent = character.recognition;
-      
-      // 创建来源信息
-      const charSource = document.createElement('div');
-      charSource.className = 'char-source';
-      charSource.textContent = character.source;
-      
-      // 创建添加按钮
-      const charAddBtn = document.createElement('button');
-      charAddBtn.type = 'button';
-      charAddBtn.className = 'char-add-btn';
-      charAddBtn.title = '添加到字集';
-      charAddBtn.innerHTML = '<span>+</span>';
-      
-      // 组装元素
-      charCard.appendChild(charImage);
-      charCard.appendChild(charLabel);
-      charCard.appendChild(charSource);
-      charCard.appendChild(charAddBtn);
-      charItem.appendChild(charCard);
-      grid.appendChild(charItem);
-      
-      // 生成统一尺寸的图片
-      const imageUrl = await generateUniformCharImage(character);
-      if (imageUrl) {
-        charImage.src = imageUrl;
+      for (const character of characters) {
+        // 创建单字元素
+        const charItem = document.createElement('div');
+        charItem.className = 'add-char-item';
+        charItem.dataset.char = character.recognition;
+        charItem.dataset.style = character.style;
+        charItem.dataset.charId = character.id;
+        
+        // 存储原始字符坐标和图片信息到data属性
+        charItem.dataset.x = character.x;
+        charItem.dataset.y = character.y;
+        charItem.dataset.width = character.width;
+        charItem.dataset.height = character.height;
+        charItem.dataset.workImageUrl = character.work_image_url;
+        
+        const charCard = document.createElement('div');
+        charCard.className = 'char-card';
+        
+        // 创建图片容器
+        const charImage = document.createElement('img');
+        charImage.className = 'char-image';
+        charImage.ariaHidden = 'true';
+        
+        // 创建文字标签
+        const charLabel = document.createElement('div');
+        charLabel.className = 'char-label';
+        charLabel.textContent = character.recognition;
+        
+        // 创建来源信息
+        const charSource = document.createElement('div');
+        charSource.className = 'char-source';
+        charSource.textContent = character.source;
+        
+        // 创建添加按钮
+        const charAddBtn = document.createElement('button');
+        charAddBtn.type = 'button';
+        charAddBtn.className = 'char-add-btn';
+        charAddBtn.title = '添加到字集';
+        charAddBtn.innerHTML = '<span>+</span>';
+        
+        // 组装元素
+        charCard.appendChild(charImage);
+        charCard.appendChild(charLabel);
+        charCard.appendChild(charSource);
+        charCard.appendChild(charAddBtn);
+        charItem.appendChild(charCard);
+        grid.appendChild(charItem);
+        
+        // 生成统一尺寸的图片
+        const imageUrl = await generateUniformCharImage(character);
+        if (imageUrl) {
+          charImage.src = imageUrl;
+        }
+        
+        // 添加点击事件
+        charAddBtn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          const charItem = this.closest('.add-char-item');
+          const char = charItem.dataset.char;
+          addCharToCollection(char);
+        });
       }
-      
-      // 添加点击事件
-      charAddBtn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        const charItem = this.closest('.add-char-item');
-        const char = charItem.dataset.char;
-        addCharToCollection(char);
-      });
-    }
   } catch (error) {
     console.error('加载单字数据失败:', error);
     alert('加载单字数据失败: ' + error.message);
@@ -820,11 +827,13 @@ function openCharModalFromItem(item) {
   const char = item.dataset.char || (item.querySelector('.char-label') && item.querySelector('.char-label').textContent) || '?';
   const source = item.querySelector('.char-source') ? item.querySelector('.char-source').textContent : '';
   const charId = item.dataset.charId;
-  const workImageUrl = item.querySelector('.char-image') ? item.querySelector('.char-image').style.backgroundImage.replace(/url\(['"]?([^'"]+)['"]?\)/, '$1') : '';
-  const x = Math.abs(item.querySelector('.char-image') ? parseInt(item.querySelector('.char-image').style.backgroundPositionX) : 0);
-  const y = Math.abs(item.querySelector('.char-image') ? parseInt(item.querySelector('.char-image').style.backgroundPositionY) : 0);
-  const width = item.querySelector('.char-image') ? parseInt(item.querySelector('.char-image').style.width) : 0;
-  const height = item.querySelector('.char-image') ? parseInt(item.querySelector('.char-image').style.height) : 0;
+  
+  // 从data属性获取原始字符坐标和图片信息
+  const x = parseFloat(item.dataset.x) || 0;
+  const y = parseFloat(item.dataset.y) || 0;
+  const width = parseFloat(item.dataset.width) || 0;
+  const height = parseFloat(item.dataset.height) || 0;
+  const workImageUrl = item.dataset.workImageUrl || '';
 
   // 调用与作品详情页面相同的弹窗逻辑
   showCharDetail({
@@ -1666,6 +1675,13 @@ async function openDetailModal(collectionId) {
         item.className = 'detail-char-item';
         item.dataset.char = character.recognition;
         item.dataset.charId = character.id;
+        
+        // 存储原始字符坐标和图片信息到data属性
+        item.dataset.x = character.x;
+        item.dataset.y = character.y;
+        item.dataset.width = character.width;
+        item.dataset.height = character.height;
+        item.dataset.workImageUrl = character.work_image_url;
         
         // 创建char-card元素
         const charCard = document.createElement('div');
