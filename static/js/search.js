@@ -1,9 +1,37 @@
 document.addEventListener('DOMContentLoaded', () => {
+  // 书法风格英文到中文的映射
+  const STYLE_MAP = {
+    'kai': '楷书',
+    'xing': '行书',
+    'cao': '草书',
+    'li': '隶书',
+    'zhuan': '篆书',
+    'unknown': '未知'
+  };
+  
+  // 转换书法风格为中文
+  function getStyleName(style) {
+    if (!style) return '';
+    return STYLE_MAP[style.toLowerCase()] || style;
+  }
+
   // 支持不同模板中搜索输入的 id：优先 globalSearchInput，回退到 'q'，再回退到 name="q"
   const input = document.getElementById('globalSearchInput') || document.getElementById('q') || document.querySelector('input[name="q"]');
   const btn = document.getElementById('searchBtn') || document.querySelector('#searchForm button[type=button]');
   const worksResults = document.getElementById('worksResults');
   const charsResults = document.getElementById('charsResults');
+
+  // 搜索候选下拉框元素
+  const searchSuggestions = document.getElementById('searchSuggestions');
+  const workSuggestionList = document.getElementById('workSuggestionList');
+  const authorSuggestionList = document.getElementById('authorSuggestionList');
+  const workSuggestionsGroup = document.getElementById('workSuggestions');
+  const authorSuggestionsGroup = document.getElementById('authorSuggestions');
+
+  // 缓存作品和作者数据用于候选搜索
+  let cachedWorks = [];
+  let cachedAuthors = [];
+  let suggestionDataLoaded = false;
 
   // Modal elements
   const hotKeywordsSection = document.getElementById('hotKeywordsSection');
@@ -81,12 +109,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const card = document.createElement('div');
       card.className = 'result-work-card';
 
+      // 图片区域
       const thumb = document.createElement('div');
       thumb.className = 'thumb';
       if (w.thumbnail || w.cover || w.image_url) {
         const img = document.createElement('img');
         const imgUrl = w.thumbnail || w.cover || w.image_url;
-        // 确保图片URL正确，上传的图片应该通过/uploads/路径访问
         const fullImgUrl = imgUrl.startsWith('http') || imgUrl.startsWith('/') ? imgUrl : `/uploads/works/${imgUrl}`;
         img.src = fullImgUrl;
         img.alt = w.title || 'thumbnail';
@@ -94,16 +122,42 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         thumb.textContent = '预览';
       }
+      card.appendChild(thumb);
 
+      // 信息区域
       const info = document.createElement('div');
       info.className = 'info';
+      
       const title = document.createElement('h3');
       title.textContent = w.title || ('作品 ' + (w.id || ''));
-      const p = document.createElement('p');
-      p.textContent = `${w.author_name || w.author || ''} · ${w.dynasty || ''} ${w.style || ''}`;
       info.appendChild(title);
-      info.appendChild(p);
+      
+      const meta = document.createElement('p');
+      meta.className = 'work-meta';
+      const authorText = w.author_name || w.author || '佚名';
+      const styleText = getStyleName(w.style) || '';
+      meta.textContent = `${authorText}${styleText ? ' · ' + styleText : ''}`;
+      info.appendChild(meta);
+      
+      // 显示作品描述（如果有）
+      if (w.description) {
+        const desc = document.createElement('p');
+        desc.className = 'work-description';
+        desc.textContent = w.description;
+        info.appendChild(desc);
+      }
+      
+      card.appendChild(info);
 
+      // 底部操作栏
+      const footer = document.createElement('div');
+      footer.className = 'card-footer';
+      
+      const footerMeta = document.createElement('span');
+      footerMeta.className = 'meta';
+      footerMeta.textContent = w.dynasty || '';
+      footer.appendChild(footerMeta);
+      
       const actions = document.createElement('div');
       actions.className = 'actions';
       const btn = document.createElement('button');
@@ -114,10 +168,9 @@ document.addEventListener('DOMContentLoaded', () => {
         openWorkModalWithData(w);
       });
       actions.appendChild(btn);
-      info.appendChild(actions);
-
-      card.appendChild(thumb);
-      card.appendChild(info);
+      footer.appendChild(actions);
+      
+      card.appendChild(footer);
       worksResults.appendChild(card);
     });
   }
@@ -461,7 +514,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const metaLines = [];
     if (work.author_name || work.author) metaLines.push('<div><strong>作者：</strong>' + (work.author_name||work.author) + '</div>');
     if (work.dynasty) metaLines.push('<div><strong>朝代：</strong>' + work.dynasty + '</div>');
-    if (work.style) metaLines.push('<div><strong>书体：</strong>' + work.style + '</div>');
+    if (work.style) metaLines.push('<div><strong>书体：</strong>' + getStyleName(work.style) + '</div>');
     if (work.description) metaLines.push('<div><strong>说明：</strong>' + work.description + '</div>');
     workModalMeta.innerHTML = metaLines.join('');
 
@@ -688,4 +741,204 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // 加载热门搜索词
   loadHotKeywords();
+
+  // ========== 搜索候选下拉框功能 ==========
+  
+  // 加载候选数据（作品名和作者）
+  async function loadSuggestionData() {
+    if (suggestionDataLoaded) return;
+    
+    try {
+      // 调用搜索接口获取所有作品数据
+      const result = await ds.search('');
+      const works = result.works || [];
+      
+      // 缓存作品数据
+      cachedWorks = works.map(w => ({
+        id: w.id,
+        title: w.title || '',
+        author: w.author_name || w.author || '',
+        dynasty: w.dynasty || '',
+        style: w.style || ''
+      }));
+      
+      // 提取唯一的作者列表
+      const authorSet = new Map();
+      works.forEach(w => {
+        const authorName = w.author_name || w.author;
+        if (authorName && !authorSet.has(authorName)) {
+          authorSet.set(authorName, {
+            name: authorName,
+            dynasty: w.dynasty || '',
+            workCount: 1
+          });
+        } else if (authorName) {
+          authorSet.get(authorName).workCount++;
+        }
+      });
+      cachedAuthors = Array.from(authorSet.values());
+      
+      suggestionDataLoaded = true;
+    } catch (error) {
+      console.error('Load suggestion data error:', error);
+    }
+  }
+
+  // 高亮匹配文本
+  function highlightMatch(text, query) {
+    if (!query || !text) return text;
+    try {
+      const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+      return text.replace(regex, '<span class="highlight">$1</span>');
+    } catch (e) {
+      return text;
+    }
+  }
+
+  // 正则匹配筛选作品
+  function filterWorks(query) {
+    if (!query) return [];
+    try {
+      const regex = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      return cachedWorks
+        .filter(w => regex.test(w.title))
+        .slice(0, 8);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  // 正则匹配筛选作者
+  function filterAuthors(query) {
+    if (!query) return [];
+    try {
+      const regex = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      return cachedAuthors
+        .filter(a => regex.test(a.name))
+        .slice(0, 8);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  // 渲染候选下拉框
+  function renderSuggestions(query) {
+    if (!searchSuggestions || !workSuggestionList || !authorSuggestionList) return;
+    
+    const matchedWorks = filterWorks(query);
+    const matchedAuthors = filterAuthors(query);
+
+    // 渲染作品候选
+    workSuggestionList.innerHTML = '';
+    if (matchedWorks.length > 0) {
+      workSuggestionsGroup.style.display = 'block';
+      matchedWorks.forEach(w => {
+        const item = document.createElement('div');
+        item.className = 'suggestion-item';
+        item.innerHTML = `
+          <div class="icon">📜</div>
+          <div class="text">
+            <div class="main-text">${highlightMatch(w.title, query)}</div>
+            <div class="sub-text">${w.author || '佚名'} · ${w.dynasty || '未知朝代'} · ${getStyleName(w.style) || '未知书体'}</div>
+          </div>
+        `;
+        item.addEventListener('click', () => {
+          input.value = w.title;
+          hideSuggestions();
+          doSearch();
+        });
+        workSuggestionList.appendChild(item);
+      });
+    } else {
+      workSuggestionsGroup.style.display = 'none';
+    }
+
+    // 渲染作者候选
+    authorSuggestionList.innerHTML = '';
+    if (matchedAuthors.length > 0) {
+      authorSuggestionsGroup.style.display = 'block';
+      matchedAuthors.forEach(a => {
+        const item = document.createElement('div');
+        item.className = 'suggestion-item';
+        item.innerHTML = `
+          <div class="icon">✍️</div>
+          <div class="text">
+            <div class="main-text">${highlightMatch(a.name, query)}</div>
+            <div class="sub-text">${a.dynasty || '未知朝代'} · ${a.workCount} 部作品</div>
+          </div>
+        `;
+        item.addEventListener('click', () => {
+          input.value = a.name;
+          hideSuggestions();
+          doSearch();
+        });
+        authorSuggestionList.appendChild(item);
+      });
+    } else {
+      authorSuggestionsGroup.style.display = 'none';
+    }
+
+    // 显示或隐藏下拉框
+    if (matchedWorks.length > 0 || matchedAuthors.length > 0) {
+      showSuggestions();
+    } else {
+      hideSuggestions();
+    }
+  }
+
+  function showSuggestions() {
+    if (searchSuggestions) {
+      searchSuggestions.classList.add('active');
+    }
+  }
+
+  function hideSuggestions() {
+    if (searchSuggestions) {
+      searchSuggestions.classList.remove('active');
+    }
+  }
+
+  // 输入框事件监听
+  if (input && searchSuggestions) {
+    // 输入时触发候选
+    let debounceTimer = null;
+    input.addEventListener('input', async (e) => {
+      const query = e.target.value.trim();
+      
+      // 防抖动处理
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(async () => {
+        if (query.length > 0) {
+          // 确保数据已加载
+          await loadSuggestionData();
+          renderSuggestions(query);
+        } else {
+          hideSuggestions();
+        }
+      }, 150);
+    });
+
+    // 获取焦点时显示候选（如果有内容）
+    input.addEventListener('focus', async () => {
+      const query = input.value.trim();
+      if (query.length > 0) {
+        await loadSuggestionData();
+        renderSuggestions(query);
+      }
+    });
+
+    // 点击外部关闭候选框
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.search-input-wrapper')) {
+        hideSuggestions();
+      }
+    });
+
+    // 键盘导航
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        hideSuggestions();
+      }
+    });
+  }
 });
