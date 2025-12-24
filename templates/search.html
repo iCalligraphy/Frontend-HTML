@@ -19,15 +19,34 @@ extra_css %}
 
   <form id="searchForm" class="search-form" onsubmit="return false;">
     <label for="q">关键词</label>
-    <input
-      id="q"
-      name="q"
-      type="search"
-      placeholder="请输入作品名称或单字，回车搜索"
-      autocomplete="off"
-    />
+    <div class="search-input-wrapper">
+      <input
+        id="q"
+        name="q"
+        type="search"
+        placeholder="请输入作品名称、作者或单字，回车搜索"
+        autocomplete="off"
+      />
+      <!-- 搜索候选下拉框 -->
+      <div id="searchSuggestions" class="search-suggestions">
+        <div id="workSuggestions" class="suggestion-group">
+          <div class="suggestion-group-title">📜 作品</div>
+          <div id="workSuggestionList"></div>
+        </div>
+        <div id="authorSuggestions" class="suggestion-group">
+          <div class="suggestion-group-title">✍️ 作者</div>
+          <div id="authorSuggestionList"></div>
+        </div>
+      </div>
+    </div>
     <button id="searchBtn" type="button">搜索</button>
   </form>
+
+  <div id="hotKeywordsSection" class="hot-keywords-section" style="margin: 16px 0; display: none;">
+    <span class="hot-keywords-label" style="color: #666; font-size: 14px; margin-right: 8px;">热门搜索：</span>
+    <div id="hotKeywordsList" class="hot-keywords-list" style="display: inline-flex; flex-wrap: wrap; gap: 8px;">
+    </div>
+  </div>
 
   <section class="search-results">
     <div class="results-col" style="flex: 1; margin-right: 12px">

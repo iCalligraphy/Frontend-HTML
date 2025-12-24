@@ -290,6 +290,10 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // 加载用户信息
   loadUserInfo();
+  
+  // 初始化字集功能
+  initCollectionButtons();
+  initCollectionActions();
 });
 
 // ========== 初始化 Mock 控制面板 ========== 
@@ -400,19 +404,12 @@ function initEventListeners() {
   document.getElementById('editProfileBtn').addEventListener('click', function() {
     switchTab('settings');
   });
-  
-  document.getElementById('settingsBtn').addEventListener('click', function() {
-    switchTab('settings');
-  });
 
   // 保存资料
   document.getElementById('saveProfileBtn').addEventListener('click', updateProfile);
 
   // 修改密码
   document.getElementById('changePasswordBtn').addEventListener('click', changePassword);
-
-  // 退出登录
-  document.getElementById('logoutBtn').addEventListener('click', logout);
 
   // 模态框关闭
   document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
@@ -1073,7 +1070,7 @@ async function showFollowers() {
     if (!response.ok) throw new Error('加载失败');
 
     const data = await response.json();
-    renderUserList(data.items, modalBody);
+    renderUserList(data.followers || [], modalBody);
     modal.classList.add('show');
   } catch (error) {
     showToast('加载粉丝列表失败: ' + error.message, 'error');
@@ -1102,7 +1099,7 @@ async function showFollowing() {
     if (!response.ok) throw new Error('加载失败');
 
     const data = await response.json();
-    renderUserList(data.items, modalBody);
+    renderUserList(data.following || [], modalBody);
     modal.classList.add('show');
   } catch (error) {
     showToast('加载关注列表失败: ' + error.message, 'error');
@@ -1134,48 +1131,6 @@ function closeModal() {
 
 function closeMockDataModal() {
   document.getElementById('mockDataModal').classList.remove('show');
-}
-
-// ========== 退出登录 ========== 
-async function logout() {
-  if (!confirm('确定要退出登录吗？')) return;
-  
-  const logoutBtn = document.getElementById('logoutBtn');
-  const originalBtnText = logoutBtn.textContent;
-  
-  // 显示加载状态
-  logoutBtn.textContent = '退出中...';
-  logoutBtn.disabled = true;
-
-  try {
-    await customFetch(`${API_BASE}/api/auth/logout`, {
-      method: 'POST'
-    });
-
-    // 清理本地存储
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('user');
-
-    showToast('已退出登录', 'success');
-    setTimeout(() => {
-      window.location.href = '/';
-    }, 1000);
-  } catch (error) {
-    // 即使API调用失败，也要清理本地存储
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('user');
-    
-    showToast('已退出登录', 'success');
-    setTimeout(() => {
-      window.location.href = '/';
-    }, 1000);
-  } finally {
-    // 恢复按钮状态（虽然会跳转，但还是添加以防万一）
-    logoutBtn.textContent = originalBtnText;
-    logoutBtn.disabled = false;
-  }
 }
 
 // ========== 工具函数 ========== 
@@ -1272,17 +1227,17 @@ async function apiRequest(endpoint, method = 'GET', data = null, token = null) {
 }
 
 // 等待 DOM 加载完成
-document.addEventListener('DOMContentLoaded', function() {
-  // 初始化所有功能
-  initCollectionButtons();
-  initCollectionActions();
-  initFiltersAndSearch();
-  initModals();
-  initCollectionDetails();
-  
-  // 从后端加载字集数据
-  loadCharacterSets();
-});
+// document.addEventListener('DOMContentLoaded', function() {
+//   // 初始化所有功能
+//   initCollectionButtons();
+//   initCollectionActions();
+//   initFiltersAndSearch();
+//   initModals();
+//   initCollectionDetails();
+//   
+//   // 从后端加载字集数据
+//   loadCharacterSets();
+// });
 
 // 全局变量：当前操作的字集ID
 let currentEditSetId = null;

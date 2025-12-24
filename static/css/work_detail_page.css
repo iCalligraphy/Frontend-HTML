@@ -92,6 +92,14 @@ body {
   color: var(--text-tertiary);
 }
 
+.work-description {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  max-width: 600px;
+}
+
 .header-actions {
   display: flex;
   gap: 12px;

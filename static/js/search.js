@@ -1,11 +1,42 @@
 document.addEventListener('DOMContentLoaded', () => {
+  // 书法风格英文到中文的映射
+  const STYLE_MAP = {
+    'kai': '楷书',
+    'xing': '行书',
+    'cao': '草书',
+    'li': '隶书',
+    'zhuan': '篆书',
+    'unknown': '未知'
+  };
+  
+  // 转换书法风格为中文
+  function getStyleName(style) {
+    if (!style) return '';
+    return STYLE_MAP[style.toLowerCase()] || style;
+  }
+
   // 支持不同模板中搜索输入的 id：优先 globalSearchInput，回退到 'q'，再回退到 name="q"
   const input = document.getElementById('globalSearchInput') || document.getElementById('q') || document.querySelector('input[name="q"]');
   const btn = document.getElementById('searchBtn') || document.querySelector('#searchForm button[type=button]');
   const worksResults = document.getElementById('worksResults');
   const charsResults = document.getElementById('charsResults');
 
+  // 搜索候选下拉框元素
+  const searchSuggestions = document.getElementById('searchSuggestions');
+  const workSuggestionList = document.getElementById('workSuggestionList');
+  const authorSuggestionList = document.getElementById('authorSuggestionList');
+  const workSuggestionsGroup = document.getElementById('workSuggestions');
+  const authorSuggestionsGroup = document.getElementById('authorSuggestions');
+
+  // 缓存作品和作者数据用于候选搜索
+  let cachedWorks = [];
+  let cachedAuthors = [];
+  let suggestionDataLoaded = false;
+
   // Modal elements
+  const hotKeywordsSection = document.getElementById('hotKeywordsSection');
+  const hotKeywordsList = document.getElementById('hotKeywordsList');
+
   const charModal = document.getElementById('charModal');
   const modalOverlay = document.getElementById('searchModalOverlay');
   const modalClose = document.getElementById('searchModalClose');
@@ -29,6 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 全局搜索API地址
   const SEARCH_API = '/api/calligraphy/search';
+  const HOT_KEYWORDS_API = '/api/calligraphy/hot-keywords';
   
   function getDataSource() {
     // 返回一个调用后端API的数据源对象
@@ -77,12 +109,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const card = document.createElement('div');
       card.className = 'result-work-card';
 
+      // 图片区域
       const thumb = document.createElement('div');
       thumb.className = 'thumb';
       if (w.thumbnail || w.cover || w.image_url) {
         const img = document.createElement('img');
         const imgUrl = w.thumbnail || w.cover || w.image_url;
-        // 确保图片URL正确，上传的图片应该通过/uploads/路径访问
         const fullImgUrl = imgUrl.startsWith('http') || imgUrl.startsWith('/') ? imgUrl : `/uploads/works/${imgUrl}`;
         img.src = fullImgUrl;
         img.alt = w.title || 'thumbnail';
@@ -90,16 +122,42 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         thumb.textContent = '预览';
       }
+      card.appendChild(thumb);
 
+      // 信息区域
       const info = document.createElement('div');
       info.className = 'info';
+      
       const title = document.createElement('h3');
       title.textContent = w.title || ('作品 ' + (w.id || ''));
-      const p = document.createElement('p');
-      p.textContent = `${w.author_name || w.author || ''} · ${w.dynasty || ''} ${w.style || ''}`;
       info.appendChild(title);
-      info.appendChild(p);
+      
+      const meta = document.createElement('p');
+      meta.className = 'work-meta';
+      const authorText = w.author_name || w.author || '佚名';
+      const styleText = getStyleName(w.style) || '';
+      meta.textContent = `${authorText}${styleText ? ' · ' + styleText : ''}`;
+      info.appendChild(meta);
+      
+      // 显示作品描述（如果有）
+      if (w.description) {
+        const desc = document.createElement('p');
+        desc.className = 'work-description';
+        desc.textContent = w.description;
+        info.appendChild(desc);
+      }
+      
+      card.appendChild(info);
 
+      // 底部操作栏
+      const footer = document.createElement('div');
+      footer.className = 'card-footer';
+      
+      const footerMeta = document.createElement('span');
+      footerMeta.className = 'meta';
+      footerMeta.textContent = w.dynasty || '';
+      footer.appendChild(footerMeta);
+      
       const actions = document.createElement('div');
       actions.className = 'actions';
       const btn = document.createElement('button');
@@ -110,10 +168,9 @@ document.addEventListener('DOMContentLoaded', () => {
         openWorkModalWithData(w);
       });
       actions.appendChild(btn);
-      info.appendChild(actions);
-
-      card.appendChild(thumb);
-      card.appendChild(info);
+      footer.appendChild(actions);
+      
+      card.appendChild(footer);
       worksResults.appendChild(card);
     });
   }
@@ -223,6 +280,8 @@ document.addEventListener('DOMContentLoaded', () => {
       card.dataset.id = c.id;
       
       const work = works.find(w => String(w.id) === String(c.work_id));
+      // 优先使用字符自带的work_image_url，否则从work对象获取
+      const workImageUrl = c.work_image_url || (work && work.image_url) || '';
       
       // 初始化预览元素
       let preview;
@@ -244,11 +303,11 @@ document.addEventListener('DOMContentLoaded', () => {
       // 设置初始预览为占位符
       preview = placeholderCanvas;
       
-      // 如果有作品信息，尝试从作品图片中截取单字
-      if (work && work.image_url && c.x !== undefined && c.y !== undefined && c.width && c.height) {
+      // 如果有作品图片URL和坐标信息，尝试从作品图片中截取单字
+      if (workImageUrl && c.x !== undefined && c.y !== undefined && c.width && c.height) {
         try {
           // 加载作品图片
-          const workImg = await loadWorkImage(work.id, work.image_url);
+          const workImg = await loadWorkImage(c.work_id, workImageUrl);
           
           if (workImg) {
             // 创建预览canvas
@@ -288,7 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
             charText: c.text || c.char,
             workId: c.work_id,
             workTitle: work ? work.title : 'Unknown work',
-            workImageUrl: work ? work.image_url : 'No image URL',
+            workImageUrl: workImageUrl || 'No image URL',
             charPosition: { x: c.x, y: c.y, width: c.width, height: c.height },
             errorMessage: error.message,
             errorStack: error.stack
@@ -361,7 +420,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         try {
           // 加载作品图片
-          const workImg = await loadWorkImage(c.work_id, work.image_url);
+          const workImg = await loadWorkImage(c.work_id, workImageUrl);
           
           if (workImg) {
             // 创建一个大尺寸的canvas，用于读帖
@@ -455,7 +514,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const metaLines = [];
     if (work.author_name || work.author) metaLines.push('<div><strong>作者：</strong>' + (work.author_name||work.author) + '</div>');
     if (work.dynasty) metaLines.push('<div><strong>朝代：</strong>' + work.dynasty + '</div>');
-    if (work.style) metaLines.push('<div><strong>书体：</strong>' + work.style + '</div>');
+    if (work.style) metaLines.push('<div><strong>书体：</strong>' + getStyleName(work.style) + '</div>');
     if (work.description) metaLines.push('<div><strong>说明：</strong>' + work.description + '</div>');
     workModalMeta.innerHTML = metaLines.join('');
 
@@ -542,8 +601,8 @@ document.addEventListener('DOMContentLoaded', () => {
           collected_at: c.collected_at,
           // 添加作品信息
           work: work,
-          // 添加作品图片URL，用于生成单字图片
-          work_image_url: work ? work.image_url : '',
+          // 添加作品图片URL，用于生成单字图片（优先使用后端返回的work_image_url）
+          work_image_url: c.work_image_url || (work ? work.image_url : ''),
           // 添加单字在作品中的坐标信息
           x: c.x,
           y: c.y,
@@ -586,6 +645,7 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // 转换字符数据，使其与前端期望的格式一致
       chars = chars.map(c => {
+        const work = works.find(w => String(w.id) === String(c.work_id));
         return {
           id: c.id,
           text: c.recognition,
@@ -596,7 +656,12 @@ document.addEventListener('DOMContentLoaded', () => {
           stroke_count: c.strokes,
           stroke_order: c.stroke_order,
           collected_at: c.collected_at,
-          work: works.find(w => String(w.id) === String(c.work_id))
+          work: work,
+          work_image_url: c.work_image_url || (work ? work.image_url : ''),
+          x: c.x,
+          y: c.y,
+          width: c.width,
+          height: c.height
         };
       });
       
@@ -615,6 +680,265 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
   
+  // 获取并渲染热门搜索词
+  async function loadHotKeywords() {
+    if (!hotKeywordsSection || !hotKeywordsList) return;
+    
+    try {
+      const response = await fetch(`${HOT_KEYWORDS_API}?limit=8&days=7`);
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      const data = await response.json();
+      
+      if (data.code === 200 && data.data && data.data.keywords && data.data.keywords.length > 0) {
+        // 清空现有内容
+        hotKeywordsList.innerHTML = '';
+        
+        // 渲染热门搜索词标签
+        data.data.keywords.forEach(item => {
+          const tag = document.createElement('span');
+          tag.className = 'hot-keyword-tag';
+          tag.textContent = item.keyword;
+          tag.style.cssText = 'display: inline-block; padding: 4px 12px; background: #f5f0e8; color: #8B4513; border-radius: 16px; font-size: 13px; cursor: pointer; transition: all 0.2s;';
+          
+          // 鼠标悬停效果
+          tag.addEventListener('mouseenter', () => {
+            tag.style.background = '#8B4513';
+            tag.style.color = '#fff';
+          });
+          tag.addEventListener('mouseleave', () => {
+            tag.style.background = '#f5f0e8';
+            tag.style.color = '#8B4513';
+          });
+          
+          // 点击事件：填入搜索框并搜索
+          tag.addEventListener('click', () => {
+            if (input) {
+              input.value = item.keyword;
+              doSearch();
+            }
+          });
+          
+          hotKeywordsList.appendChild(tag);
+        });
+        
+        // 显示热门搜索区域
+        hotKeywordsSection.style.display = 'block';
+      } else {
+        // 没有热门搜索词，隐藏区域
+        hotKeywordsSection.style.display = 'none';
+      }
+    } catch (error) {
+      console.error('Load hot keywords error:', error);
+      // 加载失败，隐藏区域
+      hotKeywordsSection.style.display = 'none';
+    }
+  }
+  
   // 执行初始渲染
   initialRender();
+  
+  // 加载热门搜索词
+  loadHotKeywords();
+
+  // ========== 搜索候选下拉框功能 ==========
+  
+  // 加载候选数据（作品名和作者）
+  async function loadSuggestionData() {
+    if (suggestionDataLoaded) return;
+    
+    try {
+      // 调用搜索接口获取所有作品数据
+      const result = await ds.search('');
+      const works = result.works || [];
+      
+      // 缓存作品数据
+      cachedWorks = works.map(w => ({
+        id: w.id,
+        title: w.title || '',
+        author: w.author_name || w.author || '',
+        dynasty: w.dynasty || '',
+        style: w.style || ''
+      }));
+      
+      // 提取唯一的作者列表
+      const authorSet = new Map();
+      works.forEach(w => {
+        const authorName = w.author_name || w.author;
+        if (authorName && !authorSet.has(authorName)) {
+          authorSet.set(authorName, {
+            name: authorName,
+            dynasty: w.dynasty || '',
+            workCount: 1
+          });
+        } else if (authorName) {
+          authorSet.get(authorName).workCount++;
+        }
+      });
+      cachedAuthors = Array.from(authorSet.values());
+      
+      suggestionDataLoaded = true;
+    } catch (error) {
+      console.error('Load suggestion data error:', error);
+    }
+  }
+
+  // 高亮匹配文本
+  function highlightMatch(text, query) {
+    if (!query || !text) return text;
+    try {
+      const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+      return text.replace(regex, '<span class="highlight">$1</span>');
+    } catch (e) {
+      return text;
+    }
+  }
+
+  // 正则匹配筛选作品
+  function filterWorks(query) {
+    if (!query) return [];
+    try {
+      const regex = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      return cachedWorks
+        .filter(w => regex.test(w.title))
+        .slice(0, 8);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  // 正则匹配筛选作者
+  function filterAuthors(query) {
+    if (!query) return [];
+    try {
+      const regex = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      return cachedAuthors
+        .filter(a => regex.test(a.name))
+        .slice(0, 8);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  // 渲染候选下拉框
+  function renderSuggestions(query) {
+    if (!searchSuggestions || !workSuggestionList || !authorSuggestionList) return;
+    
+    const matchedWorks = filterWorks(query);
+    const matchedAuthors = filterAuthors(query);
+
+    // 渲染作品候选
+    workSuggestionList.innerHTML = '';
+    if (matchedWorks.length > 0) {
+      workSuggestionsGroup.style.display = 'block';
+      matchedWorks.forEach(w => {
+        const item = document.createElement('div');
+        item.className = 'suggestion-item';
+        item.innerHTML = `
+          <div class="icon">📜</div>
+          <div class="text">
+            <div class="main-text">${highlightMatch(w.title, query)}</div>
+            <div class="sub-text">${w.author || '佚名'} · ${w.dynasty || '未知朝代'} · ${getStyleName(w.style) || '未知书体'}</div>
+          </div>
+        `;
+        item.addEventListener('click', () => {
+          input.value = w.title;
+          hideSuggestions();
+          doSearch();
+        });
+        workSuggestionList.appendChild(item);
+      });
+    } else {
+      workSuggestionsGroup.style.display = 'none';
+    }
+
+    // 渲染作者候选
+    authorSuggestionList.innerHTML = '';
+    if (matchedAuthors.length > 0) {
+      authorSuggestionsGroup.style.display = 'block';
+      matchedAuthors.forEach(a => {
+        const item = document.createElement('div');
+        item.className = 'suggestion-item';
+        item.innerHTML = `
+          <div class="icon">✍️</div>
+          <div class="text">
+            <div class="main-text">${highlightMatch(a.name, query)}</div>
+            <div class="sub-text">${a.dynasty || '未知朝代'} · ${a.workCount} 部作品</div>
+          </div>
+        `;
+        item.addEventListener('click', () => {
+          input.value = a.name;
+          hideSuggestions();
+          doSearch();
+        });
+        authorSuggestionList.appendChild(item);
+      });
+    } else {
+      authorSuggestionsGroup.style.display = 'none';
+    }
+
+    // 显示或隐藏下拉框
+    if (matchedWorks.length > 0 || matchedAuthors.length > 0) {
+      showSuggestions();
+    } else {
+      hideSuggestions();
+    }
+  }
+
+  function showSuggestions() {
+    if (searchSuggestions) {
+      searchSuggestions.classList.add('active');
+    }
+  }
+
+  function hideSuggestions() {
+    if (searchSuggestions) {
+      searchSuggestions.classList.remove('active');
+    }
+  }
+
+  // 输入框事件监听
+  if (input && searchSuggestions) {
+    // 输入时触发候选
+    let debounceTimer = null;
+    input.addEventListener('input', async (e) => {
+      const query = e.target.value.trim();
+      
+      // 防抖动处理
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(async () => {
+        if (query.length > 0) {
+          // 确保数据已加载
+          await loadSuggestionData();
+          renderSuggestions(query);
+        } else {
+          hideSuggestions();
+        }
+      }, 150);
+    });
+
+    // 获取焦点时显示候选（如果有内容）
+    input.addEventListener('focus', async () => {
+      const query = input.value.trim();
+      if (query.length > 0) {
+        await loadSuggestionData();
+        renderSuggestions(query);
+      }
+    });
+
+    // 点击外部关闭候选框
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.search-input-wrapper')) {
+        hideSuggestions();
+      }
+    });
+
+    // 键盘导航
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        hideSuggestions();
+      }
+    });
+  }
 });
