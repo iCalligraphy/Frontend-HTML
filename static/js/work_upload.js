@@ -748,8 +748,7 @@ function initStep4() {
           alert('提交成功！作品已成功发布。');
           // 清空草稿
           localStorage.removeItem('uploadDraft');
-          // 跳转到首页
-          // window.location.href = 'index.html';
+          window.location.href = 'profile';
         } else {
           alert(`提交失败：${data.error || '未知错误'}`);
         }
