@@ -40,8 +40,8 @@
 - 前端调用了不存在的/api/user-activity端点导致404错误
 - 刷新页面后从API重新加载帖子时ID正确传递，所以刷新后正常
 
-帖子删除功能没有
-评论删除功能没有
+帖子删除功能没有 —— 完成
+评论删除功能没有 —— 完成
 问题原因：
 1. 后端 JWT identity 类型不匹配：create_access_token 将用户ID存为字符串（如 "3"），但 post.author_id 是整数（如 3），Python 中 3 != "3" 导致权限校验失败返回 403
 2. 前端未实现删除UI：createPostElement 中没有删除按钮，addCommentToDOM 也没有删除按钮
