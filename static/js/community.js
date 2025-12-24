@@ -752,6 +752,7 @@ class CommunityManager {
                 const topicInfo = newPostData.post.topic || {};
                 
                 const newPost = this.createPostElement({
+                    id: newPostData.post.id, // 添加帖子ID，用于点赞和评论功能
                     author: this.currentUser.username || '匿名用户',
                     avatar: this.currentUser.avatar || '👤',
                     time: '刚刚',
@@ -780,9 +781,6 @@ class CommunityManager {
 
                 // 显示成功提示
                 this.showToast('发布成功！', 'success');
-
-                // 记录活动
-                this.recordUserActivity('post_created');
             } catch (error) {
                 console.error('发布帖子失败:', error);
                 this.showToast('发布失败，请稍后重试', 'error');
