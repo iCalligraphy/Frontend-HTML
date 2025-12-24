@@ -290,6 +290,10 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // 加载用户信息
   loadUserInfo();
+  
+  // 初始化字集功能
+  initCollectionButtons();
+  initCollectionActions();
 });
 
 // ========== 初始化 Mock 控制面板 ========== 
@@ -1272,17 +1276,17 @@ async function apiRequest(endpoint, method = 'GET', data = null, token = null) {
 }
 
 // 等待 DOM 加载完成
-document.addEventListener('DOMContentLoaded', function() {
-  // 初始化所有功能
-  initCollectionButtons();
-  initCollectionActions();
-  initFiltersAndSearch();
-  initModals();
-  initCollectionDetails();
-  
-  // 从后端加载字集数据
-  loadCharacterSets();
-});
+// document.addEventListener('DOMContentLoaded', function() {
+//   // 初始化所有功能
+//   initCollectionButtons();
+//   initCollectionActions();
+//   initFiltersAndSearch();
+//   initModals();
+//   initCollectionDetails();
+//   
+//   // 从后端加载字集数据
+//   loadCharacterSets();
+// });
 
 // 全局变量：当前操作的字集ID
 let currentEditSetId = null;
