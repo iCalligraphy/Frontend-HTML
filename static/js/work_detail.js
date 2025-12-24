@@ -6,6 +6,18 @@
 // API配置
 const API_BASE = '/api';
 
+// 风格拼音到中文的映射
+const STYLE_MAP = {
+  'kai': '楷书',
+  'xing': '行书',
+  'cao': '草书',
+  'li': '隶书',
+  'zhuan': '篆书',
+  'wei': '魏碑',
+  'shoujin': '瘦金体',
+  'other': '其他'
+};
+
 // 全局状态
 const viewerState = {
   canvas: null,
@@ -186,6 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const workAuthor = document.getElementById('workAuthor');
   const workDynasty = document.getElementById('workDynasty');
   const workStyle = document.getElementById('workStyle');
+  const workDescription = document.getElementById('workDescription');
   const headerCharCountEl = document.getElementById('headerCharCount');
 
   const viewerCanvas = document.getElementById('viewerCanvas');
@@ -399,7 +412,14 @@ document.addEventListener('DOMContentLoaded', () => {
     workTitle.textContent = currentWork.title || '未命名作品';
     workAuthor.textContent = currentWork.author_name || '未知';
     workDynasty.textContent = currentWork.dynasty || '-';
-    workStyle.textContent = currentWork.style || '-';
+    // 将风格拼音转换为中文显示
+    const styleValue = currentWork.style || '';
+    workStyle.textContent = STYLE_MAP[styleValue] || styleValue || '-';
+    // 显示作品介绍
+    if (workDescription) {
+      workDescription.textContent = currentWork.description || '';
+      workDescription.style.display = currentWork.description ? 'block' : 'none';
+    }
     headerCharCountEl.textContent = boxes.length;
     charCountEl.textContent = `${boxes.length} 个字`;
   }
