@@ -69,7 +69,6 @@ class CommunityManager {
         this.initNotifications();
         this.initTopicSelector();
         this.initLoadMore();
-        this.initDeleteActions();
         this.updateNavNotificationBadge();
         await this.loadPosts();  // 加载动态帖子
     }
@@ -861,20 +860,10 @@ class CommunityManager {
 
         postHeader.appendChild(postAuthor);
 
-        // Menu button with dropdown
-        const menuContainer = this._createElement('div', 'post-menu-container');
+        // Menu button
         const menuBtn = this._createElement('button', 'post-menu-btn', '⋯');
         menuBtn.setAttribute('aria-label', '更多操作');
-        menuContainer.appendChild(menuBtn);
-        const menuDropdown = this._createElement('div', 'post-menu-dropdown hidden');
-        const currentUserId = this.getCurrentUserId();
-        if (currentUserId && authorId === currentUserId) {
-            const delBtn = this._createElement('button', 'post-menu-item post-delete-btn', '🗑️ 删除');
-            delBtn.dataset.postId = data.id;
-            menuDropdown.appendChild(delBtn);
-        }
-        menuContainer.appendChild(menuDropdown);
-        postHeader.appendChild(menuContainer);
+        postHeader.appendChild(menuBtn);
 
         article.appendChild(postHeader);
 
@@ -1323,7 +1312,7 @@ class CommunityManager {
                 
                 // 添加所有评论到DOM
                 for (const comment of comments) {
-                    this.addCommentToDOM(post, comment.content, comment.author, comment.id);
+                    this.addCommentToDOM(post, comment.content, comment.author);
                 }
             }
         } catch (error) {
@@ -1426,7 +1415,7 @@ class CommunityManager {
             });
             
             // 添加评论到DOM
-            this.addCommentToDOM(post, response.comment.content, response.comment.author, response.comment.id);
+            this.addCommentToDOM(post, response.comment.content, response.comment.author);
             
             // 清空输入框
             commentInput.value = '';
@@ -1452,7 +1441,7 @@ class CommunityManager {
     /**
      * 添加评论到DOM（重构版，使用 DOM API 替代 innerHTML）
      */
-    addCommentToDOM(post, commentText, author = null, commentId = null) {
+    addCommentToDOM(post, commentText, author = null) {
         const commentsList = post.querySelector('.comments-list');
         if (!commentsList) return;
         
@@ -1475,20 +1464,12 @@ class CommunityManager {
         // Comment body
         const commentBody = this._createElement('div', 'comment-body');
 
-        // Header (author + time + delete)
+        // Header (author + time)
         const commentHeader = this._createElement('div', 'comment-header');
         const authorSpan = this._createElement('span', 'comment-author', commentAuthor.username);
         const timeSpan = this._createElement('span', 'comment-time', '刚刚');
         commentHeader.appendChild(authorSpan);
         commentHeader.appendChild(timeSpan);
-        // Delete button for own comments
-        const currentUserId = this.getCurrentUserId();
-        if (currentUserId && commentAuthor.id === currentUserId && commentId) {
-            const delBtn = this._createElement('button', 'comment-delete-btn', '🗑️');
-            delBtn.dataset.commentId = commentId;
-            delBtn.title = '删除评论';
-            commentHeader.appendChild(delBtn);
-        }
         commentBody.appendChild(commentHeader);
 
         // Comment text
@@ -2293,74 +2274,6 @@ class CommunityManager {
     }
 
     /**
-     * 初始化删除功能
-     */
-    initDeleteActions() {
-        document.addEventListener('click', (e) => {
-            const menuBtn = e.target.closest('.post-menu-btn');
-            if (menuBtn) {
-                e.stopPropagation();
-                const dropdown = menuBtn.parentElement.querySelector('.post-menu-dropdown');
-                if (dropdown) {
-                    document.querySelectorAll('.post-menu-dropdown').forEach(d => {
-                        if (d !== dropdown) d.classList.add('hidden');
-                    });
-                    dropdown.classList.toggle('hidden');
-                }
-                return;
-            }
-            const deletePostBtn = e.target.closest('.post-delete-btn');
-            if (deletePostBtn) {
-                e.stopPropagation();
-                this.handleDeletePost(deletePostBtn.dataset.postId);
-                return;
-            }
-            const deleteCommentBtn = e.target.closest('.comment-delete-btn');
-            if (deleteCommentBtn) {
-                e.stopPropagation();
-                this.handleDeleteComment(deleteCommentBtn, deleteCommentBtn.dataset.commentId);
-                return;
-            }
-            document.querySelectorAll('.post-menu-dropdown').forEach(d => d.classList.add('hidden'));
-        });
-    }
-
-    /**
-     * 处理删除帖子
-     */
-    async handleDeletePost(postId) {
-        if (!postId) { this.showToast('获取帖子ID失败', 'error'); return; }
-        if (!confirm('确定要删除这篇帖子吗？')) return;
-        try {
-            await this.apiRequest(`/posts/${postId}`, { method: 'DELETE' });
-            const card = document.querySelector(`.post-card[data-post-id="${postId}"]`);
-            if (card) card.remove();
-            this.showToast('帖子已删除', 'success');
-        } catch (err) { this.showToast('删除失败: ' + err.message, 'error'); }
-    }
-
-    /**
-     * 处理删除评论
-     */
-    async handleDeleteComment(btn, commentId) {
-        if (!commentId) { this.showToast('获取评论ID失败', 'error'); return; }
-        if (!confirm('确定要删除这条评论吗？')) return;
-        try {
-            await this.apiRequest(`/post-comments/${commentId}`, { method: 'DELETE' });
-            const item = btn.closest('.comment-item');
-            if (item) {
-                const post = item.closest('.post-card');
-                item.remove();
-                if (post) {
-                    const cnt = post.querySelector('.post-action[data-action="comment"] .action-count');
-                    if (cnt) cnt.textContent = Math.max(0, parseInt(cnt.textContent) - 1);
-                }
-            }
-            this.showToast('评论已删除', 'success');
-        } catch (err) { this.showToast('删除失败: ' + err.message, 'error'); }
-    }
-
-    /**
      * 显示提示消息
      */
     showToast(message, type = 'info', duration = 3000) {
@@ -2472,71 +2385,6 @@ style.textContent = `
         text-align: center;
         padding: 20px;
         color: var(--gray);
-    }
-
-    .post-menu-container {
-        position: relative;
-    }
-
-    .post-menu-dropdown {
-        position: absolute;
-        top: 100%;
-        right: 0;
-        background: #fff;
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        min-width: 120px;
-        z-index: 100;
-        overflow: hidden;
-    }
-
-    .post-menu-dropdown.hidden {
-        display: none;
-    }
-
-    .post-menu-item {
-        display: block;
-        width: 100%;
-        padding: 10px 16px;
-        border: none;
-        background: none;
-        text-align: left;
-        cursor: pointer;
-        font-size: 14px;
-        color: #333;
-        transition: background 0.2s;
-    }
-
-    .post-menu-item:hover {
-        background: #f5f5f5;
-    }
-
-    .post-delete-btn:hover {
-        background: #ffebee;
-        color: #d32f2f;
-    }
-
-    .comment-delete-btn {
-        background: none;
-        border: none;
-        cursor: pointer;
-        font-size: 12px;
-        padding: 2px 6px;
-        margin-left: 8px;
-        opacity: 0.5;
-        transition: opacity 0.2s;
-    }
-
-    .comment-delete-btn:hover {
-        opacity: 1;
-        color: #d32f2f;
-    }
-
-    .comment-header {
-        display: flex;
-        align-items: center;
-        gap: 8px;
     }
 `;
 document.head.appendChild(style);

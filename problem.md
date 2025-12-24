@@ -29,7 +29,7 @@
 
 字集中单子删除功能没有 —— 完成
 
-社区：按钮没有 ??? 何意味没看懂
+社区：按钮没有 ??? 何意味讲清楚
 
 评论里点赞有问题 —— 完成
 修复-新发布帖子点赞评论功能异常及404错误
@@ -41,8 +41,27 @@
 - 刷新页面后从API重新加载帖子时ID正确传递，所以刷新后正常
 
 帖子删除功能没有
-
 评论删除功能没有
+问题原因：
+1. 后端 JWT identity 类型不匹配：create_access_token 将用户ID存为字符串（如 "3"），但 post.author_id 是整数（如 3），Python 中 3 != "3" 导致权限校验失败返回 403
+2. 前端未实现删除UI：createPostElement 中没有删除按钮，addCommentToDOM 也没有删除按钮
+3. 路由冲突：comments_bp 使用 url_prefix='/api/comments'，与 posts_bp 中的 /api/comments/<id> 冲突，导致评论删除请求返回 404
+4. 评论ID未传递：addCommentToDOM 函数未接收 commentId 参数，导致删除按钮无法获取评论ID
+
+后端修复-帖子和评论删除功能
+- 修复 delete_post 函数中 JWT identity 类型不匹配问题（字符串转整数）
+- 修复 delete_comment 函数中 JWT identity 类型不匹配问题（字符串转整数）
+- 将帖子评论删除路由从 /api/comments/<id> 改为 /api/post-comments/<id>，避免与作品评论蓝图冲突
+- 重命名函数 delete_comment 为 delete_post_comment 以区分作品评论
+
+前端修复-社区页面删除功能实现
+- 添加帖子删除功能：initDeleteActions、handleDeletePost 方法
+- 添加评论删除功能：handleDeleteComment 方法
+- 在 createPostElement 中添加删除按钮下拉菜单（仅对自己的帖子显示）
+- 修改 addCommentToDOM 函数签名，增加 commentId 参数用于删除
+- 更新评论删除 API 路径为 /post-comments/<id>
+- 添加下拉菜单和删除按钮的 CSS 样式
+- 在 init() 中调用 initDeleteActions() 初始化删除事件监听
 
 作品详情页：
 "返回上一页"功能有问题

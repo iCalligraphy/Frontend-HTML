@@ -69,7 +69,6 @@ class CommunityManager {
         this.initNotifications();
         this.initTopicSelector();
         this.initLoadMore();
-        this.initDeleteActions();
         this.updateNavNotificationBadge();
         await this.loadPosts();  // 加载动态帖子
     }
@@ -794,172 +793,77 @@ class CommunityManager {
     }
 
     /**
-     * DOM 辅助方法：创建元素并设置属性
-     */
-    _createElement(tag, className, textContent = null) {
-        const el = document.createElement(tag);
-        if (className) el.className = className;
-        if (textContent !== null) el.textContent = textContent;
-        return el;
-    }
-
-    /**
-     * DOM 辅助方法：创建头像元素
-     */
-    _createAvatarElement(avatar, altText, className = 'author-avatar') {
-        const avatarDiv = this._createElement('div', className);
-        if (typeof avatar === 'string' && avatar !== 'default_avatar.png') {
-            const img = document.createElement('img');
-            img.src = `/uploads/avatars/${avatar}`;
-            img.alt = altText;
-            img.className = 'avatar-img';
-            avatarDiv.appendChild(img);
-        } else {
-            avatarDiv.textContent = avatar || altText.charAt(0);
-        }
-        return avatarDiv;
-    }
-
-    /**
-     * 创建帖子元素（重构版，使用 DOM API 替代 innerHTML）
+     * 创建帖子元素
      */
     createPostElement(data) {
         const article = document.createElement('article');
         article.className = 'post-card';
+        // 添加帖子ID属性，用于点赞和评论功能
         article.dataset.postId = data.id || 0;
-
+        
+        // 检查是否已关注作者（默认false，实际会通过API获取）
         const isFollowing = data.isFollowing || false;
+        
+        // 作者ID，用于关注功能
         const authorId = data.authorId || 0;
 
-        // === Post Header ===
-        const postHeader = this._createElement('div', 'post-header');
-
-        // Author section
-        const postAuthor = this._createElement('div', 'post-author');
-
-        // Avatar
-        const avatarDiv = this._createAvatarElement(data.avatar, data.author);
-        postAuthor.appendChild(avatarDiv);
-
-        // Author info
-        const authorInfo = this._createElement('div', 'author-info');
-        const authorName = this._createElement('h4', 'author-name', data.author);
-        const postTime = this._createElement('p', 'post-time', data.time);
-        authorInfo.appendChild(authorName);
-        authorInfo.appendChild(postTime);
-        postAuthor.appendChild(authorInfo);
-
-        // Follow button (if authorId exists)
-        if (authorId > 0) {
-            const authorActions = this._createElement('div', 'author-actions');
-            const followBtn = this._createElement('button', `btn-follow ${isFollowing ? 'btn-following' : ''}`, isFollowing ? '已关注' : '关注');
-            followBtn.dataset.userId = authorId;
-            followBtn.dataset.authorName = data.author;
-            authorActions.appendChild(followBtn);
-            postAuthor.appendChild(authorActions);
-        }
-
-        postHeader.appendChild(postAuthor);
-
-        // Menu button with dropdown
-        const menuContainer = this._createElement('div', 'post-menu-container');
-        const menuBtn = this._createElement('button', 'post-menu-btn', '⋯');
-        menuBtn.setAttribute('aria-label', '更多操作');
-        menuContainer.appendChild(menuBtn);
-        const menuDropdown = this._createElement('div', 'post-menu-dropdown hidden');
-        const currentUserId = this.getCurrentUserId();
-        if (currentUserId && authorId === currentUserId) {
-            const delBtn = this._createElement('button', 'post-menu-item post-delete-btn', '🗑️ 删除');
-            delBtn.dataset.postId = data.id;
-            menuDropdown.appendChild(delBtn);
-        }
-        menuContainer.appendChild(menuDropdown);
-        postHeader.appendChild(menuContainer);
-
-        article.appendChild(postHeader);
-
-        // === Post Body ===
-        const postBody = this._createElement('div', 'post-body');
-
-        // Title (optional)
-        if (data.title) {
-            const postTitle = this._createElement('h3', 'post-title', data.title);
-            postBody.appendChild(postTitle);
-        }
-
-        // Content
-        const postContent = this._createElement('p', 'post-content', data.content);
-        postBody.appendChild(postContent);
-
-        // Topics
-        const topics = data.topics && data.topics.length > 0 ? data.topics : (data.topic ? [data.topic] : []);
-        if (topics.length > 0) {
-            const topicsDiv = this._createElement('div', 'post-topics');
-            topics.forEach(topic => {
-                const topicLink = document.createElement('a');
-                topicLink.href = `/community/topics/${topic.id}`;
-                topicLink.className = 'post-topic-tag';
-                topicLink.textContent = `${topic.icon || '🏷️'} #${topic.name}`;
-                topicsDiv.appendChild(topicLink);
-            });
-            postBody.appendChild(topicsDiv);
-        }
-
-        article.appendChild(postBody);
-
-        // === Post Footer ===
-        const postFooter = this._createElement('div', 'post-footer');
-
-        // Like button
-        const likeBtn = this._createElement('button', 'post-action');
-        likeBtn.dataset.action = 'like';
-        if (data.is_liked) likeBtn.setAttribute('liked', '');
-        const likeIcon = this._createElement('span', 'action-icon', '👍');
-        const likeCount = this._createElement('span', 'action-count', String(data.likes || 0));
-        likeBtn.appendChild(likeIcon);
-        likeBtn.appendChild(likeCount);
-        postFooter.appendChild(likeBtn);
-
-        // Comment button
-        const commentBtn = this._createElement('button', 'post-action');
-        commentBtn.dataset.action = 'comment';
-        const commentIcon = this._createElement('span', 'action-icon', '💬');
-        const commentCount = this._createElement('span', 'action-count', String(data.comments || 0));
-        commentBtn.appendChild(commentIcon);
-        commentBtn.appendChild(commentCount);
-        postFooter.appendChild(commentBtn);
-
-        // Share button
-        const shareBtn = this._createElement('button', 'post-action');
-        shareBtn.dataset.action = 'share';
-        const shareIcon = this._createElement('span', 'action-icon', '↗');
-        const shareText = this._createElement('span', 'action-text', '分享');
-        shareBtn.appendChild(shareIcon);
-        shareBtn.appendChild(shareText);
-        postFooter.appendChild(shareBtn);
-
-        article.appendChild(postFooter);
-
-        // === Comments Section ===
-        const commentsSection = this._createElement('div', 'comments-section hidden');
-
-        // Comment composer
-        const commentComposer = this._createElement('div', 'comment-composer');
-        const commentInput = document.createElement('input');
-        commentInput.type = 'text';
-        commentInput.className = 'comment-input';
-        commentInput.placeholder = '写下你的评论...';
-        const sendBtn = this._createElement('button', 'btn btn-small', '发送');
-        commentComposer.appendChild(commentInput);
-        commentComposer.appendChild(sendBtn);
-        commentsSection.appendChild(commentComposer);
-
-        // Comments list
-        const commentsList = this._createElement('div', 'comments-list');
-        commentsSection.appendChild(commentsList);
-
-        article.appendChild(commentsSection);
-
+        article.innerHTML = `
+            <div class="post-header">
+                <div class="post-author">
+                <div class="author-avatar">${typeof data.avatar === 'string' && data.avatar !== 'default_avatar.png' ? `<img src="/uploads/avatars/${data.avatar}" alt="${data.author}" class="avatar-img" />` : data.avatar}</div>
+                <div class="author-info">
+                    <h4 class="author-name">${data.author}</h4>
+                    <p class="post-time">${data.time}</p>
+                </div>
+                    ${authorId > 0 ? `
+                        <div class="author-actions">
+                            <button class="btn-follow ${isFollowing ? 'btn-following' : ''}" 
+                                    data-user-id="${authorId}" 
+                                    data-author-name="${data.author}">
+                                ${isFollowing ? '已关注' : '关注'}
+                            </button>
+                        </div>
+                    ` : ''}
+                </div>
+                <button class="post-menu-btn" aria-label="更多操作">⋯</button>
+            </div>
+            <div class="post-body">
+                ${data.title ? `<h3 class="post-title">${data.title}</h3>` : ''}
+                <p class="post-content">${data.content}</p>
+                ${(data.topics && data.topics.length > 0) ? `<div class="post-topics">
+                    ${data.topics.map(topic => `
+                        <a href="/community/topics/${topic.id}" class="post-topic-tag">
+                            ${topic.icon || '🏷️'} #${topic.name}
+                        </a>
+                    `).join('')}
+                </div>` : (data.topic ? `<div class="post-topics">
+                    <a href="/community/topics/${data.topic.id}" class="post-topic-tag">
+                        ${data.topic.icon || '🏷️'} #${data.topic.name}
+                    </a>
+                </div>` : '')}
+            </div>
+            <div class="post-footer">
+                <button class="post-action" data-action="like" ${data.is_liked ? 'liked' : ''}>
+                    <span class="action-icon">👍</span>
+                    <span class="action-count">${data.likes}</span>
+                </button>
+                <button class="post-action" data-action="comment">
+                    <span class="action-icon">💬</span>
+                    <span class="action-count">${data.comments}</span>
+                </button>
+                <button class="post-action" data-action="share">
+                    <span class="action-icon">↗</span>
+                    <span class="action-text">分享</span>
+                </button>
+            </div>
+            <div class="comments-section hidden">
+                <div class="comment-composer">
+                    <input type="text" class="comment-input" placeholder="写下你的评论..." />
+                    <button class="btn btn-small">发送</button>
+                </div>
+                <div class="comments-list"></div>
+            </div>
+        `;
         return article;
     }
 
@@ -1323,7 +1227,7 @@ class CommunityManager {
                 
                 // 添加所有评论到DOM
                 for (const comment of comments) {
-                    this.addCommentToDOM(post, comment.content, comment.author, comment.id);
+                    this.addCommentToDOM(post, comment.content, comment.author);
                 }
             }
         } catch (error) {
@@ -1426,7 +1330,7 @@ class CommunityManager {
             });
             
             // 添加评论到DOM
-            this.addCommentToDOM(post, response.comment.content, response.comment.author, response.comment.id);
+            this.addCommentToDOM(post, response.comment.content, response.comment.author);
             
             // 清空输入框
             commentInput.value = '';
@@ -1450,9 +1354,9 @@ class CommunityManager {
     }
 
     /**
-     * 添加评论到DOM（重构版，使用 DOM API 替代 innerHTML）
+     * 添加评论到DOM
      */
-    addCommentToDOM(post, commentText, author = null, commentId = null) {
+    addCommentToDOM(post, commentText, author = null) {
         const commentsList = post.querySelector('.comments-list');
         if (!commentsList) return;
         
@@ -1462,48 +1366,22 @@ class CommunityManager {
             avatar: this.currentUser?.avatar || this.currentUser?.username?.charAt(0) || '匿'
         };
         
-        const commentEl = this._createElement('div', 'comment-item');
-
-        // Avatar
-        const avatarDiv = this._createAvatarElement(
-            commentAuthor.avatar, 
-            commentAuthor.username, 
-            'comment-avatar'
-        );
-        commentEl.appendChild(avatarDiv);
-
-        // Comment body
-        const commentBody = this._createElement('div', 'comment-body');
-
-        // Header (author + time + delete)
-        const commentHeader = this._createElement('div', 'comment-header');
-        const authorSpan = this._createElement('span', 'comment-author', commentAuthor.username);
-        const timeSpan = this._createElement('span', 'comment-time', '刚刚');
-        commentHeader.appendChild(authorSpan);
-        commentHeader.appendChild(timeSpan);
-        // Delete button for own comments
-        const currentUserId = this.getCurrentUserId();
-        if (currentUserId && commentAuthor.id === currentUserId && commentId) {
-            const delBtn = this._createElement('button', 'comment-delete-btn', '🗑️');
-            delBtn.dataset.commentId = commentId;
-            delBtn.title = '删除评论';
-            commentHeader.appendChild(delBtn);
-        }
-        commentBody.appendChild(commentHeader);
-
-        // Comment text
-        const textEl = this._createElement('p', 'comment-text', commentText);
-        commentBody.appendChild(textEl);
-
-        // Like button
-        const likeBtn = this._createElement('button', 'comment-like');
-        const likeIcon = this._createElement('span', 'action-icon', '👍');
-        const likeCount = this._createElement('span', 'action-count', '0');
-        likeBtn.appendChild(likeIcon);
-        likeBtn.appendChild(likeCount);
-        commentBody.appendChild(likeBtn);
-
-        commentEl.appendChild(commentBody);
+        const commentEl = document.createElement('div');
+        commentEl.className = 'comment-item';
+        commentEl.innerHTML = `
+            <div class="comment-avatar">${typeof commentAuthor.avatar === 'string' && commentAuthor.avatar !== 'default_avatar.png' ? `<img src="/uploads/avatars/${commentAuthor.avatar}" alt="${commentAuthor.username}" class="avatar-img" />` : commentAuthor.avatar || commentAuthor.username.charAt(0)}</div>
+            <div class="comment-body">
+                <div class="comment-header">
+                    <span class="comment-author">${commentAuthor.username}</span>
+                    <span class="comment-time">刚刚</span>
+                </div>
+                <p class="comment-text">${commentText}</p>
+                <button class="comment-like">
+                    <span class="action-icon">👍</span>
+                    <span class="action-count">0</span>
+                </button>
+            </div>
+        `;
         commentsList.appendChild(commentEl);
         
         // 滚动到最新评论
@@ -2293,74 +2171,6 @@ class CommunityManager {
     }
 
     /**
-     * 初始化删除功能
-     */
-    initDeleteActions() {
-        document.addEventListener('click', (e) => {
-            const menuBtn = e.target.closest('.post-menu-btn');
-            if (menuBtn) {
-                e.stopPropagation();
-                const dropdown = menuBtn.parentElement.querySelector('.post-menu-dropdown');
-                if (dropdown) {
-                    document.querySelectorAll('.post-menu-dropdown').forEach(d => {
-                        if (d !== dropdown) d.classList.add('hidden');
-                    });
-                    dropdown.classList.toggle('hidden');
-                }
-                return;
-            }
-            const deletePostBtn = e.target.closest('.post-delete-btn');
-            if (deletePostBtn) {
-                e.stopPropagation();
-                this.handleDeletePost(deletePostBtn.dataset.postId);
-                return;
-            }
-            const deleteCommentBtn = e.target.closest('.comment-delete-btn');
-            if (deleteCommentBtn) {
-                e.stopPropagation();
-                this.handleDeleteComment(deleteCommentBtn, deleteCommentBtn.dataset.commentId);
-                return;
-            }
-            document.querySelectorAll('.post-menu-dropdown').forEach(d => d.classList.add('hidden'));
-        });
-    }
-
-    /**
-     * 处理删除帖子
-     */
-    async handleDeletePost(postId) {
-        if (!postId) { this.showToast('获取帖子ID失败', 'error'); return; }
-        if (!confirm('确定要删除这篇帖子吗？')) return;
-        try {
-            await this.apiRequest(`/posts/${postId}`, { method: 'DELETE' });
-            const card = document.querySelector(`.post-card[data-post-id="${postId}"]`);
-            if (card) card.remove();
-            this.showToast('帖子已删除', 'success');
-        } catch (err) { this.showToast('删除失败: ' + err.message, 'error'); }
-    }
-
-    /**
-     * 处理删除评论
-     */
-    async handleDeleteComment(btn, commentId) {
-        if (!commentId) { this.showToast('获取评论ID失败', 'error'); return; }
-        if (!confirm('确定要删除这条评论吗？')) return;
-        try {
-            await this.apiRequest(`/post-comments/${commentId}`, { method: 'DELETE' });
-            const item = btn.closest('.comment-item');
-            if (item) {
-                const post = item.closest('.post-card');
-                item.remove();
-                if (post) {
-                    const cnt = post.querySelector('.post-action[data-action="comment"] .action-count');
-                    if (cnt) cnt.textContent = Math.max(0, parseInt(cnt.textContent) - 1);
-                }
-            }
-            this.showToast('评论已删除', 'success');
-        } catch (err) { this.showToast('删除失败: ' + err.message, 'error'); }
-    }
-
-    /**
      * 显示提示消息
      */
     showToast(message, type = 'info', duration = 3000) {
@@ -2472,71 +2282,6 @@ style.textContent = `
         text-align: center;
         padding: 20px;
         color: var(--gray);
-    }
-
-    .post-menu-container {
-        position: relative;
-    }
-
-    .post-menu-dropdown {
-        position: absolute;
-        top: 100%;
-        right: 0;
-        background: #fff;
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        min-width: 120px;
-        z-index: 100;
-        overflow: hidden;
-    }
-
-    .post-menu-dropdown.hidden {
-        display: none;
-    }
-
-    .post-menu-item {
-        display: block;
-        width: 100%;
-        padding: 10px 16px;
-        border: none;
-        background: none;
-        text-align: left;
-        cursor: pointer;
-        font-size: 14px;
-        color: #333;
-        transition: background 0.2s;
-    }
-
-    .post-menu-item:hover {
-        background: #f5f5f5;
-    }
-
-    .post-delete-btn:hover {
-        background: #ffebee;
-        color: #d32f2f;
-    }
-
-    .comment-delete-btn {
-        background: none;
-        border: none;
-        cursor: pointer;
-        font-size: 12px;
-        padding: 2px 6px;
-        margin-left: 8px;
-        opacity: 0.5;
-        transition: opacity 0.2s;
-    }
-
-    .comment-delete-btn:hover {
-        opacity: 1;
-        color: #d32f2f;
-    }
-
-    .comment-header {
-        display: flex;
-        align-items: center;
-        gap: 8px;
     }
 `;
 document.head.appendChild(style);
