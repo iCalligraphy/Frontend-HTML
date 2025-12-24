@@ -1420,6 +1420,9 @@ async function handleCollectionSubmit() {
     currentEditSetId = null;
     
     alert(currentEditSetId ? '字集更新成功！' : '字集创建成功！');
+    
+    // 自动刷新页面，确保所有数据及时更新
+    window.location.reload();
   } catch (error) {
     console.error('保存字集失败:', error);
     
