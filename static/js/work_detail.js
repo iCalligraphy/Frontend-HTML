@@ -436,13 +436,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // 处理相对路径的情况
     const basename = src.split('/').pop();
-    const cleaned = src.replace(/^\/+/, '');
     const candidates = [
+      src,                              // 优先尝试原始路径（保留前导斜杠）
+      `/uploads/works/${basename}`,     // 显式尝试正确的上传路径
       `/static/images/${basename}`,
-      `/static/${basename}`,
-      `../static/images/${basename}`,
-      cleaned,
-      src
+      `/static/${basename}`
     ];
     const uniqCandidates = Array.from(new Set(candidates.filter(Boolean)));
     let i = 0;
