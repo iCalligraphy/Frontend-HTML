@@ -1636,8 +1636,6 @@ async function openDetailModal(collectionId) {
             <div class="detail-toolbar">
               <div class="detail-search"><input type="search" id="charSearch" class="search-input" placeholder="搜索单字..." /></div>
               <div class="detail-actions">
-                <button type="button" class="btn btn-outline btn-small" id="selectModeBtn">批量选择</button>
-                <button type="button" class="btn btn-outline btn-small" id="exportBtn">导出</button>
               </div>
             </div>
             <div class="detail-char-grid" id="detailCharGrid"></div>
@@ -1659,6 +1657,9 @@ async function openDetailModal(collectionId) {
   }
 
   try {
+    // 初始化字集详情功能，绑定事件监听器
+    initCollectionDetails();
+    
     // 从后端加载字集详情和单字列表
     const result = await apiRequest(`/character-sets/${collectionId}/characters`);
     const characters = result.characters;
@@ -1769,21 +1770,17 @@ function initCollectionDetails() {
   // 单字搜索
   const charSearch = document.getElementById('charSearch');
   if (charSearch) {
+    // 输入内容时触发搜索
     charSearch.addEventListener('input', function() {
       searchCharacters(this.value.trim());
     });
-  }
-
-  // 批量选择模式
-  const selectModeBtn = document.getElementById('selectModeBtn');
-  if (selectModeBtn) {
-    selectModeBtn.addEventListener('click', toggleSelectMode);
-  }
-
-  // 导出功能
-  const exportBtn = document.getElementById('exportBtn');
-  if (exportBtn) {
-    exportBtn.addEventListener('click', handleExport);
+    
+    // 按下回车键时触发搜索
+    charSearch.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter' || e.keyCode === 13) {
+        searchCharacters(this.value.trim());
+      }
+    });
   }
 
   // 移除单字
@@ -1794,10 +1791,9 @@ function initCollectionDetails() {
       handleRemoveCharacter(e.target.closest('.detail-char-item'));
     }
   });
-  // 点击单字打开详情（非批量选择模式）
+  // 点击单字打开详情
   document.querySelectorAll('.detail-char-item').forEach(item => {
     item.addEventListener('click', function(e) {
-      if (this.classList.contains('selectable')) return; // 批量选择模式下不打开
       if (e.target.classList.contains('char-remove') || e.target.closest('.char-remove')) return;
       openCharModalFromItem(this);
     });
@@ -1808,7 +1804,6 @@ function initCollectionDetails() {
     const item = e.target.closest && e.target.closest('.detail-char-item');
     if (!item) return;
     if (e.target.classList.contains('char-remove') || e.target.closest('.char-remove')) return;
-    if (item.classList.contains('selectable')) return;
     openCharModalFromItem(item);
   });
 }
@@ -1838,63 +1833,7 @@ function searchCharacters(keyword) {
 /**
  * 切换批量选择模式
  */
-function toggleSelectMode() {
-  const btn = document.getElementById('selectModeBtn');
-  const charItems = document.querySelectorAll('.detail-char-item');
 
-  if (btn.textContent === '批量选择') {
-    btn.textContent = '取消选择';
-    btn.classList.add('active');
-
-    // 添加选择功能
-    charItems.forEach(item => {
-      item.classList.add('selectable');
-      item.addEventListener('click', handleCharacterSelect);
-    });
-  } else {
-    btn.textContent = '批量选择';
-    btn.classList.remove('active');
-
-    // 移除选择功能
-    charItems.forEach(item => {
-      item.classList.remove('selectable', 'selected');
-      item.removeEventListener('click', handleCharacterSelect);
-    });
-  }
-}
-
-/**
- * 处理单字选择
- */
-function handleCharacterSelect(e) {
-  if (e.target.classList.contains('char-remove')) return;
-  this.classList.toggle('selected');
-}
-
-/**
- * 处理导出
- */
-function handleExport() {
-  const chars = Array.from(document.querySelectorAll('.detail-char-item'))
-    .map(item => item.dataset.char)
-    .join('');
-
-  if (!chars) {
-    alert('当前字集为空');
-    return;
-  }
-
-  // 简单的导出功能
-  const blob = new Blob([chars], { type: 'text/plain' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `字集_${new Date().getTime()}.txt`;
-  a.click();
-  URL.revokeObjectURL(url);
-
-  alert('导出成功！');
-}
 
 /**
  * 处理移除单字
