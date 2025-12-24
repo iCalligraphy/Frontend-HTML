@@ -1070,7 +1070,7 @@ async function showFollowers() {
     if (!response.ok) throw new Error('加载失败');
 
     const data = await response.json();
-    renderUserList(data.items, modalBody);
+    renderUserList(data.followers || [], modalBody);
     modal.classList.add('show');
   } catch (error) {
     showToast('加载粉丝列表失败: ' + error.message, 'error');
@@ -1099,7 +1099,7 @@ async function showFollowing() {
     if (!response.ok) throw new Error('加载失败');
 
     const data = await response.json();
-    renderUserList(data.items, modalBody);
+    renderUserList(data.following || [], modalBody);
     modal.classList.add('show');
   } catch (error) {
     showToast('加载关注列表失败: ' + error.message, 'error');

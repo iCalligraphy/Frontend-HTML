@@ -4,10 +4,22 @@
 
 注册：验证码删除或加好提示 —— 完成
 
-个人中心："设置"删掉，"退出登录"按钮删掉
+个人中心："设置"删掉，"退出登录"按钮删掉  —— 完成
+修复-个人中心页面移除多余按钮
+- 删除用户信息区多余的"设置"按钮
+- 删除账户设置中的"退出登录"按钮及整个账户操作区块
+- 清理profile.js中settingsBtn和logoutBtn相关事件监听器
+- 移除logout()函数避免运行时错误
 
-按"粉丝"有奇怪报错
-
+按"粉丝"有奇怪报错 —— 完成
+修复-粉丝列表加载报错问题
+- 修复showFollowers()函数使用错误的响应字段名(data.items→data.followers)
+- 修复showFollowing()函数使用错误的响应字段名(data.items→data.following)
+- 添加空数组兜底处理防止数据为空时报错
+问题原因：前后端API响应格式不一致
+- 后端返回格式：{ followers: [...], total, page, ... } 和 { following: [...], total, page, ... }
+- 前端原期望格式：{ items: [...] }
+- 导致 data.items 为 undefined，访问 .length 属性时报错
 
 字集：创建后要自动刷新 —— 完成
 
