@@ -140,52 +140,11 @@ function initSendCode() {
 }
 
 /**
- * 发送验证码（模拟）
+ * 发送验证码（功能待完善）
  */
 function sendVerificationCode(btn, phone) {
-  // 禁用按钮
-  btn.disabled = true;
-
-  // 模拟 API 调用
-  setTimeout(() => {
-    showMessage('验证码已发送至 ' + phone, 'success');
-
-    // 倒计时
-    let countdown = 60;
-    btn.textContent = `${countdown}秒后重试`;
-
-    const timer = setInterval(() => {
-      countdown--;
-      if (countdown > 0) {
-        btn.textContent = `${countdown}秒后重试`;
-      } else {
-        clearInterval(timer);
-        btn.textContent = '获取验证码';
-        btn.disabled = false;
-      }
-    }, 1000);
-  }, 500);
-
-  // TODO: 实际项目中应该调用后端 API
-  // fetch('/api/auth/send-code', {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({ phone })
-  // })
-  // .then(response => response.json())
-  // .then(data => {
-  //   if (data.success) {
-  //     showMessage('验证码已发送', 'success');
-  //     // 开始倒计时...
-  //   } else {
-  //     showMessage(data.message || '发送失败', 'error');
-  //     btn.disabled = false;
-  //   }
-  // })
-  // .catch(error => {
-  //   showMessage('网络错误，请重试', 'error');
-  //   btn.disabled = false;
-  // });
+  // 显示提示信息，说明验证码功能待完善
+  showMessage('验证码功能待完善，现在随便输入6位数字即可', 'info');
 }
 
 /**
