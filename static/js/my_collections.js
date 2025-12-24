@@ -331,6 +331,53 @@ function closeAddCharModal() {
 }
 
 /**
+ * 生成统一尺寸的单字图片
+ */
+function generateUniformCharImage(character) {
+  const CANVAS_SIZE = 120; // 统一尺寸
+  const canvas = document.createElement('canvas');
+  canvas.width = CANVAS_SIZE;
+  canvas.height = CANVAS_SIZE;
+  const ctx = canvas.getContext('2d');
+  
+  // 填充白色背景
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+  
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = function() {
+      const { x, y, width, height } = character;
+      const aspect = width / height;
+      
+      let destW = CANVAS_SIZE;
+      let destH = CANVAS_SIZE;
+      let dx = 0;
+      let dy = 0;
+      
+      if (aspect > 1) {
+        // 宽大于高，垂直居中
+        destH = Math.round(CANVAS_SIZE / aspect);
+        dy = Math.floor((CANVAS_SIZE - destH) / 2);
+      } else if (aspect < 1) {
+        // 高大于宽，水平居中
+        destW = Math.round(CANVAS_SIZE * aspect);
+        dx = Math.floor((CANVAS_SIZE - destW) / 2);
+      }
+      
+      ctx.drawImage(img, x, y, width, height, dx, dy, destW, destH);
+      resolve(canvas.toDataURL());
+    };
+    img.onerror = function() {
+      // 图片加载失败，返回空字符串
+      resolve('');
+    };
+    img.src = character.work_image_url;
+  });
+}
+
+/**
  * 从后端加载单字数据
  */
 async function loadMockCharacters() {
@@ -341,44 +388,86 @@ async function loadMockCharacters() {
 
     const grid = document.getElementById('addCharGrid');
     if (!grid) return;
-
-    // 处理单字数据，转换为前端需要的格式
-    grid.innerHTML = characters.map(character => `
-      <div class="add-char-item" data-char="${character.recognition}" data-style="${character.style}" data-char-id="${character.id}">
-        <div class="char-card">
-          <div class="char-image" aria-hidden="true" style="background-image: url('${character.work_image_url}'); background-position: -${character.x}px -${character.y}px; background-size: ${character.work_image_width || 'auto'} ${character.work_image_height || 'auto'}; width: ${character.width}px; height: ${character.height}px;"></div>
-          <div class="char-label">${character.recognition}</div>
-          <div class="char-source">${character.source}</div>
-          <button type="button" class="char-add-btn" title="添加到字集">
-            <span>+</span>
-          </button>
-        </div>
-      </div>
-    `).join('');
     
-    // 添加CSS样式，确保char-image元素的背景图片显示正确
+    // 清空网格
+    grid.innerHTML = '';
+    
+    // 添加CSS样式，确保char-image元素显示正确
     const style = document.createElement('style');
     style.textContent = `
       .char-image {
-        background-repeat: no-repeat;
         background-color: white;
         margin: 0 auto;
+        width: 120px;
+        height: 120px;
+        display: block;
       }
       .char-display-large {
         display: none;
       }
+      .add-char-item {
+        display: flex;
+        flex-direction: column;
+      }
     `;
     document.head.appendChild(style);
 
-    // 添加单字点击事件
-    grid.querySelectorAll('.char-add-btn').forEach(btn => {
-      btn.addEventListener('click', function(e) {
+    // 批量处理单字数据
+    for (const character of characters) {
+      // 创建单字元素
+      const charItem = document.createElement('div');
+      charItem.className = 'add-char-item';
+      charItem.dataset.char = character.recognition;
+      charItem.dataset.style = character.style;
+      charItem.dataset.charId = character.id;
+      
+      const charCard = document.createElement('div');
+      charCard.className = 'char-card';
+      
+      // 创建图片容器
+      const charImage = document.createElement('img');
+      charImage.className = 'char-image';
+      charImage.ariaHidden = 'true';
+      
+      // 创建文字标签
+      const charLabel = document.createElement('div');
+      charLabel.className = 'char-label';
+      charLabel.textContent = character.recognition;
+      
+      // 创建来源信息
+      const charSource = document.createElement('div');
+      charSource.className = 'char-source';
+      charSource.textContent = character.source;
+      
+      // 创建添加按钮
+      const charAddBtn = document.createElement('button');
+      charAddBtn.type = 'button';
+      charAddBtn.className = 'char-add-btn';
+      charAddBtn.title = '添加到字集';
+      charAddBtn.innerHTML = '<span>+</span>';
+      
+      // 组装元素
+      charCard.appendChild(charImage);
+      charCard.appendChild(charLabel);
+      charCard.appendChild(charSource);
+      charCard.appendChild(charAddBtn);
+      charItem.appendChild(charCard);
+      grid.appendChild(charItem);
+      
+      // 生成统一尺寸的图片
+      const imageUrl = await generateUniformCharImage(character);
+      if (imageUrl) {
+        charImage.src = imageUrl;
+      }
+      
+      // 添加点击事件
+      charAddBtn.addEventListener('click', function(e) {
         e.stopPropagation();
         const charItem = this.closest('.add-char-item');
         const char = charItem.dataset.char;
         addCharToCollection(char);
       });
-    });
+    }
   } catch (error) {
     console.error('加载单字数据失败:', error);
     alert('加载单字数据失败: ' + error.message);
@@ -1227,44 +1316,64 @@ function createCharModal() {
 /**
  * 创建大尺寸单字预览
  */
-function createLargeCharPreview(box) {
-  const LARGE_SIZE = 180;
+/**
+ * 生成统一尺寸的单字预览图
+ * @param {Object} box - 单字信息对象
+ * @param {number} [size=180] - 生成图片的尺寸
+ * @param {HTMLImageElement} [image=null] - 可选的图片对象，如果提供则直接使用
+ * @returns {HTMLCanvasElement} 生成的canvas元素
+ */
+function createLargeCharPreview(box, size = 180, image = null) {
   const canvas = document.createElement('canvas');
-  canvas.width = LARGE_SIZE;
-  canvas.height = LARGE_SIZE;
+  canvas.width = size;
+  canvas.height = size;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#fff'; 
-  ctx.fillRect(0, 0, LARGE_SIZE, LARGE_SIZE);
   
-  if (box.workImageUrl) {
+  // 填充白色背景
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, size, size);
+  
+  const drawChar = (img) => {
+    const { x, y, width, height } = box;
+    const aspect = width / height;
+    
+    let destW = size;
+    let destH = size;
+    let dx = 0;
+    let dy = 0;
+    
+    if (aspect > 1) {
+      // 宽大于高，垂直居中
+      destH = Math.round(size / aspect);
+      dy = Math.floor((size - destH) / 2);
+    } else if (aspect < 1) {
+      // 高大于宽，水平居中
+      destW = Math.round(size * aspect);
+      dx = Math.floor((size - destW) / 2);
+    }
+    
+    ctx.drawImage(img, x, y, width, height, dx, dy, destW, destH);
+  };
+  
+  if (image && image.complete) {
+    // 使用已加载的图片对象
+    drawChar(image);
+  } else if (box.workImageUrl) {
+    // 从URL加载图片
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = function() {
-      const { x, y, width, height } = box;
-      const aspect = width / height;
-      let destW = LARGE_SIZE; 
-      let destH = LARGE_SIZE;
-      let dx = 0;
-      let dy = 0;
-      
-      if (aspect > 1) {
-        destH = Math.round(LARGE_SIZE / aspect);
-        dy = Math.floor((LARGE_SIZE - destH) / 2);
-      } else if (aspect < 1) {
-        destW = Math.round(LARGE_SIZE * aspect);
-        dx = Math.floor((LARGE_SIZE - destW) / 2);
-      }
-      
-      ctx.drawImage(img, x, y, width, height, dx, dy, destW, destH);
+      drawChar(img);
     };
     img.src = box.workImageUrl;
   } else {
     // 如果没有图片，显示文字
-    ctx.font = '140px serif';
+    const fontSize = Math.round(size * 0.7);
+    ctx.font = `${fontSize}px serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#000';
-    ctx.fillText(box.char || '?', LARGE_SIZE / 2, LARGE_SIZE / 2);
+    ctx.fillStyle = '#000000';
+    ctx.fillText(box.char || '?', size / 2, size / 2);
   }
   
   return canvas;
@@ -1550,30 +1659,65 @@ async function openDetailModal(collectionId) {
     if (grid) {
       grid.innerHTML = '';
       
-      characters.forEach(charInSet => {
+      // 批量处理单字数据
+      for (const charInSet of characters) {
         const character = charInSet.character;
         const item = document.createElement('div');
         item.className = 'detail-char-item';
         item.dataset.char = character.recognition;
         item.dataset.charId = character.id;
-        item.innerHTML = `
-          <div class="char-card">
-            <div class="char-image" aria-hidden="true" style="background-image: url('${character.work_image_url}'); background-position: -${character.x}px -${character.y}px; background-size: ${character.work_image_width || 'auto'} ${character.work_image_height || 'auto'}; width: ${character.width}px; height: ${character.height}px;"></div>
-            <div class="char-label">${character.recognition}</div>
-            <div class="char-source">${character.source}</div>
-            <button type="button" class="char-remove" aria-label="移除" title="从字集中移除">×</button>
-          </div>
-        `;
+        
+        // 创建char-card元素
+        const charCard = document.createElement('div');
+        charCard.className = 'char-card';
+        
+        // 创建图片元素
+        const charImage = document.createElement('img');
+        charImage.className = 'char-image';
+        charImage.ariaHidden = 'true';
+        
+        // 创建文字标签
+        const charLabel = document.createElement('div');
+        charLabel.className = 'char-label';
+        charLabel.textContent = character.recognition;
+        
+        // 创建来源信息
+        const charSource = document.createElement('div');
+        charSource.className = 'char-source';
+        charSource.textContent = character.source;
+        
+        // 创建移除按钮
+        const charRemoveBtn = document.createElement('button');
+        charRemoveBtn.type = 'button';
+        charRemoveBtn.className = 'char-remove';
+        charRemoveBtn.ariaLabel = '移除';
+        charRemoveBtn.title = '从字集中移除';
+        charRemoveBtn.innerHTML = '×';
+        
+        // 组装元素
+        charCard.appendChild(charImage);
+        charCard.appendChild(charLabel);
+        charCard.appendChild(charSource);
+        charCard.appendChild(charRemoveBtn);
+        item.appendChild(charCard);
         grid.appendChild(item);
-      });
+        
+        // 生成统一尺寸的图片
+        const imageUrl = await generateUniformCharImage(character);
+        if (imageUrl) {
+          charImage.src = imageUrl;
+        }
+      }
       
-      // 添加CSS样式，确保char-image元素的背景图片显示正确
+      // 添加CSS样式，确保char-image元素显示正确
       const style = document.createElement('style');
       style.textContent = `
         .detail-char-item .char-image {
-          background-repeat: no-repeat;
           background-color: white;
           margin: 0 auto;
+          width: 120px;
+          height: 120px;
+          display: block;
         }
       `;
       document.head.appendChild(style);

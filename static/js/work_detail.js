@@ -639,21 +639,44 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  function createCharPreview(box) {
-    const PREVIEW_SIZE = 100;
+  /**
+   * 生成统一尺寸的单字预览图
+   * @param {Object} box - 单字信息对象
+   * @param {number} [size=100] - 生成图片的尺寸
+   * @returns {HTMLCanvasElement} 生成的canvas元素
+   */
+  function createCharPreview(box, size = 100) {
     const canvas = document.createElement('canvas');
-    canvas.width = PREVIEW_SIZE;
-    canvas.height = PREVIEW_SIZE;
+    canvas.width = size;
+    canvas.height = size;
     const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#fff'; ctx.fillRect(0,0,PREVIEW_SIZE,PREVIEW_SIZE);
+    
+    // 填充白色背景
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, size, size);
+    
     if (image && image.complete) {
       const { x, y, width, height } = box;
       const aspect = width / height;
-      let destW = PREVIEW_SIZE; let destH = PREVIEW_SIZE; let dx = 0; let dy = 0;
-      if (aspect > 1) { destH = Math.round(PREVIEW_SIZE / aspect); dy = Math.floor((PREVIEW_SIZE - destH)/2); }
-      else if (aspect < 1) { destW = Math.round(PREVIEW_SIZE * aspect); dx = Math.floor((PREVIEW_SIZE - destW)/2); }
+      
+      let destW = size;
+      let destH = size;
+      let dx = 0;
+      let dy = 0;
+      
+      if (aspect > 1) {
+        // 宽大于高，垂直居中
+        destH = Math.round(size / aspect);
+        dy = Math.floor((size - destH) / 2);
+      } else if (aspect < 1) {
+        // 高大于宽，水平居中
+        destW = Math.round(size * aspect);
+        dx = Math.floor((size - destW) / 2);
+      }
+      
       ctx.drawImage(image, x, y, width, height, dx, dy, destW, destH);
     }
+    
     return canvas;
   }
 
@@ -867,20 +890,59 @@ document.addEventListener('DOMContentLoaded', () => {
     if (copyCharBtn) copyCharBtn.onclick = () => copyCharText(box.char);
   }
 
-  function createLargeCharPreview(box) {
-    const LARGE_SIZE = 180;
+  /**
+   * 生成统一尺寸的单字预览图
+   * @param {Object} box - 单字信息对象
+   * @param {number} [size=180] - 生成图片的尺寸
+   * @param {HTMLImageElement} [imageObj=null] - 可选的图片对象，如果提供则直接使用
+   * @returns {HTMLCanvasElement} 生成的canvas元素
+   */
+  function createLargeCharPreview(box, size = 180, imageObj = null) {
     const canvas = document.createElement('canvas');
-    canvas.width = LARGE_SIZE; canvas.height = LARGE_SIZE;
+    canvas.width = size;
+    canvas.height = size;
     const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#fff'; ctx.fillRect(0,0,LARGE_SIZE,LARGE_SIZE);
-    if (image && image.complete) {
+    
+    // 填充白色背景
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, size, size);
+    
+    const drawChar = (img) => {
       const { x, y, width, height } = box;
       const aspect = width / height;
-      let destW = LARGE_SIZE; let destH = LARGE_SIZE; let dx = 0; let dy = 0;
-      if (aspect > 1) { destH = Math.round(LARGE_SIZE / aspect); dy = Math.floor((LARGE_SIZE - destH)/2); }
-      else if (aspect < 1) { destW = Math.round(LARGE_SIZE * aspect); dx = Math.floor((LARGE_SIZE - destW)/2); }
-      ctx.drawImage(image, x, y, width, height, dx, dy, destW, destH);
+      
+      let destW = size;
+      let destH = size;
+      let dx = 0;
+      let dy = 0;
+      
+      if (aspect > 1) {
+        // 宽大于高，垂直居中
+        destH = Math.round(size / aspect);
+        dy = Math.floor((size - destH) / 2);
+      } else if (aspect < 1) {
+        // 高大于宽，水平居中
+        destW = Math.round(size * aspect);
+        dx = Math.floor((size - destW) / 2);
+      }
+      
+      ctx.drawImage(img, x, y, width, height, dx, dy, destW, destH);
+    };
+    
+    // 使用传入的图片对象或全局image对象
+    const imgToUse = imageObj || image;
+    if (imgToUse && imgToUse.complete) {
+      drawChar(imgToUse);
+    } else if (box.workImageUrl) {
+      // 从URL加载图片（备用方案）
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = function() {
+        drawChar(img);
+      };
+      img.src = box.workImageUrl;
     }
+    
     return canvas;
   }
 
