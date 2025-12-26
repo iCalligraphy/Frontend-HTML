@@ -817,13 +817,14 @@ class CommunityManager {
                 postContent.value = '';
                 if (charCount) charCount.textContent = '0';
 
-                // 显示成功提示
                 this.showToast('发布成功！', 'success');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 500);
             } catch (error) {
                 console.error('发布帖子失败:', error);
                 this.showToast('发布失败，请稍后重试', 'error');
             } finally {
-                // 恢复发布按钮状态
                 publishBtn.disabled = false;
                 publishBtn.innerHTML = '<span class="btn-text">发布</span>';
             }
@@ -2039,8 +2040,10 @@ class CommunityManager {
             // 显示成功提示
             this.showToast('关注成功', 'success');
 
-            // 更新关注数
             this.updateTopicFollowers(topicId, 1);
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
         } catch (error) {
             console.error(`关注话题 ${topicId} 失败:`, error);
             this.showToast('关注失败，请稍后重试', 'error');
@@ -2092,8 +2095,10 @@ class CommunityManager {
             // 显示成功提示
             this.showToast('已取消关注', 'success');
 
-            // 更新关注数
             this.updateTopicFollowers(topicId, -1);
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
         } catch (error) {
             console.error(`取消关注话题 ${topicId} 失败:`, error);
             this.showToast('取消关注失败，请稍后重试', 'error');
@@ -2143,6 +2148,9 @@ class CommunityManager {
                 button.classList.remove('btn-following');
                 button.classList.add('btn-follow');
                 this.showToast(`已取消关注 ${authorName}`, 'info');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 500);
             } else {
                 // 关注
                 await this.apiRequest(`/users/${userId}/follow`, {
@@ -2153,6 +2161,9 @@ class CommunityManager {
                 button.classList.remove('btn-follow');
                 button.classList.add('btn-following');
                 this.showToast(`已成功关注 ${authorName}`, 'success');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 500);
             }
         } catch (error) {
             // 处理409 CONFLICT响应（重复关注）- 这是正常情况，不是错误
