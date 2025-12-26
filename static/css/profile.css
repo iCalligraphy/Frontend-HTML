@@ -639,6 +639,29 @@
     gap: 24px;
   }
 
+
+/* Scoped overrides for profile page to avoid global conflicts (search input/icon) */
+.profile-page .search-box {
+  position: relative;
+}
+
+.profile-page .search-box .search-input {
+  width: 100%;
+  padding: 12px 16px 12px 44px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 15px;
+  background: var(--bg-xuan);
+}
+
+.profile-page .search-box .search-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--gray);
+  pointer-events: none;
+}
   .stats-section {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -855,7 +878,6 @@
 }
 
 .search-input {
-  padding: 8px 14px;
   border: 1px solid var(--border);
   border-radius: 20px;
   font-size: 14px;
