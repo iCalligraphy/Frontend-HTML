@@ -449,7 +449,24 @@ function initEventListeners() {
   const followersStatCard = document.getElementById('followersStatCard');
   if (followersStatCard) {
     followersStatCard.addEventListener('click', function() {
-      showFollowers();
+      // 跳转到关注/粉丝标签页，并激活“关注我的”子标签
+      switchTab('follow');
+      try {
+        const followTabBtns = document.querySelectorAll('#follow .tab-btn');
+        followTabBtns.forEach(b => b.classList.remove('active'));
+        const followersBtn = document.querySelector('#follow .tab-btn[data-tab="followers"]');
+        if (followersBtn) followersBtn.classList.add('active');
+      } catch (e) {
+        console.warn('切换到粉丝子标签失败:', e);
+      }
+    });
+  }
+
+  // 通知统计卡：跳转到通知标签页
+  const notificationsStatCard = document.getElementById('notificationsStatCard');
+  if (notificationsStatCard) {
+    notificationsStatCard.addEventListener('click', function() {
+      switchTab('notifications');
     });
   }
 }
