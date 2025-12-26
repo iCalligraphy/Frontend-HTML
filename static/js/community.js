@@ -65,7 +65,6 @@ class CommunityManager {
         this.initPostFilters();
         this.initPostActions();
         this.initComments();
-        this.initCategorySystem();
         this.initFollowSystem();
         this.initNotifications();
         this.initTopicSelector();
@@ -195,16 +194,53 @@ class CommunityManager {
      */
     async loadTopics() {
         try {
-            // 直接使用我们定义的五个话题分类，不从API获取
-            this.initCategorySystem();
-            console.log('使用预定义的话题分类:', this.topics);
-            
-            // 填充所有话题选择下拉框
+            this.showLoading('加载话题数据...');
+
+            console.log('开始从后端API获取话题列表...');
+            const response = await this.apiRequest('/topics');
+            console.log('API响应:', response);
+
+            if (response.topics && response.topics.length > 0) {
+                this.topics = response.topics;
+                console.log('成功加载话题数据:', this.topics);
+
+                try {
+                    console.log('开始获取当前用户关注的话题...');
+                    const followedResponse = await this.getFollowedTopics();
+                    console.log('关注话题API响应:', followedResponse);
+
+                    const followedTopicIds = new Set(
+                        (Array.isArray(followedResponse.topics) ? followedResponse.topics : 
+                         Array.isArray(followedResponse) ? followedResponse : []).map(t => t.id)
+                    );
+                    console.log('已关注的话题ID:', Array.from(followedTopicIds));
+
+                    this.topics.forEach(topic => {
+                        topic.isFollowed = followedTopicIds.has(topic.id);
+                    });
+
+                    console.log('合并关注状态后的话题数据:', this.topics);
+                } catch (followError) {
+                    console.error('获取关注话题失败，继续使用话题数据:', followError);
+                    this.topics.forEach(topic => {
+                        topic.isFollowed = false;
+                    });
+                }
+            } else {
+                console.log('API返回空数据，使用预定义数据');
+                this.initCategorySystem();
+            }
+
             this.initComposerTopicSelect();
             this.initTopicSelector();
         } catch (error) {
-            console.error('初始化话题分类失败:', error);
-            this.topics = [];
+            console.error('加载话题失败，使用预定义数据:', error);
+            console.error('错误详情:', error.message);
+            this.initCategorySystem();
+            this.initComposerTopicSelect();
+            this.initTopicSelector();
+        } finally {
+            this.hideLoading();
         }
     }
 
@@ -1515,41 +1551,59 @@ class CommunityManager {
      * 初始化分类系统
      */
     initCategorySystem() {
-        // 只显示五个话题分类
         this.topics = [
             {
                 id: 'technique',
                 name: '技法交流',
                 category: '话题分类',
-                icon: '🖌️'
+                icon: '🖌️',
+                postCount: 1250,
+                description: '分享书写技巧，讨论笔法、结构、章法等',
+                color: '#8b4513',
+                isPopular: true
             },
             {
                 id: 'appreciation',
                 name: '作品欣赏',
                 category: '话题分类',
-                icon: '👁️'
+                icon: '👁️',
+                postCount: 890,
+                description: '欣赏经典与原创书法作品，交流鉴赏心得',
+                color: '#4a7c59',
+                isPopular: true
             },
             {
                 id: 'qna',
                 name: '问答求助',
                 category: '话题分类',
-                icon: '❓'
+                icon: '❓',
+                postCount: 670,
+                description: '提出书法学习中的疑问，互相解答帮助',
+                color: '#2c5aa0',
+                isPopular: true
             },
             {
                 id: 'materials',
                 name: '文房四宝',
                 category: '话题分类',
-                icon: '📦'
+                icon: '📦',
+                postCount: 450,
+                description: '讨论笔墨纸砚等书法工具的选择与使用',
+                color: '#a0522d',
+                isPopular: false
             },
             {
                 id: 'events',
                 name: '活动赛事',
                 category: '话题分类',
-                icon: '🎯'
+                icon: '🎯',
+                postCount: 320,
+                description: '书法比赛、展览、线下活动等信息分享',
+                color: '#c84b31',
+                isPopular: false
             }
         ];
         
-        // 按分类分组的话题数据
         this.topicsByCategory = {
             '话题分类': this.topics
         };
@@ -1855,20 +1909,29 @@ class CommunityManager {
      */
     async populateSidebarTopics() {
         try {
-            // 确保话题数据已加载
+            console.log('开始填充侧边栏话题...');
+
             if ((!this.topics || this.topics.length === 0) && (!this.allTopics || this.allTopics.length === 0)) {
+                console.log('话题数据为空，重新加载...');
                 if (typeof this.loadTopics === 'function') {
                     await this.loadTopics();
                 }
             }
 
             const topics = (this.topics && this.topics.length) ? this.topics : (this.allTopics || []);
+            console.log('使用的话题数据:', topics);
+
             const list = document.getElementById('sidebarTopicsList');
-            if (!list) return;
+            if (!list) {
+                console.log('未找到侧边栏话题列表元素');
+                return;
+            }
 
             list.innerHTML = '';
 
             const toShow = topics.slice(0, 10);
+            console.log('显示的话题:', toShow);
+
             toShow.forEach(topic => {
                 const li = document.createElement('li');
                 li.className = 'sidebar-topic-item';
@@ -1876,6 +1939,8 @@ class CommunityManager {
                 const icon = topic.icon || '📚';
                 const postCount = topic.postCount != null ? Number(topic.postCount).toLocaleString() : '0';
                 const isFollowed = !!topic.isFollowed;
+
+                console.log(`话题 ${topic.name}: 关注状态=${isFollowed}, 帖子数=${postCount}`);
 
                 li.innerHTML = `
                     <div class="sidebar-topic-left">
@@ -1893,44 +1958,44 @@ class CommunityManager {
                 list.appendChild(li);
             });
 
-            // 绑定按钮事件
             list.querySelectorAll('.topic-follow-btn').forEach(btn => {
                 btn.addEventListener('click', async (e) => {
                     e.preventDefault();
                     const topicId = btn.dataset.topicId;
                     if (!topicId) return;
 
+                    if (!this.currentUser) {
+                        this.showToast('请先登录后再关注话题', 'warning');
+                        return;
+                    }
+
                     btn.disabled = true;
+                    const originalText = btn.textContent;
+                    const isFollowing = btn.classList.contains('following');
+
                     try {
-                        if (btn.classList.contains('following')) {
+                        if (isFollowing) {
                             await this.unfollowTopic(topicId);
-                            btn.classList.remove('following');
-                            btn.textContent = '关注';
-                            btn.setAttribute('aria-pressed', 'false');
                         } else {
                             await this.followTopic(topicId);
-                            btn.classList.add('following');
-                            btn.textContent = '已关注';
-                            btn.setAttribute('aria-pressed', 'true');
                         }
 
-                        // 更新本地话题状态
-                        const t = (this.topics || this.allTopics || []).find(x => String(x.id) === String(topicId));
-                        if (t) t.isFollowed = btn.classList.contains('following');
-                        // 立即刷新侧边栏与话题主区显示
-                        try {
-                            if (typeof this.populateSidebarTopics === 'function') await this.populateSidebarTopics();
-                        } catch (e) { /* ignore */ }
-                        try { if (typeof this.updateContent === 'function') this.updateContent(); } catch (e) { /* ignore */ }
-                        try { if (typeof this.updateFollowingCount === 'function') this.updateFollowingCount(); } catch (e) { /* ignore */ }
+                        const topic = (this.topics || this.allTopics || []).find(x => String(x.id) === String(topicId));
+                        if (topic) {
+                            topic.isFollowed = !isFollowing;
+                        }
+
+                        await this.populateSidebarTopics();
                     } catch (err) {
                         console.error('侧边栏关注操作失败:', err);
-                        this.showToast && this.showToast('操作失败，请稍后重试', 'error');
-                    } finally {
+                        this.showToast('操作失败，请稍后重试', 'error');
+                        btn.textContent = originalText;
                         btn.disabled = false;
                     }
                 });
             });
+
+            console.log('侧边栏话题填充完成');
         } catch (error) {
             console.error('填充侧边栏话题失败:', error);
         }
@@ -1939,28 +2004,52 @@ class CommunityManager {
      * 关注话题
      */
     async followTopic(topicId) {
-        const btn = document.querySelector(`.btn-follow.topic-follow-btn[data-topic-id="${topicId}"]`);
-        if (!btn) return;
+        // 查找所有相关的关注按钮
+        const buttons = document.querySelectorAll(`.topic-follow-btn[data-topic-id="${topicId}"]`);
+        if (buttons.length === 0) {
+            console.error(`未找到话题 ${topicId} 的关注按钮`);
+            return;
+        }
 
         // 显示加载状态
-        const originalText = btn.textContent;
-        btn.textContent = '关注中...';
-        btn.disabled = true;
+        buttons.forEach(btn => {
+            btn.disabled = true;
+            btn.textContent = '关注中...';
+        });
 
         try {
             // 调用API关注话题
             await this.apiRequest(`/topics/${topicId}/follow`, { method: 'POST' });
             console.log(`成功关注话题 ${topicId}`);
+
+            // 更新按钮状态
+            buttons.forEach(btn => {
+                btn.classList.add('following');
+                btn.textContent = '已关注';
+                btn.setAttribute('aria-pressed', 'true');
+                btn.disabled = false;
+            });
+
+            // 更新本地话题状态
+            const topic = (this.topics || this.allTopics || []).find(x => String(x.id) === String(topicId));
+            if (topic) {
+                topic.isFollowed = true;
+            }
+
+            // 显示成功提示
+            this.showToast('关注成功', 'success');
+
             // 更新关注数
             this.updateTopicFollowers(topicId, 1);
         } catch (error) {
             console.error(`关注话题 ${topicId} 失败:`, error);
-            this.showToast('关注话题失败，请稍后重试', 'error');
+            this.showToast('关注失败，请稍后重试', 'error');
+
             // 恢复按钮状态
-            btn.textContent = originalText;
-            btn.disabled = false;
-            btn.classList.remove('btn-following');
-            btn.classList.add('btn-follow');
+            buttons.forEach(btn => {
+                btn.textContent = '关注';
+                btn.disabled = false;
+            });
         }
     }
 
@@ -1968,28 +2057,52 @@ class CommunityManager {
      * 取消关注话题
      */
     async unfollowTopic(topicId) {
-        const btn = document.querySelector(`.btn-follow.topic-follow-btn[data-topic-id="${topicId}"]`);
-        if (!btn) return;
+        // 查找所有相关的关注按钮
+        const buttons = document.querySelectorAll(`.topic-follow-btn[data-topic-id="${topicId}"]`);
+        if (buttons.length === 0) {
+            console.error(`未找到话题 ${topicId} 的关注按钮`);
+            return;
+        }
 
         // 显示加载状态
-        const originalText = btn.textContent;
-        btn.textContent = '取消中...';
-        btn.disabled = true;
+        buttons.forEach(btn => {
+            btn.disabled = true;
+            btn.textContent = '取消中...';
+        });
 
         try {
             // 调用API取消关注话题
             await this.apiRequest(`/topics/${topicId}/follow`, { method: 'DELETE' });
             console.log(`成功取消关注话题 ${topicId}`);
+
+            // 更新按钮状态
+            buttons.forEach(btn => {
+                btn.classList.remove('following');
+                btn.textContent = '关注';
+                btn.setAttribute('aria-pressed', 'false');
+                btn.disabled = false;
+            });
+
+            // 更新本地话题状态
+            const topic = (this.topics || this.allTopics || []).find(x => String(x.id) === String(topicId));
+            if (topic) {
+                topic.isFollowed = false;
+            }
+
+            // 显示成功提示
+            this.showToast('已取消关注', 'success');
+
             // 更新关注数
             this.updateTopicFollowers(topicId, -1);
         } catch (error) {
             console.error(`取消关注话题 ${topicId} 失败:`, error);
-            this.showToast('取消关注话题失败，请稍后重试', 'error');
+            this.showToast('取消关注失败，请稍后重试', 'error');
+
             // 恢复按钮状态
-            btn.textContent = originalText;
-            btn.disabled = false;
-            btn.classList.remove('btn-follow');
-            btn.classList.add('btn-following');
+            buttons.forEach(btn => {
+                btn.textContent = '已关注';
+                btn.disabled = false;
+            });
         }
     }
 
@@ -2410,77 +2523,6 @@ class CommunityManager {
             document.querySelectorAll('.post-menu-dropdown').forEach(d => d.classList.add('hidden'));
         });
     }
-     /**
-   * 加载话题数据
-   */
-  async loadTopicData() {
-    try {
-      const response = await this.apiRequest('/api/topics');
-      this.allTopics = response.topics;
-    } catch (error) {
-      console.error('加载话题数据失败:', error);
-      this.showToast('加载话题数据失败，请稍后重试', 'error');
-      // 如果API请求失败，使用默认数据作为备份
-      this.allTopics = [
-        {
-          id: 'technique',
-          name: '技法交流',
-          description: '分享书写技巧，讨论笔法、结构、章法等',
-          postCount: 1250,
-          color: '#8b4513',
-          icon: '🖌️',
-          isPopular: true,
-          createdAt: '2022-03-15',
-          isFollowed: false
-        },
-        {
-          id: 'appreciation',
-          name: '作品欣赏',
-          description: '欣赏经典与原创书法作品，交流鉴赏心得',
-          postCount: 890,
-          color: '#4a7c59',
-          icon: '👁️',
-          isPopular: true,
-          createdAt: '2022-04-10',
-          isFollowed: false
-        },
-        {
-          id: 'qna',
-          name: '问答求助',
-          description: '提出书法学习中的疑问，互相解答帮助',
-          postCount: 670,
-          color: '#2c5aa0',
-          icon: '❓',
-          isPopular: true,
-          createdAt: '2022-05-20',
-          isFollowed: false
-        },
-        {
-          id: 'materials',
-          name: '文房四宝',
-          description: '讨论笔墨纸砚等书法工具的选择与使用',
-          postCount: 450,
-          color: '#a0522d',
-          icon: '📦',
-          isPopular: false,
-          createdAt: '2022-06-05',
-          isFollowed: false
-        },
-        {
-          id: 'events',
-          name: '活动赛事',
-          description: '书法比赛、展览、线下活动等信息分享',
-          postCount: 320,
-          color: '#c84b31',
-          icon: '🎯',
-          isPopular: false,
-          createdAt: '2022-07-12',
-          isFollowed: false
-        }
-      ];
-    }
-  }
-
 
     /**
      * 处理删除帖子
