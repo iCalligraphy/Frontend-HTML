@@ -59,6 +59,7 @@ class CommunityManager {
     async init() {
         await this.loadUserData();
         await this.loadTopics();  // 加载话题数据
+        await this.populateSidebarTopics();
         this.initCheckin();
         this.initPostComposer();
         this.initPostFilters();
@@ -1850,6 +1851,91 @@ class CommunityManager {
     }
 
     /**
+     * 填充社区右侧话题列表（侧边栏）
+     */
+    async populateSidebarTopics() {
+        try {
+            // 确保话题数据已加载
+            if ((!this.topics || this.topics.length === 0) && (!this.allTopics || this.allTopics.length === 0)) {
+                if (typeof this.loadTopics === 'function') {
+                    await this.loadTopics();
+                }
+            }
+
+            const topics = (this.topics && this.topics.length) ? this.topics : (this.allTopics || []);
+            const list = document.getElementById('sidebarTopicsList');
+            if (!list) return;
+
+            list.innerHTML = '';
+
+            const toShow = topics.slice(0, 10);
+            toShow.forEach(topic => {
+                const li = document.createElement('li');
+                li.className = 'sidebar-topic-item';
+
+                const icon = topic.icon || '📚';
+                const postCount = topic.postCount != null ? Number(topic.postCount).toLocaleString() : '0';
+                const isFollowed = !!topic.isFollowed;
+
+                li.innerHTML = `
+                    <div class="sidebar-topic-left">
+                        <span class="sidebar-topic-icon">${icon}</span>
+                        <div class="sidebar-topic-info">
+                            <div class="sidebar-topic-name">${topic.name}</div>
+                            <div class="sidebar-topic-count">${postCount} 帖子</div>
+                        </div>
+                    </div>
+                    <button class="topic-follow-btn ${isFollowed ? 'following' : ''}" data-topic-id="${topic.id}" aria-pressed="${isFollowed}">
+                        ${isFollowed ? '已关注' : '关注'}
+                    </button>
+                `;
+
+                list.appendChild(li);
+            });
+
+            // 绑定按钮事件
+            list.querySelectorAll('.topic-follow-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    const topicId = btn.dataset.topicId;
+                    if (!topicId) return;
+
+                    btn.disabled = true;
+                    try {
+                        if (btn.classList.contains('following')) {
+                            await this.unfollowTopic(topicId);
+                            btn.classList.remove('following');
+                            btn.textContent = '关注';
+                            btn.setAttribute('aria-pressed', 'false');
+                        } else {
+                            await this.followTopic(topicId);
+                            btn.classList.add('following');
+                            btn.textContent = '已关注';
+                            btn.setAttribute('aria-pressed', 'true');
+                        }
+
+                        // 更新本地话题状态
+                        const t = (this.topics || this.allTopics || []).find(x => String(x.id) === String(topicId));
+                        if (t) t.isFollowed = btn.classList.contains('following');
+                        // 立即刷新侧边栏与话题主区显示
+                        try {
+                            if (typeof this.populateSidebarTopics === 'function') await this.populateSidebarTopics();
+                        } catch (e) { /* ignore */ }
+                        try { if (typeof this.updateContent === 'function') this.updateContent(); } catch (e) { /* ignore */ }
+                        try { if (typeof this.updateFollowingCount === 'function') this.updateFollowingCount(); } catch (e) { /* ignore */ }
+                    } catch (err) {
+                        console.error('侧边栏关注操作失败:', err);
+                        this.showToast && this.showToast('操作失败，请稍后重试', 'error');
+                    } finally {
+                        btn.disabled = false;
+                    }
+                });
+            });
+        } catch (error) {
+            console.error('填充侧边栏话题失败:', error);
+        }
+    }
+    /**
      * 关注话题
      */
     async followTopic(topicId) {
@@ -2324,6 +2410,77 @@ class CommunityManager {
             document.querySelectorAll('.post-menu-dropdown').forEach(d => d.classList.add('hidden'));
         });
     }
+     /**
+   * 加载话题数据
+   */
+  async loadTopicData() {
+    try {
+      const response = await this.apiRequest('/api/topics');
+      this.allTopics = response.topics;
+    } catch (error) {
+      console.error('加载话题数据失败:', error);
+      this.showToast('加载话题数据失败，请稍后重试', 'error');
+      // 如果API请求失败，使用默认数据作为备份
+      this.allTopics = [
+        {
+          id: 'technique',
+          name: '技法交流',
+          description: '分享书写技巧，讨论笔法、结构、章法等',
+          postCount: 1250,
+          color: '#8b4513',
+          icon: '🖌️',
+          isPopular: true,
+          createdAt: '2022-03-15',
+          isFollowed: false
+        },
+        {
+          id: 'appreciation',
+          name: '作品欣赏',
+          description: '欣赏经典与原创书法作品，交流鉴赏心得',
+          postCount: 890,
+          color: '#4a7c59',
+          icon: '👁️',
+          isPopular: true,
+          createdAt: '2022-04-10',
+          isFollowed: false
+        },
+        {
+          id: 'qna',
+          name: '问答求助',
+          description: '提出书法学习中的疑问，互相解答帮助',
+          postCount: 670,
+          color: '#2c5aa0',
+          icon: '❓',
+          isPopular: true,
+          createdAt: '2022-05-20',
+          isFollowed: false
+        },
+        {
+          id: 'materials',
+          name: '文房四宝',
+          description: '讨论笔墨纸砚等书法工具的选择与使用',
+          postCount: 450,
+          color: '#a0522d',
+          icon: '📦',
+          isPopular: false,
+          createdAt: '2022-06-05',
+          isFollowed: false
+        },
+        {
+          id: 'events',
+          name: '活动赛事',
+          description: '书法比赛、展览、线下活动等信息分享',
+          postCount: 320,
+          color: '#c84b31',
+          icon: '🎯',
+          isPopular: false,
+          createdAt: '2022-07-12',
+          isFollowed: false
+        }
+      ];
+    }
+  }
+
 
     /**
      * 处理删除帖子
