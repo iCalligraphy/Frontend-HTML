@@ -752,17 +752,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const largePreview = createLargeCharPreview(box);
     modalPreview.appendChild(largePreview);
 
-    const prevCollectBtn = document.getElementById('collectCharBtn');
-    if (prevCollectBtn) prevCollectBtn.remove();
-
-    const collectBtn = document.createElement('button');
-    collectBtn.type = 'button';
-    collectBtn.className = 'btn btn-primary';
-    collectBtn.id = 'collectCharBtn';
-    collectBtn.innerHTML = '⭐ 收藏';
-
-    const charIdForCollect = Number(box.id !== undefined ? box.id : index);
-
+    // 保留用于读帖的截图函数，未作修改
     function captureCharImage(box) {
       return new Promise((resolve) => {
         const srcImg = window.image || document.getElementById('viewerImage') || viewerCanvas;
@@ -794,6 +784,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
+    // 保留 mock API 加载函数（不影响读帖）
     function ensureMockAPI() {
       return new Promise((resolve, reject) => {
         if (window.mockAPI) return resolve(window.mockAPI);
@@ -812,60 +803,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    ensureMockAPI().then(api => {
-      try {
-        if (api.isCollected(Number(charIdForCollect))) {
-          collectBtn.innerHTML = '✅ 已收藏';
-          collectBtn.disabled = true;
-          collectBtn.className = 'btn btn-outline';
-        }
-      } catch (e) { console.error('检查收藏状态失败:', e); }
-    }).catch(err => console.error('加载 mockAPI 失败:', err));
-
-    collectBtn.onclick = async (e) => {
-      e.stopPropagation();
-      if (collectBtn.disabled) return;
-      collectBtn.disabled = true;
-      collectBtn.innerHTML = '⏳ 处理中...';
-      try {
-        const api = await ensureMockAPI();
-        collectBtn.innerHTML = '📸 截取图片...';
-        const imageData = await captureCharImage(box);
-        collectBtn.innerHTML = '💾 保存中...';
-        const charData = {
-          character_id: charIdForCollect,
-          text: box.char || '',
-          work_id: currentWork?.id || currentWorkId,
-          work_title: currentWork?.title || '',
-          work_style: currentWork?.style || '',
-          position: [box.x||0, box.y||0, (box.x||0)+(box.width||0), (box.y||0)+(box.height||0)],
-          imageData: imageData || null,
-          collected_at: new Date().toISOString()
-        };
-        let res;
-        if (typeof api.collectCharacterWithData === 'function') res = await api.collectCharacterWithData(charData);
-        else if (typeof api.collectCharacter === 'function') res = await api.collectCharacter(Number(charIdForCollect));
-        else throw new Error('收藏接口不可用');
-        if (res && res.code === 201) {
-          collectBtn.innerHTML = '✅ 已收藏';
-          collectBtn.className = 'btn btn-outline';
-          alert('收藏成功！\n已保存单字，可在“我的字集”查看。');
-        } else {
-          collectBtn.innerHTML = '⭐ 收藏';
-          collectBtn.disabled = false;
-          collectBtn.className = 'btn btn-primary';
-          alert(res?.message || '收藏失败');
-        }
-      } catch (err) {
-        console.error('收藏失败', err);
-        collectBtn.innerHTML = '⭐ 收藏';
-        collectBtn.disabled = false;
-        collectBtn.className = 'btn btn-primary';
-        alert('收藏失败：' + (err.message || '未知错误'));
-      }
-    };
-
-    // 添加“读帖”按钮（localStorage 方案）
+    // 移除收藏按钮相关逻辑（保留读帖功能）
     const prevReadPostBtn = document.getElementById('readPostBtn');
     if (prevReadPostBtn) prevReadPostBtn.remove();
     const readPostBtn = document.createElement('button');
@@ -894,12 +832,11 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
 
-    // 插入到弹窗按钮区
+    // 插入到弹窗按钮区（只插入读帖按钮）
     const modalActions = charModal.querySelector('.char-actions') || (() => {
       const el = document.createElement('div'); el.className='char-actions'; charModal.querySelector('.modal-body').appendChild(el); return el;
     })();
     modalActions.insertBefore(readPostBtn, modalActions.firstChild);
-    modalActions.insertBefore(collectBtn, modalActions.firstChild);
 
     charModal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
