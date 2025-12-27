@@ -18,9 +18,21 @@
           <a href="/my-collections" {% if active_page == 'my_collections' %}class="active"{% endif %}>我的字集</a>
           <a href="/profile" {% if active_page == 'profile' %}class="active"{% endif %}>个人中心</a>
           <a href="/community" {% if active_page == 'community' %}class="active"{% endif %}>社区</a>
-          <div class="nav-auth" id="navAuthContainer">
-            <a href="/auth" class="btn btn-outline">登录/注册</a>
+
+          <!-- 右侧区域：认证 + 搜索（搜索移至登录右侧） -->
+          <div class="nav-right" style="display:flex;align-items:center;">
+            <div class="nav-auth" id="navAuthContainer">
+              <a href="/auth" class="btn btn-outline">登录/注册</a>
+            </div>
+
+            <div class="nav-search" id="navSearchContainer" style="margin-left:12px;">
+              <form id="navSearchForm" class="nav-search-form" onsubmit="event.preventDefault(); const v=document.getElementById('globalSearchInput').value.trim(); if(v) window.location.href='/search?q='+encodeURIComponent(v);">
+                <input id="globalSearchInput" type="search" placeholder="搜索作者/作品/风格…" />
+                <button type="submit" id="searchBtn" class="btn btn-primary">搜索</button>
+              </form>
+            </div>
           </div>
+
           <script>
             // 动态更新导航栏认证状态
             document.addEventListener('DOMContentLoaded', function() {

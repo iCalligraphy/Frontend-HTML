@@ -35,6 +35,59 @@ a { color: var(--ink-black); text-decoration: none; }
 .nav a.active { background: var(--theme-brown); color: #fff; }
 .auth-link { font-weight: 600; }
 
+/* 导航栏搜索框美化 */
+.nav-search-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-search-form input[type="search"] {
+  width: 220px;
+  max-width: 40vw;
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(0,0,0,0.12);
+  background: #fff;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.04);
+  transition: width .18s ease, box-shadow .18s ease, border-color .18s;
+  font-size: 14px;
+  color: #222;
+}
+
+.nav-search-form input[type="search"]::placeholder {
+  color: #9b9b9b;
+}
+
+.nav-search-form input[type="search"]:focus {
+  outline: none;
+  border-color: #8a4b2f;
+  box-shadow: 0 0 0 4px rgba(138,75,47,0.08);
+  width: 260px;
+}
+
+.nav-search-form button[type="submit"] {
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: #8a4b2f;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background .12s ease, transform .08s;
+}
+
+.nav-search-form button[type="submit"]:hover {
+  background: #733e29;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 720px) {
+  .nav-search-form input[type="search"] { width: 120px; }
+  .nav-search-form input[type="search"]:focus { width: 160px; }
+  .nav-search-form button[type="submit"] { padding: 6px 8px; }
+}
+
 /* 英雄区 */
 .hero { padding: 48px 0 28px; background: radial-gradient(110% 100% at 0% 0%, #fff 0%, var(--bg-xuan) 55%, var(--bg-xuan) 100%); border-bottom: 1px solid var(--border); }
 .hero-inner { display: grid; grid-template-columns: 1.2fr 1fr; align-items: center; gap: 24px; }
@@ -105,8 +158,16 @@ a { color: var(--ink-black); text-decoration: none; }
 .works-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 .work-card { display: flex; flex-direction: column; gap: 10px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 14px rgba(0,0,0,0.05); transition: transform 0.2s ease, box-shadow 0.2s ease; }
 .work-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
-.thumb { height: 160px; background: linear-gradient(135deg, #f8f6ee 0%, #f1ede0 50%, #ece6d6 100%); position: relative; }
-.thumb::after { content: ""; position: absolute; inset: 12px; border: 2px solid rgba(139,69,19,0.18); border-radius: 8px; }
+.thumb {
+  width: 100%;
+  height: 160px; /* 按需调整高度或改用 padding-bottom 控制纵横比 */
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: #faf7ef; /* 占位背景色，可选 */
+  border-radius: 6px;
+  overflow: hidden;
+}
 .work-info { padding: 12px; }
 .work-info h4 { margin: 0 0 6px; font-size: 18px; }
 .meta { color: var(--gray); font-size: 13px; }
