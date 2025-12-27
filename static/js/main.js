@@ -30,61 +30,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 获取作品列表
   async function fetchWorks(page = 1) {
+    const params = new URLSearchParams();
+    params.set('page', page);
+    params.set('per_page', 6);
+
+    // 只在有实际输入时加入查询词，避免出现 search=1 之类的标志参数
+    const q = searchInput && searchInput.value ? searchInput.value.trim() : '';
+    if (q) params.set('q', q);
+
+    const author = authorInput && authorInput.value ? authorInput.value.trim() : '';
+    if (author) params.set('author', author);
+
+    if (sourceSelect && sourceSelect.value && sourceSelect.value !== 'all') {
+      params.set('source', sourceSelect.value);
+    }
+
+    // 可按需加入 style 等其它筛选
+    // if (selectedStyle) params.set('style', selectedStyle);
+
+    loadingIndicator.style.display = '';
     try {
-      // 显示加载状态
-      loadingIndicator.style.display = 'flex';
-      
-      // 构建查询参数
-      const params = new URLSearchParams({
-        page: page,
-        per_page: 6
-      });
-      
-      // 添加筛选条件
-      const selectedStyle = Array.from(chips)
-        .filter(chip => chip.classList.contains('selected'))
-        .map(chip => chip.dataset.style)
-        .join(',');
-      
-      if (selectedStyle) {
-        params.append('style', selectedStyle);
-      }
-      
-      if (authorInput && authorInput.value.trim()) {
-        params.append('author', authorInput.value.trim());
-      }
-      
-      if (sourceSelect && sourceSelect.value !== 'all') {
-        params.append('source_type', sourceSelect.value);
-      }
-      
-      if (searchInput && searchInput.value.trim()) {
-        params.append('search', searchInput.value.trim());
-      }
-      
-      // 调用API
-      const response = await fetch(`${API_BASE_URL}/works/?${params.toString()}`);
-      
-      if (!response.ok) {
-        throw new Error('网络请求失败');
-      }
-      
-      const data = await response.json();
-      worksData = data.works || [];
-      totalPages = data.pages || 0;
-      currentPage = data.page || 1;
-      
-      // 更新分页信息
-      updatePagination();
-      
-      // 渲染作品列表
+      const res = await fetch(`${API_BASE_URL}/works?${params.toString()}`);
+      if (!res.ok) throw new Error('Fetch failed: ' + res.status);
+      const data = await res.json();
+      worksData = data.items || [];
+      totalPages = data.total_pages || 0;
+      currentPage = page;
       renderWorks();
-      
-    } catch (error) {
-      console.error('获取作品失败:', error);
-      alert('获取作品失败，请稍后重试');
+      updatePagination();
+    } catch (err) {
+      console.error(err);
     } finally {
-      // 隐藏加载状态
       loadingIndicator.style.display = 'none';
     }
   }
@@ -225,15 +201,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // 搜索按钮
+  // 搜索按钮（区分导航栏搜索表单与页面内搜索）
   if (searchBtn && searchInput) {
-    searchBtn.addEventListener('click', () => {
-      const keyword = searchInput.value.trim();
-      if (!keyword) {
-        alert('请输入搜索关键词');
+    searchBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const v = searchInput.value.trim();
+
+      // 导航栏搜索使用 navSearchForm（如果存在则跳转到 /search?q=...）
+      const navForm = document.getElementById('navSearchForm');
+      if (navForm && (navForm.contains(searchBtn) || navForm.contains(searchInput))) {
+        if (v) window.location.href = '/search?q=' + encodeURIComponent(v);
         return;
       }
-      fetchWorks(1); // 搜索时重新获取数据
+
+      // 页面内搜索：刷新作品列表（仅在需要时传 q）
+      currentPage = 1;
+      fetchWorks(1);
     });
     
     // 回车键搜索
