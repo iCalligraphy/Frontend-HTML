@@ -25,12 +25,15 @@
               <a href="/auth" class="btn btn-outline">登录/注册</a>
             </div>
 
+            {# 在检索页隐藏导航栏搜索，避免与页面内搜索冲突 #}
+            {% if active_page != 'search' %}
             <div class="nav-search" id="navSearchContainer" style="margin-left:12px;">
               <form id="navSearchForm" class="nav-search-form" onsubmit="event.preventDefault(); const v=document.getElementById('globalSearchInput').value.trim(); if(v) window.location.href='/search?q='+encodeURIComponent(v);">
                 <input id="globalSearchInput" type="search" placeholder="搜索作者/作品/风格…" />
                 <button type="submit" id="searchBtn" class="btn btn-primary">搜索</button>
               </form>
             </div>
+            {% endif %}
           </div>
 
           <script>
