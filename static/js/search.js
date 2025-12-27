@@ -941,4 +941,100 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+
+  // 绑定模态框“下载/复制”按钮功能
+  const downloadBtn = document.getElementById('searchDownloadCharBtn');
+  const copyBtn = document.getElementById('searchCopyCharBtn');
+
+  function downloadBlobBlobURL(blob, filename = 'char.png') {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  async function downloadImageFromUrl(url, filename = 'char.png') {
+    try {
+      const res = await fetch(url, { mode: 'cors' });
+      if (!res.ok) throw new Error('network');
+      const blob = await res.blob();
+      downloadBlobBlobURL(blob, filename);
+    } catch (err) {
+      alert('下载失败：无法获取图片');
+      console.error(err);
+    }
+  }
+
+  async function handleDownloadChar() {
+    const preview = document.getElementById('modalPreview');
+    if (!preview) return alert('无预览内容');
+
+    // 优先 canvas
+    const canvas = preview.querySelector('canvas');
+    if (canvas) {
+      canvas.toBlob((blob) => {
+        if (!blob) return alert('生成图片失败');
+        downloadBlobBlobURL(blob, (modalCharText.textContent || 'char') + '.png');
+      }, 'image/png');
+      return;
+    }
+
+    // 再尝试 img 元素
+    const img = preview.querySelector('img');
+    if (img && img.src) {
+      // data URL 直接下载
+      if (img.src.startsWith('data:')) {
+        const a = document.createElement('a');
+        a.href = img.src;
+        a.download = (modalCharText.textContent || 'char') + '.png';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        return;
+      }
+      // 否则通过 fetch 获取 blob 再下载（避免长 query）
+      await downloadImageFromUrl(img.src, (modalCharText.textContent || 'char') + '.png');
+      return;
+    }
+
+    alert('未找到可下载图片');
+  }
+
+  async function handleCopyCharText() {
+    const text = (modalCharText && modalCharText.textContent) ? modalCharText.textContent.trim() : '';
+    if (!text) return alert('无可复制文字');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        await navigator.clipboard.writeText(text);
+        // 简短提示
+        alert('已复制到剪贴板');
+      } catch (err) {
+        // 退回到旧式方法
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); alert('已复制到剪贴板'); } catch (e) { alert('复制失败'); }
+        ta.remove();
+      }
+    } else {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); alert('已复制到剪贴板'); } catch (e) { alert('复制失败'); }
+      ta.remove();
+    }
+  }
+
+  if (downloadBtn) downloadBtn.addEventListener('click', (e) => { e.preventDefault(); handleDownloadChar(); });
+  if (copyBtn) copyBtn.addEventListener('click', (e) => { e.preventDefault(); handleCopyCharText(); });
 });
