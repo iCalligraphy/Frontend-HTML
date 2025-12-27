@@ -1,62 +1,216 @@
-/* search-modal.css — 调整为示例弹窗视觉 */
-.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:1200}
-.modal.show{display:flex}
-.modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,0.18)}
+/* search-modal.css — 单字弹窗布局 */
 
-/* 外层面板：白底 + 棕色描边 + 圆角 */
-.modal-panel{position:relative;background:#fff;border-radius:14px;box-shadow:0 18px 40px rgba(0,0,0,0.08);border:2px solid var(--theme-brown,#8B4513);width:860px;max-width:96%;z-index:2;overflow:hidden;padding:18px}
-.modal-close{position:absolute;right:18px;top:14px;border:0;background:transparent;font-size:20px;cursor:pointer;color:var(--theme-brown,#8B4513);font-weight:700}
-
-.modal-body{display:flex;gap:28px;align-items:flex-start;padding:12px}
-
-/* 预览框：白色内框 + 细内边距，模拟图片边缘留白 */
-#modalPreview{width:140px;height:140px;display:flex;align-items:center;justify-content:center;background:#fff;border-radius:10px;padding:10px;box-shadow:inset 0 0 0 6px rgba(248,243,235,0.95)}
-#modalPreview img{display:block;max-width:100%;max-height:100%;border-radius:6px}
-
-/* 右侧信息区 */
-.modal-meta{flex:1;font-size:14px;color:#333}
-.modal-meta .meta-row{display:flex;gap:12px;align-items:flex-start;white-space:nowrap;margin:8px 0}
-.modal-meta .meta-label{color:#888;min-width:56px}
-.modal-meta .meta-value{color:var(--theme-brown,#8B4513);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:340px}
-
-/* 标题大字样 */
-.char-detail-text{color:var(--theme-brown,#8B4513);font-size:44px;font-family:'KaiTi','STKaiti',serif;font-weight:700;margin:6px 0}
-
-/* 按钮行：一行显示，窄屏横向滚动 */
-.modal-actions{margin-top:18px;display:flex;gap:14px;flex-wrap:nowrap;align-items:center;overflow-x:auto;padding:6px 4px}
-.modal-actions button{padding:8px 14px;border-radius:8px;border:1.5px solid var(--theme-brown,#8B4513);background:#fff;color:var(--theme-brown,#8B4513);font-weight:600;cursor:pointer;transition:all 0.18s;flex:0 0 auto}
-.modal-actions button.btn-outline{background:#fffbe9}
-.modal-actions button.btn-primary{background:var(--theme-brown,#8B4513);color:#fff;border-color:var(--theme-brown,#8B4513)}
-.modal-actions button[disabled]{background:#e9f7ef;color:#2f7d3a;border-color:#c8e6c9}
-
-.char-actions button,.modal-actions button{background:#fffbe9;border:1.5px solid var(--theme-brown,#8B4513);color:var(--theme-brown,#8B4513);font-weight:600}
-.char-actions button.btn-primary,.modal-actions button.btn-primary{background:var(--theme-brown,#8B4513);color:#fff}
-.char-actions button:hover,.modal-actions button:hover{background:var(--theme-brown,#8B4513);color:#fff}
-
-@media (max-width:920px){
-  .modal-panel{width:94%}
-}
-@media (max-width:720px){
-  .modal-body{flex-direction:column;gap:12px}
-  #modalPreview{width:100%;height:220px}
-  .modal-actions{justify-content:flex-start}
+.modal {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
 }
 
-/* 美化 workModal 中的打开作品页链接按钮 */
-#workModalOpenPage {
+.modal.show {
+  display: flex;
+}
+
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.18);
+  z-index: 1;
+}
+
+/* 面板：白底不透明 */
+.modal-panel {
+  position: relative;
+  background: #fff !important;
+  z-index: 2 !important;
+  opacity: 1 !important;
+  width: auto;
+  max-width: 94%;
+  padding: 12px 16px 12px 8px;
+  border-radius: 10px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.1);
+  border: 2px solid #e8dfd3;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* 关闭按钮：右上角 */
+#searchModalClose,
+.modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  border-radius: 8px;
-  border: 1.5px solid var(--theme-brown,#8B4513);
-  background: #fffbe9;
-  color: var(--theme-brown,#8B4513);
-  font-weight: 600;
-  text-decoration: none;
-  transition: all 0.18s ease;
+  justify-content: center;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--theme-brown, #8B4513);
+  font-size: 18px;
+  cursor: pointer;
+  z-index: 20;
+  box-shadow: none;
+  padding: 0;
+  transition: background 0.2s ease;
 }
-#workModalOpenPage:hover {
-  background: var(--theme-brown,#8B4513);
+
+#searchModalClose:hover,
+.modal-close:hover {
+  background: rgba(0, 0, 0, 0.12);
+}
+
+/* ===== 单字弹窗专用布局（参考样式：左侧图片，右侧上方大字+信息，下方按钮）===== */
+#charModal .modal-body {
+  display: grid;
+  grid-template-columns: minmax(240px, 280px) minmax(280px, 1fr);
+  grid-template-areas:
+    "preview char"
+    "preview meta"
+    "preview actions";  /* 按钮与预览同列，底部对齐 */
+  gap: 12px 20px;
+  grid-auto-rows: min-content;
+  align-items: start;
+  justify-items: start;
+  padding: 8px 0;
+}
+
+/* 预览图：左侧较大 */
+#modalPreview {
+  grid-area: preview;
+  width: 240px;
+  height: 200px;
+  padding: 8px;
+  overflow: hidden;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #faf5ef;
+  border: 1px solid #e8dfd3;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+#modalPreview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  display: block;
+  border-radius: 6px;
+}
+
+/* 大字：右上方 */
+#modalCharText {
+  grid-area: char;
+  justify-self: start;
+  align-self: start;
+  color: var(--theme-brown, #8B4513);
+  font-size: 48px;
+  font-family: 'KaiTi', 'STKaiti', serif;
+  font-weight: 700;
+  margin: 0;
+  padding: 0;
+  line-height: 1;
+}
+
+/* 信息区：右下方 */
+#modalMeta {
+  grid-area: meta;
+  width: 100%;
+  font-size: 14px;
+  color: #333;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0;
+  border: none;
+  margin: 0;
+}
+
+#modalMeta > div {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  color: #666;
+  font-size: 13px;
+}
+
+#modalMeta strong {
+  min-width: 60px;
+  color: #8b8b8b;
+  font-weight: 600;
+}
+
+#modalMeta span {
+  color: var(--theme-brown, #8B4513);
+  font-weight: 600;
+}
+
+/* 按钮行：与图片底部水平对齐，位置在图片下方 */
+#charModal .modal-actions {
+  grid-area: actions;
+  position: static !important;
+  justify-self: start;
+  align-self: end;               /* 与预览底部对齐 */
+  margin-top: 0;
+  gap: 12px;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+/* 按钮视觉 */
+.modal-actions button,
+.modal-actions a.btn {
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: 1.5px solid var(--theme-brown, #8B4513);
+  background: #fff;
+  color: var(--theme-brown, #8B4513);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: none;
+  transition: all 0.2s ease;
+}
+
+.modal-actions button:hover,
+.modal-actions a.btn:hover {
+  background: var(--theme-brown, #8B4513);
   color: #fff;
 }
+
+/* ===== 响应式设计 ===== */
+@media (max-width: 720px) {
+  .modal-panel {
+    width: 94%;
+    padding: 12px;
+  }
+
+  #charModal .modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  #modalPreview {
+    width: 160px;
+    height: 160px;
+    padding: 6px;
+  }
+
+  #modalCharText {
+    font-size: 36px;
+  }
+
+  #charModal .modal-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+

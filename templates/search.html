@@ -85,7 +85,7 @@ extra_css %}
     style="display: none"
   >
     <div id="searchModalOverlay" class="modal-backdrop"></div>
-    <div class="modal-panel">
+    <div class="modal-panel" style="position: relative">
       <button id="searchModalClose" class="modal-close" aria-label="关闭">
         ×
       </button>
@@ -96,15 +96,30 @@ extra_css %}
         <div id="modalMeta" class="modal-meta">
           <div><strong>书体：</strong><span id="modalStyle">-</span></div>
           <div><strong>出自：</strong><span id="modalWork">-</span></div>
-          <div><strong>笔画：</strong><span id="modalStrokeCount">-</span></div>
-          <div><strong>笔顺：</strong><span id="modalStrokeOrder">-</span></div>
-          <div><strong>识别：</strong><span id="modalConfidence">-</span></div>
+          <div style="display: none">
+            <strong>笔画：</strong><span id="modalStrokeCount">-</span>
+          </div>
+          <div style="display: none">
+            <strong>笔顺：</strong><span id="modalStrokeOrder">-</span>
+          </div>
+          <div style="display: none">
+            <strong>识别：</strong><span id="modalConfidence">-</span>
+          </div>
           <div>
             <strong>采集时间：</strong><span id="modalCollectedAt">-</span>
           </div>
         </div>
 
-        <div class="modal-actions">
+        <div
+          class="modal-actions"
+          style="
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            display: flex;
+            gap: 10px;
+          "
+        >
           <button
             id="searchDownloadCharBtn"
             type="button"

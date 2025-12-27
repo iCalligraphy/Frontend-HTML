@@ -1025,123 +1025,27 @@ function showCharDetail(box, index) {
   const largePreview = createLargeCharPreview(box);
   modalPreview.appendChild(largePreview);
   
-  // 移除旧的收藏按钮和读帖按钮
-  const prevCollectBtn = document.getElementById('collectCharBtn');
-  if (prevCollectBtn) prevCollectBtn.remove();
-  
+  // 移除旧的读帖按钮（保留读帖函数，不移除 captureCharImage 等）
   const prevReadPostBtn = document.getElementById('readPostBtn');
   if (prevReadPostBtn) prevReadPostBtn.remove();
   
-  // 创建收藏按钮
-  const collectBtn = document.createElement('button');
-  collectBtn.type = 'button';
-  collectBtn.className = 'btn btn-primary';
-  collectBtn.id = 'collectCharBtn';
-  collectBtn.innerHTML = '⭐ 收藏';
-  
-  // 创建读帖按钮
+  // 创建读帖按钮（保留）
   const readPostBtn = document.createElement('button');
   readPostBtn.type = 'button';
   readPostBtn.className = 'btn btn-outline';
   readPostBtn.id = 'readPostBtn';
   readPostBtn.innerHTML = '📝 读帖';
   
-  // 添加到弹窗按钮区
+  // 添加到弹窗按钮区（只插入读帖按钮与已有下载/复制）
   const modalActions = charModal.querySelector('.char-actions') || (() => {
     const el = document.createElement('div');
     el.className = 'char-actions';
     charModal.querySelector('.modal-body').appendChild(el);
     return el;
   })();
-  
-  // 插入按钮到弹窗按钮区
   modalActions.insertBefore(readPostBtn, modalActions.firstChild);
-  modalActions.insertBefore(collectBtn, modalActions.firstChild);
   
-  // 添加收藏按钮点击事件
-  const charIdForCollect = Number(box.id !== undefined ? box.id : index);
-  
-  // 检查收藏状态
-  function ensureMockAPI() {
-    return new Promise((resolve, reject) => {
-      if (window.mockAPI) return resolve(window.mockAPI);
-      const existing = document.getElementById('mock-api-script');
-      if (existing) {
-        existing.addEventListener('load', () => { if (window.mockAPI) resolve(window.mockAPI); else reject(new Error('mockAPI 未初始化')); });
-        existing.addEventListener('error', () => reject(new Error('加载 mockAPI 失败')));
-        return;
-      }
-      const script = document.createElement('script');
-      script.id = 'mock-api-script';
-      script.src = '/static/js/api_mock.js';
-      script.onload = () => { if (window.mockAPI) resolve(window.mockAPI); else reject(new Error('mockAPI 未初始化')); };
-      script.onerror = () => reject(new Error('加载 mockAPI 失败'));
-      document.head.appendChild(script);
-    });
-  }
-  
-  ensureMockAPI().then(api => {
-    try {
-      if (api.isCollected(Number(charIdForCollect))) {
-        collectBtn.innerHTML = '✅ 已收藏';
-        collectBtn.disabled = true;
-        collectBtn.className = 'btn btn-outline';
-      }
-    } catch (e) {
-      console.error('检查收藏状态失败:', e);
-    }
-  }).catch(err => console.error('加载 mockAPI 失败:', err));
-  
-  collectBtn.onclick = async (e) => {
-    e.stopPropagation();
-    if (collectBtn.disabled) return;
-    collectBtn.disabled = true;
-    collectBtn.innerHTML = '⏳ 处理中...';
-    try {
-      const api = await ensureMockAPI();
-      
-      // 实现收藏逻辑
-      const charData = {
-        character_id: charIdForCollect,
-        text: box.char || '',
-        work_id: box.work_id || '',
-        work_title: box.work_title || '',
-        work_style: box.style || '',
-        position: [box.x || 0, box.y || 0, (box.x || 0) + (box.width || 0), (box.y || 0) + (box.height || 0)],
-        imageData: null,
-        collected_at: new Date().toISOString()
-      };
-      
-      let res;
-      if (typeof api.collectCharacterWithData === 'function') {
-        res = await api.collectCharacterWithData(charData);
-      } else if (typeof api.collectCharacter === 'function') {
-        res = await api.collectCharacter(Number(charIdForCollect));
-      } else {
-        throw new Error('收藏接口不可用');
-      }
-      
-      if (res && res.code === 201) {
-        collectBtn.innerHTML = '✅ 已收藏';
-        collectBtn.disabled = true;
-        collectBtn.className = 'btn btn-outline';
-        alert('收藏成功！\n已保存单字，可在“我的字集”查看。');
-      } else {
-        collectBtn.innerHTML = '⭐ 收藏';
-        collectBtn.disabled = false;
-        collectBtn.className = 'btn btn-primary';
-        alert(res?.message || '收藏失败');
-      }
-    } catch (err) {
-      console.error('收藏失败', err);
-      collectBtn.innerHTML = '⭐ 收藏';
-      collectBtn.disabled = false;
-      collectBtn.className = 'btn btn-primary';
-      alert('收藏失败：' + (err.message || '未知错误'));
-    }
-  };
-  
-  // 截取单字图片函数
+  // 截取单字图片函数（保留不动）
   function captureCharImage(box) {
     return new Promise((resolve) => {
       // 创建一个Image对象加载原始作品图片
@@ -1206,7 +1110,7 @@ function showCharDetail(box, index) {
     });
   }
   
-  // 读帖按钮点击事件
+  // 读帖按钮点击事件（保留不动）
   readPostBtn.onclick = async (e) => {
     e.stopPropagation();
     readPostBtn.disabled = true;
@@ -1244,7 +1148,7 @@ function showCharDetail(box, index) {
   if (modalClose) modalClose.addEventListener('click', closeModal);
   if (modalOverlay) modalOverlay.addEventListener('click', closeModal);
   
-  // 绑定下载和复制按钮事件
+  // 绑定下载和复制按钮事件（保留）
   const downloadBtn = document.getElementById('downloadCharBtn');
   const copyBtn = document.getElementById('copyCharBtn');
   
