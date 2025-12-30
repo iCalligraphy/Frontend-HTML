@@ -707,9 +707,10 @@ function initStep4() {
         formData.append('title', uploadState.workData.title);
         formData.append('description', uploadState.workData.description);
         formData.append('style', uploadState.workData.style);
-        formData.append('author_name', uploadState.workData.dynasty ? `${uploadState.workData.dynasty}${uploadState.workData.author}` : uploadState.workData.author);
+        formData.append('author_name', uploadState.workData.author);
         formData.append('source_type', uploadState.workData.source);
         formData.append('tags', uploadState.workData.tags);
+        formData.append('dynasty', uploadState.workData.dynasty);
         
         // 直接使用canvas坐标，不进行转换
         // 标注时的坐标已经是正确的canvas坐标，不需要再转换

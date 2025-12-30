@@ -144,7 +144,7 @@ function initSendCode() {
  */
 function sendVerificationCode(btn, phone) {
   // 显示提示信息，说明验证码功能待完善
-  showMessage('验证码功能待完善，现在随便输入6位数字即可', 'info');
+  showMessage('验证码功能待完善，注册时随便输入6位数字即可，验证码登录暂时不可用', 'info');
 }
 
 /**
