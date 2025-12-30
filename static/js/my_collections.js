@@ -58,6 +58,23 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // 从后端加载字集数据
   loadCharacterSets();
+  
+  // 全局事件监听器：移除单字（只绑定一次）
+  document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('char-remove') ||
+        e.target.closest('.char-remove')) {
+      e.stopPropagation();
+      handleRemoveCharacter(e.target.closest('.detail-char-item'));
+    }
+  });
+  
+  // 全局事件监听器：点击单字打开详情（只绑定一次）
+  document.addEventListener('click', function(e) {
+    const item = e.target.closest && e.target.closest('.detail-char-item');
+    if (!item) return;
+    if (e.target.classList.contains('char-remove') || e.target.closest('.char-remove')) return;
+    openCharModalFromItem(item);
+  });
 });
 
 // 全局变量：当前操作的字集ID
@@ -955,12 +972,10 @@ function openCharModal(data = {}) {
   }
   if (removeBtn) {
     removeBtn.onclick = () => {
-      if (confirm(`确定要从字集中移除 “${text}” 吗？`)) {
-        // try to remove from detail grid if present
-        const item = Array.from(document.querySelectorAll('.detail-char-item')).find(it => (it.dataset.char || '').toString() === text.toString());
-        if (item) item.remove();
-        closeCharModal();
-      }
+      // 直接移除，不再弹出确认框
+      const item = Array.from(document.querySelectorAll('.detail-char-item')).find(it => (it.dataset.char || '').toString() === text.toString());
+      if (item) item.remove();
+      closeCharModal();
     };
   }
   // 读帖按钮：将 canvas 导出为 dataURL 写入 localStorage，然后跳转到 /read-post
@@ -1523,12 +1538,16 @@ async function openDetailModal(collectionId) {
       // 设置回退内联样式，确保在被覆盖或优先级问题下可见
       modal.style.display = 'flex';
       document.body.style.overflow = 'hidden';
+      // 保存当前字集ID到modal
+      modal.dataset.collectionId = collectionId;
     } else {
       // 动态创建回退 modal，以防模板未包含 detailModal
       modal = document.createElement('div');
       modal.id = 'detailModal';
       modal.className = 'modal';
       modal.style.display = 'flex';
+      // 保存当前字集ID到modal
+      modal.dataset.collectionId = collectionId;
       modal.innerHTML = `
         <div class="modal-overlay" id="detailOverlay"></div>
         <div class="modal-content modal-large">
@@ -1686,30 +1705,6 @@ function initCollectionDetails() {
       }
     });
   }
-
-  // 移除单字
-  document.addEventListener('click', function(e) {
-    if (e.target.classList.contains('char-remove') ||
-        e.target.closest('.char-remove')) {
-      e.stopPropagation(); // 阻止事件冒泡到父元素
-      handleRemoveCharacter(e.target.closest('.detail-char-item'));
-    }
-  });
-  // 点击单字打开详情
-  document.querySelectorAll('.detail-char-item').forEach(item => {
-    item.addEventListener('click', function(e) {
-      if (e.target.classList.contains('char-remove') || e.target.closest('.char-remove')) return;
-      openCharModalFromItem(this);
-    });
-  });
-
-  // 事件委托：支持动态生成的 .detail-char-item 点击打开（优先于单独绑定）
-  document.addEventListener('click', function(e) {
-    const item = e.target.closest && e.target.closest('.detail-char-item');
-    if (!item) return;
-    if (e.target.classList.contains('char-remove') || e.target.closest('.char-remove')) return;
-    openCharModalFromItem(item);
-  });
 }
 
 /**
@@ -1745,26 +1740,16 @@ function searchCharacters(keyword) {
 async function handleRemoveCharacter(charItem) {
   const char = charItem.dataset.char;
   
-  // 获取当前字集ID（从详情弹窗的URL或其他方式获取）
-  // 这里简化处理，从当前显示的字集详情中获取
+  // 从详情弹窗的 dataset 中获取当前字集ID
   const detailModal = document.getElementById('detailModal');
   if (!detailModal) return;
   
-  // 查找当前字集的按钮，获取字集ID
-  const currentSetBtn = Array.from(document.querySelectorAll('button[data-collection]')).find(btn => {
-    const card = btn.closest('.collection-card');
-    if (!card) return false;
-    const name = card.querySelector('.collection-name').textContent;
-    const detailTitle = document.getElementById('detailTitle');
-    return detailTitle && detailTitle.textContent.includes(name);
-  });
+  const collectionId = detailModal.dataset.collectionId;
   
-  if (!currentSetBtn) {
+  if (!collectionId) {
     alert('无法获取当前字集信息');
     return;
   }
-  
-  const collectionId = currentSetBtn.dataset.collection;
 
   if (confirm(`确定要从字集中移除"${char}"吗？`)) {
     try {
