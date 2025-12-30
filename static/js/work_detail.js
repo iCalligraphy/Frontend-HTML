@@ -411,7 +411,15 @@ document.addEventListener('DOMContentLoaded', () => {
   function updateWorkInfo() {
     workTitle.textContent = currentWork.title || '未命名作品';
     workAuthor.textContent = currentWork.author_name || '未知';
-    workDynasty.textContent = currentWork.dynasty || '-';
+      if (workDynasty) {
+        // 临时隐藏朝代显示（如果需要恢复，删除下面两行）
+        workDynasty.style.display = 'none';
+        // 同时隐藏与朝代相邻的分隔符（前后各一个）以保持布局整洁
+        const prev = workDynasty.previousElementSibling;
+        const next = workDynasty.nextElementSibling;
+        if (prev && prev.classList && prev.classList.contains('meta-divider')) prev.style.display = 'none';
+        if (next && next.classList && next.classList.contains('meta-divider')) next.style.display = 'none';
+      }
     // 将风格拼音转换为中文显示
     const styleValue = currentWork.style || '';
     workStyle.textContent = STYLE_MAP[styleValue] || styleValue || '-';

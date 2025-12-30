@@ -28,6 +28,23 @@ document.addEventListener('DOMContentLoaded', () => {
   // API配置
   const API_BASE_URL = '/api';
 
+  // 风格拼音到中文的映射（用于在列表/网格页统一显示中文风格）
+  const STYLE_MAP = {
+    'kai': '楷书',
+    'xing': '行书',
+    'cao': '草书',
+    'li': '隶书',
+    'zhuan': '篆书',
+    'wei': '魏碑',
+    'shoujin': '瘦金体',
+    'other': '其他'
+  };
+
+  function formatStyle(styleValue) {
+    if (!styleValue) return '未知风格';
+    return STYLE_MAP[styleValue] || styleValue;
+  }
+
   // 获取作品列表
   async function fetchWorks(page = 1) {
     try {
@@ -40,14 +57,17 @@ document.addEventListener('DOMContentLoaded', () => {
         per_page: 6
       });
       
-      // 添加筛选条件
-      const selectedStyle = Array.from(chips)
+      // 添加筛选条件 — 将每个选中的风格作为单独的 `style` 参数追加。
+      // 后端若将重复的同名 query 参数视为数组（常见），则表示“任一匹配（OR）”。
+      const selectedStyles = Array.from(chips)
         .filter(chip => chip.classList.contains('selected'))
         .map(chip => chip.dataset.style)
-        .join(',');
-      
-      if (selectedStyle) {
-        params.append('style', selectedStyle);
+        .filter(Boolean);
+
+      if (selectedStyles.length === 1) {
+        params.append('style', selectedStyles[0]);
+      } else if (selectedStyles.length > 1) {
+        selectedStyles.forEach(s => params.append('style', s));
       }
       
       if (authorInput && authorInput.value.trim()) {
@@ -112,7 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="thumb" ${work.image_url ? `style="background-image: url(${work.image_url})"` : ''}></div>
         <div class="work-info">
           <h4>${work.title || '未知作品'}</h4>
-          <p class="meta">作者：${work.author_name || '未知作者'} · 风格：${work.style || '未知风格'} · 字数：${work.characters_count || 0}</p>
+          <p class="meta">作者：${work.author_name || '未知作者'} · 风格：${formatStyle(work.style)} · 字数：${work.characters_count || 0}</p>
         </div>
       </article>
     `).join('');
@@ -133,7 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
     listContainer.innerHTML = worksData.map(work => `
       <div class="list-row" data-work-id="${work.id}">
         <span class="list-title">${work.title || '未知作品'}</span>
-        <span class="list-meta">${work.author_name || '未知作者'} · ${work.style || '未知风格'} · ${work.characters_count || 0}字</span>
+        <span class="list-meta">${work.author_name || '未知作者'} · ${formatStyle(work.style)} · ${work.characters_count || 0}字</span>
       </div>
     `).join('');
     
