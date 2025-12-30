@@ -150,6 +150,9 @@ document.addEventListener('DOMContentLoaded', () => {
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        if (response.status === 403) {
+          throw new Error('不是您的作品，无权限修改或删除该字');
+        }
         throw new Error(`删除单字失败: ${response.status} ${errorData.error || ''}`);
       }
       
@@ -546,7 +549,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  function deleteBox(id) {
+  async function deleteBox(id) {
     if (!confirm('确定删除这个单字吗？')) return;
     
     // 查找要删除的单字
@@ -556,23 +559,23 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     
+    // 如果有后端ID，先发送删除请求
+    if (boxToDelete.id && boxToDelete.id !== Date.now()) {
+      try {
+        await deleteCharacterFromBackend(boxToDelete.id);
+      } catch (error) {
+        console.error('删除单字失败:', error);
+        alert(error.message);
+        return;
+      }
+    }
+    
     // 从本地移除
     boxes = boxes.filter(box => (box.id !== undefined ? box.id : boxes.indexOf(box)) !== id);
     filteredBoxes = filteredBoxes.filter(box => (box.id !== undefined ? box.id : filteredBoxes.indexOf(box)) !== id);
     renderBoxes(); renderCharCards(); updateWorkInfo();
     
-    // 如果有后端ID，发送删除请求
-    if (boxToDelete.id && boxToDelete.id !== Date.now()) {
-      try {
-        deleteCharacterFromBackend(boxToDelete.id);
-        alert('单字已成功删除！');
-      } catch (error) {
-        console.error('删除单字失败:', error);
-        alert(`单字已从本地删除，但删除服务器数据失败：${error.message}`);
-      }
-    } else {
-      alert('单字已成功删除！');
-    }
+    alert('单字已成功删除！');
   }
 
   function saveToLocalStorage() {
