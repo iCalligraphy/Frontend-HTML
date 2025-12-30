@@ -1505,9 +1505,6 @@ function createCollectionCard(data) {
         <p class="collection-meta">${data.characters_count}个字 · 更新于 ${timeText}</p>
       </div>
       <div class="collection-actions">
-        <button type="button" class="action-btn" data-action="edit" aria-label="编辑字集">
-          <span class="action-icon">✏️</span>
-        </button>
         <button type="button" class="action-btn" data-action="delete" aria-label="删除字集">
           <span class="action-icon">🗑️</span>
         </button>
