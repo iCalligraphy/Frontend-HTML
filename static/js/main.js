@@ -10,7 +10,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const searchInput = document.getElementById('globalSearchInput');
   const searchBtn = document.getElementById('searchBtn');
   const authorInput = document.getElementById('authorInput');
-  const sourceSelect = document.getElementById('sourceSelect');
   
   let currentPage = 1;
   let totalPages = 0;
@@ -72,10 +71,6 @@ document.addEventListener('DOMContentLoaded', () => {
       
       if (authorInput && authorInput.value.trim()) {
         params.append('author', authorInput.value.trim());
-      }
-      
-      if (sourceSelect && sourceSelect.value !== 'all') {
-        params.append('source_type', sourceSelect.value);
       }
       
       if (searchInput && searchInput.value.trim()) {
@@ -269,13 +264,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // 作者输入框变化
   if (authorInput) {
     authorInput.addEventListener('change', () => {
-      fetchWorks(1);
-    });
-  }
-
-  // 来源选择变化
-  if (sourceSelect) {
-    sourceSelect.addEventListener('change', () => {
       fetchWorks(1);
     });
   }

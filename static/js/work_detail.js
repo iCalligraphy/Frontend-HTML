@@ -303,9 +303,6 @@ document.addEventListener('DOMContentLoaded', () => {
         throw new Error('作品数据不存在');
       }
       
-      // 更新作品信息
-      updateWorkInfo();
-      
       // 从API获取单字列表
       const response = await fetch(`${API_BASE}/works/${workIdNum}/characters`);
       const charactersData = await response.json();
@@ -367,6 +364,9 @@ document.addEventListener('DOMContentLoaded', () => {
       
       filteredBoxes = [...boxes];
       
+      // 更新作品信息（包含单字数量）
+      updateWorkInfo();
+      
       // 加载作品图片
       const imageUrl = currentWork.image_url.startsWith('http') || currentWork.image_url.startsWith('/uploads/') 
         ? currentWork.image_url 
@@ -411,19 +411,16 @@ document.addEventListener('DOMContentLoaded', () => {
   function updateWorkInfo() {
     workTitle.textContent = currentWork.title || '未命名作品';
     workAuthor.textContent = currentWork.author_name || '未知';
-      if (workDynasty) {
-        // 临时隐藏朝代显示（如果需要恢复，删除下面两行）
-        workDynasty.style.display = 'none';
-        // 同时隐藏与朝代相邻的分隔符（前后各一个）以保持布局整洁
-        const prev = workDynasty.previousElementSibling;
-        const next = workDynasty.nextElementSibling;
-        if (prev && prev.classList && prev.classList.contains('meta-divider')) prev.style.display = 'none';
-        if (next && next.classList && next.classList.contains('meta-divider')) next.style.display = 'none';
-      }
-    // 将风格拼音转换为中文显示
+    if (workDynasty) {
+      workDynasty.textContent = currentWork.dynasty || '-';
+      workDynasty.style.display = '';
+      const prev = workDynasty.previousElementSibling;
+      const next = workDynasty.nextElementSibling;
+      if (prev && prev.classList && prev.classList.contains('meta-divider')) prev.style.display = '';
+      if (next && next.classList && next.classList.contains('meta-divider')) next.style.display = '';
+    }
     const styleValue = currentWork.style || '';
     workStyle.textContent = STYLE_MAP[styleValue] || styleValue || '-';
-    // 显示作品介绍
     if (workDescription) {
       workDescription.textContent = currentWork.description || '';
       workDescription.style.display = currentWork.description ? 'block' : 'none';
