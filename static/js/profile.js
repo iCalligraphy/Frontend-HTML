@@ -283,8 +283,6 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   // 初始化 Mock 控制面板
-  initMockPanel();
-  
   // 初始化事件监听
   initEventListeners();
   
@@ -296,96 +294,7 @@ document.addEventListener('DOMContentLoaded', function() {
   initCollectionActions();
 });
 
-// ========== 初始化 Mock 控制面板 ========== 
-function initMockPanel() {
-  const mockToggle = document.getElementById('mockToggle');
-  const mockStatus = document.getElementById('mockStatus');
-  const apiBaseInput = document.getElementById('apiBaseInput');
-  const loadMockDataBtn = document.getElementById('loadMockDataBtn');
-  const showMockDataBtn = document.getElementById('showMockDataBtn');
-  const clearStorageBtn = document.getElementById('clearStorageBtn');
 
-  // 从 localStorage 读取设置
-  const savedSettings = JSON.parse(localStorage.getItem('profileSettings') || '{}');
-  USE_MOCK_DATA = savedSettings.useMockData !== false;
-  API_BASE = savedSettings.apiBase || 'http://localhost:5000';
-
-  mockToggle.checked = USE_MOCK_DATA;
-  apiBaseInput.value = API_BASE;
-  updateMockStatus();
-
-  // Mock 模式切换
-  mockToggle.addEventListener('change', function() {
-    USE_MOCK_DATA = this.checked;
-    localStorage.setItem('profileSettings', JSON.stringify({
-      useMockData: USE_MOCK_DATA,
-      apiBase: API_BASE
-    }));
-    updateMockStatus();
-    loadUserInfo();
-  });
-
-  // API 地址更新
-  apiBaseInput.addEventListener('change', function() {
-    API_BASE = this.value || 'http://localhost:5000';
-    localStorage.setItem('profileSettings', JSON.stringify({
-      useMockData: USE_MOCK_DATA,
-      apiBase: API_BASE
-    }));
-  });
-
-  // 重新加载 Mock 数据
-  loadMockDataBtn.addEventListener('click', function() {
-    localStorage.removeItem('mockUserData');
-    loadUserInfo();
-    showToast('Mock 数据已重新生成', 'success');
-  });
-
-  // 查看 Mock 数据
-  showMockDataBtn.addEventListener('click', showMockDataModal);
-
-  // 清空本地存储
-  clearStorageBtn.addEventListener('click', function() {
-    if (confirm('确定要清空所有本地存储数据吗？')) {
-      localStorage.clear();
-      showToast('本地存储已清空', 'success');
-      setTimeout(() => location.reload(), 500);
-    }
-  });
-}
-
-function updateMockStatus() {
-  const mockStatus = document.getElementById('mockStatus');
-  if (USE_MOCK_DATA) {
-    mockStatus.textContent = '✓ Mock 模式已启用';
-    mockStatus.style.color = '#28a745';
-  } else {
-    mockStatus.textContent = '✗ 使用真实 API';
-    mockStatus.style.color = '#ff6b6b';
-  }
-}
-
-function showMockDataModal() {
-  const modal = document.getElementById('mockDataModal');
-  const mockDataBody = document.getElementById('mockDataBody');
-
-  const mockData = {
-    user: MockDataGenerator.generateUser(),
-    works: MockDataGenerator.generateWorks(3),
-    collections: MockDataGenerator.generateCollections(2),
-    posts: MockDataGenerator.generatePosts(3),
-    followers: MockDataGenerator.generateUsers(3),
-    following: MockDataGenerator.generateUsers(3)
-  };
-
-  mockDataBody.innerHTML = `
-    <pre style="background: #f5f5f5; padding: 12px; border-radius: 8px; overflow-x: auto; font-size: 12px;">
-${JSON.stringify(mockData, null, 2)}
-    </pre>
-  `;
-
-  modal.classList.add('show');
-}
 
 // ========== 事件监听初始化 ========== 
 function initEventListeners() {
@@ -413,15 +322,12 @@ function initEventListeners() {
 
   // 模态框关闭
   document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
-  document.getElementById('mockDataCloseBtn').addEventListener('click', closeMockDataModal);
   
   document.getElementById('userListModal').addEventListener('click', function(e) {
     if (e.target === this) closeModal();
   });
 
-  document.getElementById('mockDataModal').addEventListener('click', function(e) {
-    if (e.target === this) closeMockDataModal();
-  });
+  
 
   // 统计卡片点击事件
   const worksStatCard = document.getElementById('worksStatCard');
@@ -1146,9 +1052,6 @@ function closeModal() {
   document.getElementById('userListModal').classList.remove('show');
 }
 
-function closeMockDataModal() {
-  document.getElementById('mockDataModal').classList.remove('show');
-}
 
 // ========== 工具函数 ========== 
 

@@ -268,57 +268,6 @@ block extra_css %}
             修改密码
           </button>
         </div>
-
-        <!-- 开发调试面板 -->
-        <div
-          class="settings-section"
-          id="debugPanel"
-          style="border: 2px dashed #ff6b6b; background: #ffe0e0"
-        >
-          <h3 class="settings-title" style="color: #ff6b6b">🧪 开发调试面板</h3>
-          <p style="color: #666; font-size: 12px; margin-bottom: 16px">
-            用于本地开发测试，连接真实后端后可删除此面板
-          </p>
-
-          <div class="form-group">
-            <label for="mockToggle">启用 Mock 模式</label>
-            <input
-              type="checkbox"
-              id="mockToggle"
-              checked
-              style="width: 20px; height: 20px; cursor: pointer"
-            />
-            <span
-              id="mockStatus"
-              style="color: #28a745; margin-left: 10px; font-weight: 600"
-              >✓ Mock 模式已启用</span
-            >
-          </div>
-
-          <div class="form-group">
-            <label for="apiBaseInput">API 地址</label>
-            <input
-              type="text"
-              id="apiBaseInput"
-              class="form-input"
-              placeholder="http://localhost:5000"
-            />
-          </div>
-
-          <button
-            class="btn btn-primary"
-            id="loadMockDataBtn"
-            style="margin-right: 8px"
-          >
-            重新加载 Mock 数据
-          </button>
-          <button class="btn btn-secondary" id="showMockDataBtn">
-            查看 Mock 数据
-          </button>
-          <button class="btn btn-secondary" id="clearStorageBtn">
-            清空本地存储
-          </button>
-        </div>
       </div>
     </div>
   </div>
@@ -339,20 +288,6 @@ block extra_css %}
     </div>
   </div>
 </div>
-
-<!-- Mock 数据查看模态框 -->
-<div id="mockDataModal" class="modal hidden">
-  <div class="modal-content" style="max-width: 600px; max-height: 80vh">
-    <div class="modal-header">
-      <h3>Mock 数据预览</h3>
-      <button class="modal-close" id="mockDataCloseBtn">&times;</button>
-    </div>
-    <div id="mockDataBody" class="modal-body" style="overflow-y: auto">
-      <!-- 内容动态插入 -->
-    </div>
-  </div>
-</div>
-
 {% endblock %} {% block extra_js %}
 <script src="/static/js/profile.js" defer></script>
 <script src="/static/js/follow.js" defer></script>
